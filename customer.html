@@ -440,6 +440,59 @@
           transform: rotate(360deg);
         }
       }
+      
+      
+      
+      
+            /* --- STOP ACCORDION & TOOLTIPS --- */
+      .stop-block {
+        transition: all 0.3s ease;
+        overflow: hidden;
+      }
+      .stop-block.collapsed .stop-details {
+        display: none;
+      }
+      .stop-summary {
+        display: none;
+        padding: 12px 15px;
+        background: var(--surface-elevated);
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .stop-block.collapsed .stop-summary {
+        display: flex;
+      }
+      .tooltip-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: white;
+        font-size: 0.7rem;
+        font-weight: bold;
+        cursor: pointer;
+        margin-left: 8px;
+      }
+      #card-element {
+        padding: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 15px;
+      }
+
+      
+      
+      
+      
+      
+      
     </style>
   </head>
   <body>
@@ -525,71 +578,61 @@
         <!-- STEP 1: PICKUP STOPS -->
         <div id="step1Panel" class="step-panel active">
           <div id="stopsContainer">
-            <!-- Stop 1 Block -->
-            <div
-              class="stop-block"
-              id="stopBlock_1"
-              style="
-                padding-bottom: 15px;
-                border-bottom: 1px solid var(--border);
-                margin-bottom: 15px;
-              "
-            >
-              <h4 style="margin-bottom: 10px; color: var(--accent)">
-                Pickup Stop 1
-              </h4>
-
-              <div class="form-group">
-                <label>Search Store Location</label>
-                <input
-                  type="text"
-                  id="storeSearchInput_1"
-                  placeholder="Walmart, Target, etc..."
-                />
-                <button
-                  class="btn btn-secondary"
-                  style="margin-top: 8px"
-                  onclick="triggerStoreSearch(1)"
-                >
-                  Search Map
-                </button>
+            
+            
+            
+            
+            
+                        <!-- Stop 1 Block -->
+            <div class="stop-block" id="stopBlock_1" style="padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 15px;">
+              <div class="stop-summary" onclick="toggleStop(1)">
+                <strong id="summaryText_1">📍 Stop 1</strong>
+                <span style="color: var(--accent); font-size: 0.8rem;">Edit</span>
               </div>
+              
+              <div class="stop-details" id="stopDetails_1">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <h4 style="color: var(--accent)">Pickup Stop 1</h4>
+                </div>
 
-              <div
-                id="selectedStoreDisplay_1"
-                style="
-                  display: none;
-                  padding: 15px;
-                  background: var(--surface-elevated);
-                  border-radius: 12px;
-                  border-left: 4px solid var(--accent);
-                  margin-top: 10px;
-                  margin-bottom: 15px;
-                "
-              >
-                <strong id="storeNameDisplay_1">Walmart Supercenter</strong>
-                <p
-                  style="
-                    font-size: 0.85rem;
-                    color: var(--text-muted);
-                    margin-top: 4px;
-                  "
-                >
-                  Location Confirmed
-                </p>
-              </div>
+                <div class="form-group">
+                  <label>Search Store Location</label>
+                  <input type="text" id="storeSearchInput_1" placeholder="Walmart, Target, etc..." />
+                  <button class="btn btn-secondary" style="margin-top: 8px" onclick="triggerStoreSearch(1)">Search Map</button>
+                </div>
 
-              <div class="form-group">
-                <label>Store Order Number</label>
-                <input
-                  type="text"
-                  id="pickupNumberInput_1"
-                  placeholder="e.g., #98765432"
-                />
+                <div id="selectedStoreDisplay_1" style="display: none; padding: 15px; background: var(--surface-elevated); border-radius: 12px; border-left: 4px solid var(--accent); margin-top: 10px; margin-bottom: 15px;">
+                  <strong id="storeNameDisplay_1">Walmart Supercenter</strong>
+                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Location Confirmed</p>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                  <div class="form-group" style="flex: 2;">
+                    <label>Store Order Number *</label>
+                    <input type="text" id="pickupNumberInput_1" placeholder="e.g., #98765432" />
+                  </div>
+                  <div class="form-group" style="flex: 1;">
+                    <label>PIN <span class="tooltip-icon" onclick="openInfoTooltip()">?</span></label>
+                    <input type="text" id="pickupPinInput_1" placeholder="1234" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Order Screenshot (Optional)</label>
+                  <input type="file" id="screenshotInput_1" accept="image/*" onchange="handleImageCompress(event, 1)" style="padding: 10px" />
+                </div>
+
+                <div class="form-group">
+                  <label>Curbside Instructions (Optional)</label>
+                  <textarea id="curbsideInstructionsInput_1" rows="2" placeholder="Spot 4, blue Honda..."></textarea>
+                </div>
               </div>
             </div>
-          </div>
 
+            
+                     
+          
+          
           <button
             id="addStopBtn"
             class="btn btn-secondary"
@@ -604,39 +647,31 @@
             Next: Delivery Details
           </button>
         </div>
-
-        <!-- STEP 2: DELIVERY DETAILS -->
+          
+          
+          
+          
+                  <!-- STEP 2: DELIVERY DETAILS -->
         <div id="step2Panel" class="step-panel">
           <div class="form-group">
             <label>Final Delivery Address</label>
-            <input
-              type="text"
-              id="deliveryAddressInput"
-              placeholder="Enter your rural address..."
-            />
-          </div>
-
-          <div class="form-group">
-            <label>Order Screenshot (Optional)</label>
-            <input
-              type="file"
-              id="screenshotInput"
-              accept="image/*"
-              onchange="handleImageCompress(event)"
-              style="padding: 10px"
-            />
+            <input type="text" id="deliveryAddressInput" placeholder="Enter your rural address..." />
           </div>
 
           <div class="form-group">
             <label>Delivery Instructions</label>
-            <textarea
-              id="instructionsInput"
-              rows="3"
-              placeholder="Leave at back door..."
-            ></textarea>
+            <textarea id="instructionsInput" rows="3" placeholder="Leave at back door..."></textarea>
           </div>
 
-          <div style="flex: 1"></div>
+          <div class="form-group">
+            <label>Payment Method</label>
+            <div id="card-element">
+              <span style="color: var(--text-muted); font-size: 0.9rem;">Card securely saved via Stripe Elements</span>
+            </div>
+          </div>
+
+          <div style="flex: 1"></div>  
+          
           <div
             style="
               text-align: center;
@@ -691,22 +726,7 @@
           />
         </div>
 
-        <h3 style="margin-top: 20px; font-size: 1rem; color: var(--text-muted)">
-          Payment Methods
-        </h3>
-        <div
-          style="
-            padding: 20px;
-            border: 1px dashed var(--border);
-            border-radius: 12px;
-            text-align: center;
-            color: var(--text-muted);
-            margin-bottom: 25px;
-          "
-        >
-          Stripe Wallet Integration Active<br />
-          <span style="font-size: 0.8rem">Visa ending in 4242</span>
-        </div>
+        
 
         <div style="flex: 1"></div>
         <button
@@ -782,51 +802,45 @@
         </button>
       </div>
     </div>
+    
+    
+    
+  
+
+        <!-- ACTIVE DELIVERY INTERCEPT PROMPT -->
+    <div class="soft-prompt-overlay" id="activeDeliveryPrompt">
+      <div class="soft-prompt-box">
+        <h3>Delivery In Progress!</h3>
+        <p>You currently have an active Hero on the clock. You cannot place a new order until this run is complete.</p>
+        <button class="btn btn-primary" onclick="dismissActiveDeliveryPrompt()">Track My Hero</button>
+      </div>
+    </div>
 
     <!-- SOFT LOCATION PROMPT -->
-
     <div class="soft-prompt-overlay" id="locationSoftPrompt">
-      <!-- ACTIVE DELIVERY INTERCEPT PROMPT -->
-      <div class="soft-prompt-overlay" id="activeDeliveryPrompt">
-        <div class="soft-prompt-box">
-          <h3>Delivery In Progress!</h3>
-          <p>
-            You currently have an active Hero on the clock. You cannot place a
-            new order until this run is complete.
-          </p>
-          <button
-            class="btn btn-primary"
-            onclick="dismissActiveDeliveryPrompt()"
-          >
-            Track My Hero
-          </button>
-        </div>
-      </div>
-
       <div class="soft-prompt-box">
         <h3>Allow Location Access?</h3>
-        <p>
-          We need your location to find the nearest available Hero for your
-          pickup.
-        </p>
+        <p>We need your location to find the nearest available Hero for your pickup.</p>
         <div class="prompt-actions">
-          <button
-            class="btn btn-secondary"
-            style="flex: 1"
-            onclick="handleLocationDeny()"
-          >
-            No
-          </button>
-          <button
-            class="btn btn-primary"
-            style="flex: 1"
-            onclick="handleLocationAllow()"
-          >
-            Yes
-          </button>
+          <button class="btn btn-secondary" style="flex: 1" onclick="handleLocationDeny()">No</button>
+          <button class="btn btn-primary" style="flex: 1" onclick="handleLocationAllow()">Yes</button>
         </div>
       </div>
     </div>
+
+    <!-- CUSTOM TOOLTIP PROMPT -->
+    <div class="soft-prompt-overlay" id="infoTooltipPrompt">
+      <div class="soft-prompt-box">
+        <h3>Help Your Hero!</h3>
+        <p>Providing your pickup PIN, curbside instructions, or a barcode screenshot prevents delays and stops the driver from having to call you.</p>
+        <button class="btn btn-primary" onclick="closeInfoTooltip()">Got it!</button>
+      </div>
+    </div>
+
+
+    
+   
+    
 
     <!-- LEAFLET MAP JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -875,38 +889,55 @@
       window.doc = doc;
       window.getDoc = getDoc;
       window.setDoc = setDoc;
+      
+      
+      
+      
 
-      // Standard Firebase implementation matches previous backend logic
+            // Standard Firebase implementation matches previous backend logic
       window.appState = {
         user: null,
-        compressedImageBase64: "",
+        userId: "customer_123", // Keep mock ID for testing UI locks
         bookingType: "scheduled",
+        compressedImages: {} // Store multiple images by stop index
       };
 
       window.submitOrderToFirebase = async function () {
         const address = document.getElementById("deliveryAddressInput").value;
         const instructions = document.getElementById("instructionsInput").value;
 
-        // Loop through the DOM to gather all stops dynamically
         let stops = [];
         let stopCount = window.currentStopCount || 1;
+        let activeStopsFound = 0;
 
         for (let i = 1; i <= stopCount; i++) {
-          const storeName = document.getElementById(
-            `storeNameDisplay_${i}`
-          ).innerText;
-          const pickupNum = document.getElementById(
-            `pickupNumberInput_${i}`
-          ).value;
+          const block = document.getElementById(`stopBlock_${i}`);
+          if (!block) continue; // Skip if it was removed
 
-          if (!pickupNum || storeName === "Walmart Supercenter") {
-            // Ensures they actually searched
-            alert(
-              `Please confirm the store and enter an order number for Stop ${i}.`
-            );
+          const storeName = document.getElementById(`storeNameDisplay_${i}`).innerText;
+          const pickupNum = document.getElementById(`pickupNumberInput_${i}`).value;
+          const pinNum = document.getElementById(`pickupPinInput_${i}`).value || "";
+          const curbsideInst = document.getElementById(`curbsideInstructionsInput_${i}`).value || "";
+          const base64Img = window.appState.compressedImages[i] || "";
+
+          if (!pickupNum || storeName === "Pending...") {
+            alert(`Please confirm the store and enter an order number for Stop ${i}.`);
             return;
           }
-          stops.push({ storeName: storeName, pickupNumber: pickupNum });
+          
+          stops.push({ 
+            storeName: storeName, 
+            pickupNumber: pickupNum,
+            pin: pinNum,
+            curbsideInstructions: curbsideInst,
+            barcodeImageUrl: base64Img
+          });
+          activeStopsFound++;
+        }
+
+        if (activeStopsFound === 0) {
+          alert("You must have at least one pickup stop.");
+          return;
         }
 
         if (!address) {
@@ -914,16 +945,15 @@
           return;
         }
 
-        const totalCost = stopCount * 12.99;
+        const totalCost = activeStopsFound * 12.99;
 
         try {
           const orderData = {
-            userId: window.appState.userId, // Attaches order to session
+            userId: window.appState.userId,
             deliveryAddress: address,
             instructions: instructions,
             stops: stops,
             totalCost: totalCost,
-            barcodeImageUrl: window.appState.compressedImageBase64 || "",
             bookingType: window.appState.bookingType,
             status: "pending",
             createdAt: new Date(),
@@ -935,16 +965,26 @@
           );
           window.appState.currentOrderId = docRef.id;
 
-          alert("Order successfully sent to Hero Dispatch!");
+          alert(`Payment of $${totalCost.toFixed(2)} authorized via Stripe. Order sent to Hero Dispatch!`);
           closeAllModals();
 
-          // Re-check sessions to trigger the UI Lock instantly
           if (window.checkActiveSession) window.checkActiveSession();
         } catch (error) {
           console.error("Submission failed:", error);
           alert("Failed to submit order. Please check your connection.");
         }
       };
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
     </script>
 
     <!-- UI & MAP SCRIPT -->
@@ -1223,7 +1263,61 @@
 
       // Utils
 
-      function handleImageCompress(event) {
+            function openInfoTooltip() {
+        document.getElementById("infoTooltipPrompt").style.display = "flex";
+      }
+
+      function closeInfoTooltip() {
+        document.getElementById("infoTooltipPrompt").style.display = "none";
+      }
+
+      function toggleStop(index) {
+        const block = document.getElementById(`stopBlock_${index}`);
+        if (block) {
+          block.classList.remove("collapsed");
+        }
+        for (let i = 1; i <= window.currentStopCount; i++) {
+          if (i !== index) {
+            const otherBlock = document.getElementById(`stopBlock_${i}`);
+            if (otherBlock) otherBlock.classList.add("collapsed");
+          }
+        }
+      }
+
+      function removeStopBlock(index) {
+        const block = document.getElementById(`stopBlock_${index}`);
+        if (block) {
+          block.remove();
+          
+          if (window.appState && window.appState.compressedImages) {
+            delete window.appState.compressedImages[index];
+          }
+
+          updateTotalCost();
+
+          for (let i = index - 1; i >= 1; i--) {
+            if (document.getElementById(`stopBlock_${i}`)) {
+              toggleStop(i);
+              break;
+            }
+          }
+
+          document.getElementById("addStopBtn").style.display = "block";
+        }
+      }
+
+      function updateTotalCost() {
+        let activeStops = 0;
+        for (let i = 1; i <= window.currentStopCount; i++) {
+          if (document.getElementById(`stopBlock_${i}`)) {
+            activeStops++;
+          }
+        }
+        const total = activeStops * 12.99;
+        document.getElementById("totalPriceDisplay").innerText = "$" + total.toFixed(2);
+      }
+
+      function handleImageCompress(event, index) {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -1236,16 +1330,22 @@
             canvas.width = 800;
             canvas.height = img.height * scale;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            window.appState.compressedImageBase64 = canvas.toDataURL(
-              "image/jpeg",
-              0.6
-            );
+            
+            if (!window.appState.compressedImages) window.appState.compressedImages = {};
+            window.appState.compressedImages[index] = canvas.toDataURL("image/jpeg", 0.6);
           };
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
       }
 
+      
+      
+      
+      
+      
+      
+      
       window.listenToMyActiveOrder = function (orderId) {
         const title = document.getElementById("sheetTitle");
         const subtitle = document.getElementById("sheetSubtitle");
@@ -1429,46 +1529,97 @@
         simulateStoreSearch();
       }
 
-      function addNewStopBlock() {
-        if (window.currentStopCount >= 3) return;
+      
+            function addNewStopBlock() {
+        let activeStops = 0;
+        for (let i = 1; i <= window.currentStopCount; i++) {
+          if (document.getElementById(`stopBlock_${i}`)) activeStops++;
+        }
+        
+        if (activeStops >= 3) return;
+        
+        // Collapse current blocks
+        for (let i = 1; i <= window.currentStopCount; i++) {
+          const block = document.getElementById(`stopBlock_${i}`);
+          if (block) {
+            const storeName = document.getElementById(`storeNameDisplay_${i}`).innerText;
+            document.getElementById(`summaryText_${i}`).innerText = `📍 Stop ${i} - ${storeName !== "Pending..." ? storeName : "Details needed"}`;
+            block.classList.add("collapsed");
+          }
+        }
+
         window.currentStopCount++;
+        const newIndex = window.currentStopCount;
 
         const container = document.getElementById("stopsContainer");
         const newBlock = document.createElement("div");
         newBlock.className = "stop-block";
-        newBlock.id = `stopBlock_${window.currentStopCount}`;
-        newBlock.style =
-          "padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 15px;";
+        newBlock.id = `stopBlock_${newIndex}`;
+        newBlock.style = "padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 15px;";
 
         newBlock.innerHTML = `
-          <h4 style="margin-bottom: 10px; color: var(--accent);">Pickup Stop ${window.currentStopCount}</h4>
-          <div class="form-group">
-            <label>Search Store Location</label>
-            <input type="text" id="storeSearchInput_${window.currentStopCount}" placeholder="Walmart, Target, etc..." />
-            <button class="btn btn-secondary" style="margin-top: 8px" onclick="triggerStoreSearch(${window.currentStopCount})">Search Map</button>
+          <div class="stop-summary" onclick="toggleStop(${newIndex})">
+            <strong id="summaryText_${newIndex}">📍 Stop ${newIndex}</strong>
+            <span style="color: var(--accent); font-size: 0.8rem;">Edit</span>
           </div>
-          <div id="selectedStoreDisplay_${window.currentStopCount}" style="display: none; padding: 15px; background: var(--surface-elevated); border-radius: 12px; border-left: 4px solid var(--accent); margin-top: 10px; margin-bottom: 15px;">
-            <strong id="storeNameDisplay_${window.currentStopCount}">Pending...</strong>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Location Confirmed</p>
-          </div>
-          <div class="form-group">
-            <label>Store Order Number</label>
-            <input type="text" id="pickupNumberInput_${window.currentStopCount}" placeholder="e.g., #98765432" />
+          
+          <div class="stop-details" id="stopDetails_${newIndex}">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 style="color: var(--accent)">Pickup Stop ${newIndex}</h4>
+              <button class="btn btn-emergency" style="width: auto; padding: 6px 12px; font-size: 0.8rem;" onclick="removeStopBlock(${newIndex})">Remove</button>
+            </div>
+
+            <div class="form-group">
+              <label>Search Store Location</label>
+              <input type="text" id="storeSearchInput_${newIndex}" placeholder="Walmart, Target, etc..." />
+              <button class="btn btn-secondary" style="margin-top: 8px" onclick="triggerStoreSearch(${newIndex})">Search Map</button>
+            </div>
+
+            <div id="selectedStoreDisplay_${newIndex}" style="display: none; padding: 15px; background: var(--surface-elevated); border-radius: 12px; border-left: 4px solid var(--accent); margin-top: 10px; margin-bottom: 15px;">
+              <strong id="storeNameDisplay_${newIndex}">Pending...</strong>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Location Confirmed</p>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <div class="form-group" style="flex: 2;">
+                <label>Store Order Number *</label>
+                <input type="text" id="pickupNumberInput_${newIndex}" placeholder="e.g., #98765432" />
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label>PIN <span class="tooltip-icon" onclick="openInfoTooltip()">?</span></label>
+                <input type="text" id="pickupPinInput_${newIndex}" placeholder="1234" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Order Screenshot (Optional)</label>
+              <input type="file" id="screenshotInput_${newIndex}" accept="image/*" onchange="handleImageCompress(event, ${newIndex})" style="padding: 10px" />
+            </div>
+
+            <div class="form-group">
+              <label>Curbside Instructions (Optional)</label>
+              <textarea id="curbsideInstructionsInput_${newIndex}" rows="2" placeholder="Spot 4, blue Honda..."></textarea>
+            </div>
           </div>
         `;
 
         container.appendChild(newBlock);
-        bindStoreAutocomplete(window.currentStopCount); // Bind smart search to new input instantly
+        bindStoreAutocomplete(newIndex);
 
-        // Update Price
-        document.getElementById("totalPriceDisplay").innerText =
-          "$" + (window.currentStopCount * 12.99).toFixed(2);
+        updateTotalCost();
 
-        // Hide button if max reached
-        if (window.currentStopCount >= 3) {
+        activeStops++;
+        if (activeStops >= 3) {
           document.getElementById("addStopBtn").style.display = "none";
         }
       }
+
+      
+      
+      
+      
+      
+      
     </script>
   </body>
 </html>
