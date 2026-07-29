@@ -316,7 +316,30 @@
         color: var(--text);
         border: 1px solid var(--border);
       }
+      
+      
+      
+      
+      /* --- GOOGLE AUTOCOMPLETE OVERRIDES --- */
+      .pac-container {
+        z-index: 3000 !important;
+        background-color: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-top: 4px;
+        box-shadow: var(--shadow);
+      }
+      .pac-item { 
+        color: var(--text-muted); 
+        border-top: 1px solid var(--border); 
+        padding: 8px 12px; 
+        cursor: pointer; 
+      }
+      .pac-item:hover { background-color: var(--surface-elevated); }
+      .pac-item-query { color: var(--text); font-size: 1rem; }
     </style>
+      
+      
   </head>
   <body>
     <!-- MAP BASE -->
@@ -639,7 +662,7 @@
       };
       
       
-    </script>
+    </script> 
 
     <!-- UI & MAP SCRIPT -->
     <script>
@@ -648,7 +671,23 @@
       document.addEventListener("DOMContentLoaded", () => {
         initMap();
         if (window.loadActiveDriver) window.loadActiveDriver();
+        initAutocomplete();
       });
+      
+      
+      function initAutocomplete() {
+        if (typeof google !== 'undefined' && google.maps && google.maps.places) {
+          const addressInput = document.getElementById('deliveryAddressInput');
+          const storeInput = document.getElementById('storeSearchInput');
+          
+          // Bind Google Places Autocomplete to the fields
+          new google.maps.places.Autocomplete(addressInput);
+          new google.maps.places.Autocomplete(storeInput);
+        } else {
+          console.error("Google Maps API failed to load.");
+        }
+      }
+      
 
       function initMap() {
         map = L.map("map", { zoomControl: false }).setView(
