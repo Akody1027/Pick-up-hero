@@ -178,7 +178,9 @@
         top: 100%;
         left: 0;
         width: 100vw;
-        height: 100vh;
+        height: 80%;
+        height: 80dvh;
+
         background: var(--bg);
         z-index: 2000;
         transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -310,6 +312,14 @@
         border-radius: 50%;
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
       }
+
+      .custom-user-dot {
+        background-color: #ffffff;
+        border: 4px solid #1a73e8;
+        border-radius: 50%;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+      }
+
       .leaflet-popup-content-wrapper,
       .leaflet-popup-tip {
         background: var(--surface);
@@ -691,11 +701,11 @@
           Use My Location
         </button>
 
-        <div style="flex: 1"></div>
         <button
           class="btn btn-primary"
           id="executeSearchBtn"
           onclick="executeHeroSearch()"
+          style="margin-top: 25px"
         >
           Find Hero
         </button>
@@ -824,6 +834,10 @@
     <script>
       let map, driverMarker, storeMarker;
 
+      let userMarker;
+      let userLat = null,
+        userLng = null;
+
       document.addEventListener("DOMContentLoaded", () => {
         initMap();
         initAutocomplete(); // Run this immediately so Google inputs work
@@ -846,8 +860,20 @@
           // Bind Google Places Autocomplete to the fields
           new google.maps.places.Autocomplete(addressInput);
           new google.maps.places.Autocomplete(storeInput);
+
           const findHeroInput = document.getElementById("findHeroAddressInput");
-          if (findHeroInput) new google.maps.places.Autocomplete(findHeroInput);
+          if (findHeroInput) {
+            const heroAutocomplete = new google.maps.places.Autocomplete(
+              findHeroInput
+            );
+            heroAutocomplete.addListener("place_changed", () => {
+              const place = heroAutocomplete.getPlace();
+              if (place.geometry) {
+                userLat = place.geometry.location.lat();
+                userLng = place.geometry.location.lng();
+              }
+            });
+          }
         } else {
           console.error("Google Maps API failed to load.");
         }
@@ -876,6 +902,16 @@
         driverMarker = L.marker([39.3869, -94.5804], {
           icon: orangeIcon,
         }).addTo(map);
+
+        const whiteDotIcon = L.divIcon({
+          className: "custom-user-dot",
+          iconSize: [18, 18],
+        });
+
+        userMarker = L.marker([0, 0], {
+          icon: whiteDotIcon,
+        }).addTo(map);
+        userMarker.setOpacity(0);
 
         driverMarker.on("click", function () {
           document.getElementById("trackerSheet").style.transform =
@@ -1062,13 +1098,10 @@
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (position) => {
-              const lat = position.coords.latitude;
-              const lng = position.coords.longitude;
+              userLat = position.coords.latitude;
+              userLng = position.coords.longitude;
               document.getElementById("findHeroAddressInput").value =
                 "Current Location Acquired";
-
-              // Silently update marker position behind the scenes
-              driverMarker.setLatLng([lat, lng]);
             },
             (error) => {
               alert("Location access denied or unavailable.");
@@ -1090,12 +1123,28 @@
 
         btn.innerHTML = '<div class="search-spinner"></div> Searching...';
 
+        // Fallback coordinates if they typed an address but autocomplete didn't capture it
+        if (!userLat || !userLng) {
+          userLat = 39.3869;
+          userLng = -94.5804;
+        }
+
         setTimeout(() => {
           btn.innerHTML = "Find Hero";
           closeAllModals();
 
+          // Show the user at their exact location
+          userMarker.setLatLng([userLat, userLng]);
+          userMarker.setOpacity(1);
+
+          // Place the hero slightly offset to simulate a nearby driver
+          const heroLat = userLat + 0.012;
+          const heroLng = userLng + 0.012;
+          driverMarker.setLatLng([heroLat, heroLng]);
           driverMarker.setOpacity(1);
-          map.panTo(driverMarker.getLatLng());
+
+          // Center map on the user
+          map.setView([userLat, userLng], 13);
         }, 1500);
       }
     </script>
