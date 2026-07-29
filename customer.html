@@ -665,14 +665,22 @@
     </script> 
 
     <!-- UI & MAP SCRIPT -->
+    
+    
     <script>
       let map, driverMarker, storeMarker;
-
+      
       document.addEventListener("DOMContentLoaded", () => {
         initMap();
-        if (window.loadActiveDriver) window.loadActiveDriver();
-        initAutocomplete();
+        initAutocomplete(); // Run this immediately so Google inputs work
+        
+        // Delay database fetch by 1 second so Firebase can finish initializing
+        setTimeout(() => {
+          if (window.loadActiveDriver) window.loadActiveDriver();
+        }, 1000);
       });
+
+
       
       
       function initAutocomplete() {
