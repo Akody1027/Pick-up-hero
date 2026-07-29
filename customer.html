@@ -320,6 +320,28 @@
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
       }
 
+      .custom-store-pin {
+        background-color: var(--accent);
+        width: 28px;
+        height: 28px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid #ffffff;
+        box-shadow: -3px 3px 10px rgba(0, 0, 0, 0.5);
+        position: relative;
+      }
+      .custom-store-pin::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 10px;
+        height: 10px;
+        background-color: #ffffff;
+        border-radius: 50%;
+      }
+
       .leaflet-popup-content-wrapper,
       .leaflet-popup-tip {
         background: var(--surface);
@@ -836,6 +858,8 @@
 
       let userMarker;
       let userLat = null,
+      let placesService;
+      let searchMarkers = [];
         userLng = null;
 
       document.addEventListener("DOMContentLoaded", () => {
@@ -859,9 +883,21 @@
 
           // Bind Google Places Autocomplete to the fields
           new google.maps.places.Autocomplete(addressInput);
-          new google.maps.places.Autocomplete(storeInput);
+
+          const storeAutocomplete = new google.maps.places.Autocomplete(storeInput);
+          storeAutocomplete.addListener("place_changed", () => {
+            const place = storeAutocomplete.getPlace();
+            if (place.geometry) {
+              simulateStoreSearch(place);
+            }
+          });
 
           const findHeroInput = document.getElementById("findHeroAddressInput");
+
+
+
+
+
           if (findHeroInput) {
             const heroAutocomplete = new google.maps.places.Autocomplete(
               findHeroInput
@@ -898,6 +934,11 @@
           className: "custom-orange-pin",
           iconSize: [24, 24],
         });
+
+        placesService = new google.maps.places.PlacesService(document.createElement('div'));
+
+
+
 
         driverMarker = L.marker([39.3869, -94.5804], {
           icon: orangeIcon,
@@ -968,34 +1009,108 @@
         document.getElementById("step2Panel").classList.add("active");
       }
 
-      // Map Interactions
-      function simulateStoreSearch() {
-        const val =
-          document.getElementById("storeSearchInput").value || "Walmart";
-        closeAllModals(); // Drop modal to show map
 
-        if (storeMarker) map.removeLayer(storeMarker);
-        storeMarker = L.marker([39.395, -94.57]).addTo(map);
 
-        storeMarker
-          .bindPopup(
-            `
-        <div style="text-align:center;">
-          <strong>${val}</strong><br>
-          <button onclick="confirmStoreSelection('${val}')" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Confirm Pin</button>
-        </div>
-      `
-          )
-          .openPopup();
-        map.panTo([39.395, -94.57]);
+
+            // Map Interactions
+      function simulateStoreSearch(preselectedPlace = null) {
+        let val = document.getElementById("storeSearchInput").value;
+        if (!val && !preselectedPlace) {
+          alert("Please enter a store name.");
+          return;
+        }
+        closeAllModals();
+
+        // Clear previous search results
+        searchMarkers.forEach(m => map.removeLayer(m));
+        searchMarkers = [];
+
+        const center = driverMarker.getLatLng();
+        const storeIcon = L.divIcon({
+          className: "custom-store-pin",
+          iconSize: [28, 28],
+          iconAnchor: [14, 28], // Anchors the bottom tip of the teardrop
+          popupAnchor: [0, -28] // Opens popup slightly above the pin
+        });
+
+        // If customer tapped a specific store from autocomplete
+        if (preselectedPlace && preselectedPlace.geometry) {
+          const lat = preselectedPlace.geometry.location.lat();
+          const lng = preselectedPlace.geometry.location.lng();
+          val = preselectedPlace.name;
+
+          const marker = L.marker([lat, lng], { icon: storeIcon }).addTo(map);
+          marker.bindPopup(`
+            <div style="text-align:center;">
+              <strong>${val}</strong><br>
+              <span style="font-size:0.8rem;color:var(--text-muted);">${preselectedPlace.formatted_address || ''}</span><br>
+              <button onclick="confirmStoreSelection('${val.replace(/'/g, "\\'")}')" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Confirm Pin</button>
+            </div>
+          `).openPopup();
+
+          searchMarkers.push(marker);
+          map.setView([lat, lng], 14);
+          return;
+        }
+
+        // Otherwise, perform a dynamic driver-centric radius search
+        const request = {
+          location: new google.maps.LatLng(center.lat, center.lng),
+          radius: '40000', // Approx 25 miles around the driver base
+          query: val
+        };
+
+        placesService.textSearch(request, (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
+            const bounds = L.latLngBounds();
+
+            results.forEach(place => {
+              const lat = place.geometry.location.lat();
+              const lng = place.geometry.location.lng();
+
+              const marker = L.marker([lat, lng], { icon: storeIcon }).addTo(map);
+              marker.bindPopup(`
+                <div style="text-align:center;">
+                  <strong>${place.name}</strong><br>
+                  <span style="font-size:0.8rem;color:var(--text-muted);">${place.formatted_address || place.vicinity}</span><br>
+                  <button onclick="confirmStoreSelection('${place.name.replace(/'/g, "\\'")}')" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Confirm Pin</button>
+                </div>
+              `);
+
+              searchMarkers.push(marker);
+              bounds.extend([lat, lng]);
+            });
+
+            // Frame the view to show all found stores and the driver base
+            bounds.extend(center);
+            map.fitBounds(bounds, { padding: [50, 50] });
+          } else {
+            alert("No stores found near the Hero's base. Try a different search.");
+            openAddModal();
+          }
+        });
       }
 
       function confirmStoreSelection(name) {
         map.closePopup();
+
+        // Wipe search markers to prevent clutter
+        searchMarkers.forEach(m => map.removeLayer(m));
+        searchMarkers = [];
+
         document.getElementById("storeNameDisplay").innerText = name;
         document.getElementById("selectedStoreDisplay").style.display = "block";
-        openAddModal(); // Bring modal back up
+        openAddModal();
       }
+
+
+
+
+
+
+
+
+
 
       // Utils
 
