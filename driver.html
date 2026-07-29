@@ -269,7 +269,8 @@
     .fab-btn svg { width: 28px; height: 28px; fill: white; }
 
     /* --- MODALS --- */
-.modal {
+
+    .modal {
       position: fixed;
       top: 100%;
       left: 0;
@@ -281,6 +282,8 @@
       display: flex;
       flex-direction: column;
     }
+    
+    
     .modal.active { top: 0; }
 
     .modal-header {
@@ -591,6 +594,9 @@
           if(data.displayName) document.getElementById('driverNameInput').value = data.displayName;
           if(data.bio) document.getElementById('driverBioInput').value = data.bio;
           if(data.premiumRate) document.getElementById('premiumRateInput').value = data.premiumRate;
+          if(data.profilePic) document.getElementById('profileImagePreview').src = data.profilePic;
+          
+          
           
           const killSwitch = document.getElementById('killSwitchToggle');
           if(data.globalKillSwitch) killSwitch.classList.add('on');
@@ -616,6 +622,8 @@
         globalKillSwitch: document.getElementById('killSwitchToggle').classList.contains('on'),
         sosEnabled: document.getElementById('sosToggle').classList.contains('on'),
         premiumRate: parseFloat(document.getElementById('premiumRateInput').value) || 50.00
+        , profilePic: document.getElementById('profileImagePreview').src
+        
       };
       
       
@@ -687,15 +695,42 @@
     function toggleBottomSheet() {
       document.getElementById('activeQueueSheet').classList.toggle('expanded');
     }
+    
+    
+    
 
     // Image Upload Preview
+
+    // Image Upload & Compression
     window.previewProfileImage = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
       const reader = new FileReader();
-      reader.onload = function() {
-        document.getElementById('profileImagePreview').src = reader.result;
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Shrink to 300px wide to prevent database overload
+          const scale = 300 / img.width;
+          canvas.width = 300; 
+          canvas.height = img.height * scale;
+          
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          // Convert to compressed JPEG and update UI
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          document.getElementById('profileImagePreview').src = compressedBase64;
+        };
+        img.src = e.target.result;
       };
-      if(event.target.files[0]) reader.readAsDataURL(event.target.files[0]);
+      reader.readAsDataURL(file);
     };
+    
+    
+    
 
     // Notification Engine (Generous Net Simulation)
 function listenForPendingOrders() {
