@@ -1,996 +1,1359 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Pick Up Hero - Driver Command</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pick Up Hero - Driver Command</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
 
-  <style>
-    :root {
-      --bg: #121212;
-      --surface: #1e1e1e;
-      --surface-elevated: #2c2c2c;
-      --accent: #ee611c;
-      --accent-hover: #d95314;
-      --text: #ffffff;
-      --text-muted: #94a3b8;
-      --border: #333333;
-      --success: #22c55e;
-      --danger: #ef4444;
-      --shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
-    }
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
+    <style>
+      :root {
+        --bg: #121212;
+        --surface: #1e1e1e;
+        --surface-elevated: #2c2c2c;
+        --accent: #ee611c;
+        --accent-hover: #d95314;
+        --text: #ffffff;
+        --text-muted: #94a3b8;
+        --border: #333333;
+        --success: #22c55e;
+        --danger: #ef4444;
+        --shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+      }
 
-    body, html {
-      background-color: var(--bg);
-      color: var(--text);
-      overflow: hidden;
-      height: 100vh;
-      width: 100vw;
-    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+      }
 
-    /* --- MAP LAYER --- */
-    #map {
-      width: 100vw;
-      height: 100vh;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 0;
-    }
+      body,
+      html {
+        background-color: var(--bg);
+        color: var(--text);
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
+      }
 
-    /* --- TOP NOTIFICATION BELL --- */
-    .top-controls {
-      position: absolute;
-      top: env(safe-area-inset-top, 20px);
-      right: 20px;
-      z-index: 1000;
-    }
+      /* --- MAP LAYER --- */
+      #map {
+        width: 100vw;
+        height: 100vh;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;
+      }
 
-    .bell-btn {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-      cursor: pointer;
-      position: relative;
-    }
+      /* --- TOP NOTIFICATION BELL --- */
+      .top-controls {
+        position: absolute;
+        top: env(safe-area-inset-top, 20px);
+        right: 20px;
+        z-index: 1000;
+      }
 
-    .bell-btn svg {
-      width: 24px;
-      height: 24px;
-      fill: var(--text);
-    }
+      .bell-btn {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        position: relative;
+      }
 
-    .badge {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      background: var(--accent);
-      color: white;
-      font-size: 0.75rem;
-      font-weight: 800;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid var(--bg);
-      display: none;
-    }
+      .bell-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: var(--text);
+      }
 
-    /* --- DRAGGABLE BOTTOM SHEET (ACTIVE QUEUE) --- */
-    .bottom-sheet {
-      position: absolute;
-      bottom: 80px; /* Above Nav Bar */
-      left: 0;
-      width: 100%;
-      height: 75vh;
-      background: rgba(30, 30, 30, 0.95);
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-      border-radius: 24px 24px 0 0;
-      z-index: 900;
-      border-top: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      transform: translateY(calc(100% - 130px)); /* Minimized state */
-      display: flex;
-      flex-direction: column;
-    }
+      .badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: var(--accent);
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 800;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--bg);
+        display: none;
+      }
 
-    .bottom-sheet.expanded {
-      transform: translateY(0);
-    }
+      /* --- DRAGGABLE BOTTOM SHEET (ACTIVE QUEUE) --- */
+      .bottom-sheet {
+        position: absolute;
+        bottom: 80px; /* Above Nav Bar */
+        left: 0;
+        width: 100%;
+        height: 75vh;
+        background: rgba(30, 30, 30, 0.95);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 24px 24px 0 0;
+        z-index: 900;
+        border-top: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(calc(100% - 130px)); /* Minimized state */
+        display: flex;
+        flex-direction: column;
+      }
 
-    .drag-handle-area {
-      width: 100%;
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: grab;
-      border-bottom: 1px solid transparent;
-    }
-    
-    .bottom-sheet.expanded .drag-handle-area {
-      border-bottom: 1px solid var(--border);
-    }
+      .bottom-sheet.expanded {
+        transform: translateY(0);
+      }
 
-    .drag-handle {
-      width: 40px;
-      height: 5px;
-      background: var(--text-muted);
-      border-radius: 5px;
-      margin-bottom: 15px;
-    }
+      .drag-handle-area {
+        width: 100%;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: grab;
+        border-bottom: 1px solid transparent;
+      }
 
-    .glance-status {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 10px;
-    }
+      .bottom-sheet.expanded .drag-handle-area {
+        border-bottom: 1px solid var(--border);
+      }
 
-    .glance-status h3 {
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
+      .drag-handle {
+        width: 40px;
+        height: 5px;
+        background: var(--text-muted);
+        border-radius: 5px;
+        margin-bottom: 15px;
+      }
 
-    .glance-status p {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
+      .glance-status {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+      }
 
-    .sheet-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      display: none;
-    }
+      .glance-status h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
 
-    .bottom-sheet.expanded .sheet-content {
-      display: block;
-    }
+      .glance-status p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
 
-    /* Vertical Timeline */
-    .timeline {
-      border-left: 2px solid var(--border);
-      margin-left: 10px;
-      padding-left: 25px;
-      list-style: none;
-    }
+      .sheet-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: none;
+      }
 
-    .timeline-item {
-      position: relative;
-      margin-bottom: 25px;
-    }
+      .bottom-sheet.expanded .sheet-content {
+        display: block;
+      }
 
-    .timeline-item::before {
-      content: '';
-      position: absolute;
-      left: -32px;
-      top: 4px;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: var(--surface-elevated);
-      border: 2px solid var(--border);
-      z-index: 2;
-    }
+      /* Vertical Timeline */
+      .timeline {
+        border-left: 2px solid var(--border);
+        margin-left: 10px;
+        padding-left: 25px;
+        list-style: none;
+      }
 
-    .timeline-item.active::before {
-      background: var(--accent);
-      border-color: var(--surface);
-      box-shadow: 0 0 10px rgba(238, 97, 28, 0.5);
-    }
+      .timeline-item {
+        position: relative;
+        margin-bottom: 25px;
+      }
 
-    .timeline-item.completed::before {
-      background: var(--success);
-      border-color: var(--surface);
-    }
+      .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: -32px;
+        top: 4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--surface-elevated);
+        border: 2px solid var(--border);
+        z-index: 2;
+      }
 
-    .node-card {
-      background: var(--surface-elevated);
-      padding: 15px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
+      .timeline-item.active::before {
+        background: var(--accent);
+        border-color: var(--surface);
+        box-shadow: 0 0 10px rgba(238, 97, 28, 0.5);
+      }
 
-    .node-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
+      .timeline-item.completed::before {
+        background: var(--success);
+        border-color: var(--surface);
+      }
 
-    /* --- BOTTOM NAVIGATION BAR --- */
-    .bottom-nav {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 80px;
-      background: rgba(18, 18, 18, 0.98);
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      z-index: 1000;
-      border-top: 1px solid var(--border);
-      padding-bottom: env(safe-area-inset-bottom);
-    }
+      .node-card {
+        background: var(--surface-elevated);
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+      }
 
-    .nav-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      width: 60px;
-    }
+      .node-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
 
-    .nav-btn svg { width: 24px; height: 24px; fill: currentColor; }
-    .nav-btn.active { color: var(--accent); }
-    .nav-btn span { font-size: 0.7rem; font-weight: 600; }
+      /* --- BOTTOM NAVIGATION BAR --- */
+      .bottom-nav {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 80px;
+        background: rgba(18, 18, 18, 0.98);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 1000;
+        border-top: 1px solid var(--border);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
 
-    .fab-container { position: relative; top: -25px; }
-    
-    .fab-btn {
-      width: 60px;
-      height: 60px;
-      background: var(--accent);
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border: none;
-      box-shadow: 0 4px 20px rgba(238, 97, 28, 0.4);
-      cursor: pointer;
-    }
+      .nav-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        width: 60px;
+      }
 
-    .fab-btn svg { width: 28px; height: 28px; fill: white; }
+      .nav-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+      }
+      .nav-btn.active {
+        color: var(--accent);
+      }
+      .nav-btn span {
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
 
-    /* --- MODALS --- */
+      .fab-container {
+        position: relative;
+        top: -25px;
+      }
 
-    .modal {
-      position: fixed;
-      top: 100%;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--bg);
-      z-index: 2000;
-      transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      flex-direction: column;
-    }
-    
-    
-    .modal.active { top: 0; }
+      .fab-btn {
+        width: 60px;
+        height: 60px;
+        background: var(--accent);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: none;
+        box-shadow: 0 4px 20px rgba(238, 97, 28, 0.4);
+        cursor: pointer;
+      }
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
+      .fab-btn svg {
+        width: 28px;
+        height: 28px;
+        fill: white;
+      }
 
-    .modal-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-    }
+      /* --- MODALS --- */
 
-    .close-btn {
-      background: var(--surface-elevated);
-      border: none;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      color: var(--text);
-      font-size: 1.2rem;
-      cursor: pointer;
-    }
+      .modal {
+        position: fixed;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg);
+        z-index: 2000;
+        transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+      }
 
-    /* --- FORMS & BUTTONS --- */
-    .form-group { margin-bottom: 20px; }
-    .form-group label {
-      display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;
-    }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 1rem; outline: none;
-    }
-    .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+      .modal.active {
+        top: 0;
+      }
 
-    .btn {
-      width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: 700; font-size: 1rem; cursor: pointer; text-align: center;
-    }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-secondary { background: var(--surface-elevated); color: var(--text); border: 1px solid var(--border); }
-    .btn-success { background: var(--success); color: white; }
-    .btn-emergency { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
 
-    /* Custom Toggles */
-    .toggle-switch {
-      position: relative; width: 50px; height: 28px; background: var(--surface-elevated); border-radius: 30px; border: 1px solid var(--border); cursor: pointer;
-    }
-    .toggle-switch.on { background: var(--accent); border-color: var(--accent); }
-    .toggle-knob {
-      position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; background: white; border-radius: 50%; transition: left 0.2s;
-    }
-    .toggle-switch.on .toggle-knob { left: 24px; }
+      .modal-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+      }
 
-    /* Map Cluster Badges */
-    .cluster-pin {
-      background: var(--accent); border: 3px solid var(--surface); border-radius: 50%; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0,0,0,0.5); font-size: 0.9rem;
-    }
-    
-    .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-  </style>
-</head>
-<body>
+      .close-btn {
+        background: var(--surface-elevated);
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        color: var(--text);
+        font-size: 1.2rem;
+        cursor: pointer;
+      }
 
-  <!-- Audio Alert Engine -->
-  <audio id="alertSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+      /* --- FORMS & BUTTONS --- */
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        font-size: 1rem;
+        outline: none;
+      }
+      .form-group input:focus,
+      .form-group textarea:focus {
+        border-color: var(--accent);
+      }
 
-  <!-- MAP LAYER -->
-  <div id="map"></div>
+      .btn {
+        width: 100%;
+        padding: 16px;
+        border-radius: 12px;
+        border: none;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        text-align: center;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: white;
+      }
+      .btn-secondary {
+        background: var(--surface-elevated);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      .btn-success {
+        background: var(--success);
+        color: white;
+      }
+      .btn-emergency {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
 
-  <!-- TOP COMMAND CENTER -->
-  <div class="top-controls">
-    <button class="bell-btn" onclick="startTriageMode()">
-      <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
-      <div class="badge" id="notificationBadge">0</div>
-    </button>
-  </div>
+      /* Custom Toggles */
+      .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 28px;
+        background: var(--surface-elevated);
+        border-radius: 30px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .toggle-switch.on {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .toggle-knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 22px;
+        height: 22px;
+        background: white;
+        border-radius: 50%;
+        transition: left 0.2s;
+      }
+      .toggle-switch.on .toggle-knob {
+        left: 24px;
+      }
 
-  <!-- DRAGGABLE TIMELINE QUEUE -->
-  <div class="bottom-sheet" id="activeQueueSheet">
-    <div class="drag-handle-area" onclick="toggleBottomSheet()">
-      <div class="drag-handle"></div>
-      <div class="glance-status">
-        <div>
-          <h3 id="glanceTitle">Idle / No Active Route</h3>
-          <p id="glanceSubtitle">Awaiting scheduled runs.</p>
-        </div>
-        <button id="workflowBtn" class="btn btn-primary" style="width: auto; padding: 10px 20px; display: none;" onclick="advanceWorkflow()">Start Route</button>
-      </div>
-    </div>
-    
-    <div class="sheet-content">
-      <h4 style="margin-bottom: 20px; color: var(--text-muted); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px;">Route Timeline</h4>
-      <ul class="timeline" id="timelineList">
-        <!-- Injected via JS based on state -->
-        <p style="color: var(--text-muted);">Queue is empty.</p>
-      </ul>
-    </div>
-  </div>
+      /* Map Cluster Badges */
+      .cluster-pin {
+        background: var(--accent);
+        border: 3px solid var(--surface);
+        border-radius: 50%;
+        color: white;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        font-size: 0.9rem;
+      }
 
-  <!-- BOTTOM NAVIGATION -->
-  <nav class="bottom-nav">
-    <button class="nav-btn active" id="navHome" onclick="closeAllModals()">
-      <svg viewBox="0 0 24 24"><path d="M12 3l10 9h-3v9h-14v-9h-3l10-9z"/></svg>
-      <span>Map</span>
-    </button>
-    
-    <div class="fab-container">
-      <button class="fab-btn" onclick="openModal('scheduleModal')">
-        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      .leaflet-popup-content-wrapper,
+      .leaflet-popup-tip {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      
+      
+      /* --- GOOGLE AUTOCOMPLETE OVERRIDES --- */
+      .pac-container {
+        z-index: 3000 !important;
+        background-color: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-top: 4px;
+        box-shadow: var(--shadow);
+      }
+      .pac-item { 
+        color: var(--text-muted); 
+        border-top: 1px solid var(--border); 
+        padding: 8px 12px; 
+        cursor: pointer; 
+      }
+      .pac-item:hover { background-color: var(--surface-elevated); }
+      .pac-item-query { color: var(--text); font-size: 1rem; }
+    </style>
+      
+      
+  </head>
+  <body>
+    <!-- Audio Alert Engine -->
+    <audio
+      id="alertSound"
+      src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+      preload="auto"
+    ></audio>
+
+    <!-- MAP LAYER -->
+    <div id="map"></div>
+
+    <!-- TOP COMMAND CENTER -->
+    <div class="top-controls">
+      <button class="bell-btn" onclick="startTriageMode()">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
+          />
+        </svg>
+        <div class="badge" id="notificationBadge">0</div>
       </button>
     </div>
 
-    <button class="nav-btn" id="navProfile" onclick="openModal('settingsModal')">
-      <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
-      <span>Settings</span>
-    </button>
-  </nav>
-
-  <!-- MODAL: SCHEDULE ROUTE (+) -->
-  <div id="scheduleModal" class="modal">
-    <div class="modal-header">
-      <h2>New Route Block</h2>
-      <button class="close-btn" onclick="closeAllModals()">✕</button>
-    </div>
-    <div class="modal-content">
-      <div class="form-group">
-        <label>Date</label>
-        <select>
-          <option>Today</option>
-          <option>Tomorrow</option>
-        </select>
-      </div>
-      <div style="display: flex; gap: 15px;">
-        <div class="form-group" style="flex: 1;">
-          <label>Start Time</label>
-          <input type="time" value="08:00" />
-        </div>
-        <div class="form-group" style="flex: 1;">
-          <label>End Time</label>
-          <input type="time" value="13:00" />
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Max Stops (Capacity)</label>
-        <input type="number" value="6" />
-      </div>
-      <button class="btn btn-primary" onclick="alert('Route block published to customers!'); closeAllModals();">Publish Run</button>
-    </div>
-  </div>
-
-  <!-- MODAL: MASTER SETTINGS -->
-  <div id="settingsModal" class="modal">
-    <div class="modal-header">
-      <h2>Driver Settings</h2>
-      <button class="close-btn" onclick="closeAllModals()">✕</button>
-    </div>
-    <div class="modal-content">
-      
-      <!-- Profile Block with Circular Uploader -->
-      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 25px;">
-        <label style="position: relative; cursor: pointer; display: block;">
-          <img src="https://via.placeholder.com/150" id="profileImagePreview" style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid var(--surface-elevated); box-shadow: 0 4px 10px rgba(0,0,0,0.3);" />
-          <div style="position: absolute; bottom: 0; right: 0; background: var(--accent); color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid var(--surface); font-weight: bold; font-size: 1.4rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">+</div>
-          <input type="file" accept="image/*" style="display: none;" onchange="previewProfileImage(event)" />
-        </label>
-      </div>
-      
-      <div class="form-group">
-        <label>Display Name</label>
-        <input type="text" id="driverNameInput" value="Hero Driver" />
-      </div>
-
-      <div class="form-group" style="margin-bottom: 35px;">
-        <label>Driver Bio (Visible to Customers)</label>
-        <textarea id="driverBioInput" rows="3" placeholder="Write a short bio...">Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursday mornings.</textarea>
-      </div>
-      
-
-
-
-      <!-- System Controls -->
-      <h4 style="color: var(--accent); margin-bottom: 15px; text-transform: uppercase; font-size: 0.85rem;">System Controls</h4>
-      
-      <div class="node-card" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <strong>Global Kill Switch</strong>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Stop accepting orders instantly</p>
-        </div>
-        
-        
-        
-        <div class="toggle-switch" id="killSwitchToggle" onclick="this.classList.toggle('on')">
-          <div class="toggle-knob"></div>
-        </div>
-      </div>
-
-      <div class="node-card" style="margin-bottom: 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <!-- DRAGGABLE TIMELINE QUEUE -->
+    <div class="bottom-sheet" id="activeQueueSheet">
+      <div class="drag-handle-area" onclick="toggleBottomSheet()">
+        <div class="drag-handle"></div>
+        <div class="glance-status">
           <div>
-            <strong style="color: var(--danger);">SOS Emergency Deliveries</strong>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Accept immediate, high-paying runs</p>
+            <h3 id="glanceTitle">Idle / No Active Route</h3>
+            <p id="glanceSubtitle">Awaiting scheduled runs.</p>
           </div>
-          <div class="toggle-switch on" id="sosToggle" onclick="this.classList.toggle('on')">
+          <button
+            id="workflowBtn"
+            class="btn btn-primary"
+            style="width: auto; padding: 10px 20px; display: none"
+            onclick="advanceWorkflow()"
+          >
+            Start Route
+          </button>
+        </div>
+      </div>
+
+      <div class="sheet-content">
+        <h4
+          style="
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+          "
+        >
+          Route Timeline
+        </h4>
+        <ul class="timeline" id="timelineList">
+          <!-- Injected via JS based on state -->
+          <p style="color: var(--text-muted)">Queue is empty.</p>
+        </ul>
+      </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" id="navHome" onclick="closeAllModals()">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 3l10 9h-3v9h-14v-9h-3l10-9z" />
+        </svg>
+        <span>Map</span>
+      </button>
+
+      <div class="fab-container">
+        <button class="fab-btn" onclick="openModal('scheduleModal')">
+          <svg viewBox="0 0 24 24">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+          </svg>
+        </button>
+      </div>
+
+      <button
+        class="nav-btn"
+        id="navProfile"
+        onclick="openModal('settingsModal')"
+      >
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"
+          />
+        </svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <!-- MODAL: SCHEDULE ROUTE (+) -->
+    <div id="scheduleModal" class="modal">
+      <div class="modal-header">
+        <h2>New Route Block</h2>
+        <button class="close-btn" onclick="closeAllModals()">✕</button>
+      </div>
+      <div class="modal-content">
+        <div class="form-group">
+          <label>Date</label>
+          <select>
+            <option>Today</option>
+            <option>Tomorrow</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 15px">
+          <div class="form-group" style="flex: 1">
+            <label>Start Time</label>
+            <input type="time" value="08:00" />
+          </div>
+          <div class="form-group" style="flex: 1">
+            <label>End Time</label>
+            <input type="time" value="13:00" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Max Stops (Capacity)</label>
+          <input type="number" value="6" />
+        </div>
+        <button
+          class="btn btn-primary"
+          onclick="alert('Route block published to customers!'); closeAllModals();"
+        >
+          Publish Run
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL: MASTER SETTINGS -->
+    <div id="settingsModal" class="modal">
+      <div class="modal-header">
+        <h2>Driver Settings</h2>
+        <button class="close-btn" onclick="closeAllModals()">✕</button>
+      </div>
+      <div class="modal-content">
+        <!-- Profile Block with Circular Uploader -->
+        <div
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 25px;
+          "
+        >
+          <label style="position: relative; cursor: pointer; display: block">
+            <img
+              src="https://via.placeholder.com/150"
+              id="profileImagePreview"
+              style="
+                width: 110px;
+                height: 110px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 3px solid var(--surface-elevated);
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+              "
+            />
+            <div
+              style="
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                background: var(--accent);
+                color: white;
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 3px solid var(--surface);
+                font-weight: bold;
+                font-size: 1.4rem;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+              "
+            >
+              +
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              style="display: none"
+              onchange="previewProfileImage(event)"
+            />
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Display Name</label>
+          <input type="text" id="driverNameInput" value="Hero Driver" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 35px">
+          <label>Driver Bio (Visible to Customers)</label>
+          <textarea
+            id="driverBioInput"
+            rows="3"
+            placeholder="Write a short bio..."
+          >
+Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursday mornings.</textarea
+          >
+        </div>
+
+        <!-- System Controls -->
+        <h4
+          style="
+            color: var(--accent);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+          "
+        >
+          System Controls
+        </h4>
+
+        <div
+          class="node-card"
+          style="
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <div>
+            <strong>Global Kill Switch</strong>
+            <p
+              style="
+                font-size: 0.8rem;
+                color: var(--text-muted);
+                margin-top: 4px;
+              "
+            >
+              Stop accepting orders instantly
+            </p>
+          </div>
+
+          <div
+            class="toggle-switch"
+            id="killSwitchToggle"
+            onclick="this.classList.toggle('on')"
+          >
             <div class="toggle-knob"></div>
           </div>
         </div>
-        <div class="form-group" style="margin-bottom: 0;">
-          <label>Current Premium Rate ($)</label>
-          <input type="number" id="premiumRateInput" value="50.00" />
+
+        <div class="node-card" style="margin-bottom: 30px">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 15px;
+            "
+          >
+            <div>
+              <strong style="color: var(--danger)"
+                >SOS Emergency Deliveries</strong
+              >
+              <p
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  margin-top: 4px;
+                "
+              >
+                Accept immediate, high-paying runs
+              </p>
+            </div>
+            <div
+              class="toggle-switch on"
+              id="sosToggle"
+              onclick="this.classList.toggle('on')"
+            >
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 0">
+            <label>Current Premium Rate ($)</label>
+            <input type="number" id="premiumRateInput" value="50.00" />
+          </div>
         </div>
-      </div>
-        
- 
-      
-      
 
-      <!-- Financials -->
-      <h4 style="color: var(--accent); margin-bottom: 15px; text-transform: uppercase; font-size: 0.85rem;">Financials</h4>
-      
-      
-      <div class="node-card" style="text-align: center; color: var(--text-muted); margin-bottom: 25px;">
-        <p style="margin-bottom: 15px;">Stripe Connect Dashboard</p>
-        <button class="btn btn-secondary">View Payouts & Bank</button>
-      </div>
-      
-      <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveDriverSettings()">Save Changes</button>
-   
+        <!-- Financials -->
+        <h4
+          style="
+            color: var(--accent);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+          "
+        >
+          Financials
+        </h4>
 
+        <div
+          class="node-card"
+          style="
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 25px;
+          "
+        >
+          <p style="margin-bottom: 15px">Stripe Connect Dashboard</p>
+          <button class="btn btn-secondary">View Payouts & Bank</button>
+        </div>
+
+        <button
+          class="btn btn-primary"
+          id="saveSettingsBtn"
+          onclick="saveDriverSettings()"
+        >
+          Save Changes
+        </button>
+      </div>
     </div>
-  </div>
 
-  <!-- LEAFLET MAP JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
-  
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqlDSF6sSZqagHDlFCw2K-v4lRQQCK6Ew&libraries=places"></script>
-  
-  <!-- FIREBASE SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
-    import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
-    
-    
+    <!-- LEAFLET MAP JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDhSqKn5eg_X-c8uNMjp7BTDWgIpV8dnvI",
-      authDomain: "pickuphero-1993f.firebaseapp.com",
-      projectId: "pickuphero-1993f",
-      storageBucket: "pickuphero-1993f.firebasestorage.app",
-      messagingSenderId: "234138921429",
-      appId: "1:234138921429:web:61071ce9b8e5e6ce70755c",
-      measurementId: "G-88L5X10BTW"
-    };
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqlDSF6sSZqagHDlFCw2K-v4lRQQCK6Ew&libraries=places"></script>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    
-    // Attach db to window to allow global AppState functions to execute Firestore queries
-    window.db = db;
-    
-    
-    window.collection = collection;
-    window.query = query;
-    window.where = where;
-    window.onSnapshot = onSnapshot;
-    window.doc = doc;
-    window.updateDoc = updateDoc;
-    window.setDoc = setDoc;
-    window.getDoc = getDoc;
-  </script>
-  
-  
-  
+    <!-- FIREBASE SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+      import { getAuth } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+      import {
+        getFirestore,
+        collection,
+        query,
+        where,
+        onSnapshot,
+        doc,
+        updateDoc,
+        setDoc,
+        getDoc,
+      } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
-  <!-- APPLICATION LOGIC -->
-  <script>
-    // System State
-    const AppState = {
-      workflowPhase: 'idle', // idle -> triage -> pickup -> delivery
-      pendingOrders: 0,
-      triageQueue: [], // The generous net array
-      activeQueue: [], // Final confirmed route
-      homeBase: [39.3869, -94.5804],
-      mapInstance: null,
-      homeMarker: null,
-      layerGroup: null // holds dynamic pins and lines
-    };
-
-    // Initialize UI and Map
-    
-    
-    
-    
-    
-    
-    const DRIVER_DOC_ID = "hero_driver_main";
-
-    window.loadDriverSettings = async function() {
-      try {
-        const docSnap = await window.getDoc(window.doc(window.db, "driver_settings", DRIVER_DOC_ID));
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if(data.displayName) document.getElementById('driverNameInput').value = data.displayName;
-          if(data.bio) document.getElementById('driverBioInput').value = data.bio;
-          if(data.premiumRate) document.getElementById('premiumRateInput').value = data.premiumRate;
-          if(data.profilePic) document.getElementById('profileImagePreview').src = data.profilePic;
-          
-          
-          
-          const killSwitch = document.getElementById('killSwitchToggle');
-          if(data.globalKillSwitch) killSwitch.classList.add('on');
-          else killSwitch.classList.remove('on');
-
-          const sosToggle = document.getElementById('sosToggle');
-          if(data.sosEnabled) sosToggle.classList.add('on');
-          else sosToggle.classList.remove('on');
-        }
-      } catch (e) {
-        console.error("Error loading settings:", e);
-      }
-    };
-
-    window.saveDriverSettings = async function() {
-      const btn = document.getElementById('saveSettingsBtn');
-      const originalText = btn.innerText;
-      btn.innerText = "Saving...";
-      
-      const payload = {
-        displayName: document.getElementById('driverNameInput').value,
-        bio: document.getElementById('driverBioInput').value,
-        globalKillSwitch: document.getElementById('killSwitchToggle').classList.contains('on'),
-        sosEnabled: document.getElementById('sosToggle').classList.contains('on'),
-        premiumRate: parseFloat(document.getElementById('premiumRateInput').value) || 50.00,
-        baseLat: AppState.homeBase[0],
-        baseLng: AppState.homeBase[1]
-        
-        , profilePic: document.getElementById('profileImagePreview').src
-        
+      const firebaseConfig = {
+        apiKey: "AIzaSyDhSqKn5eg_X-c8uNMjp7BTDWgIpV8dnvI",
+        authDomain: "pickuphero-1993f.firebaseapp.com",
+        projectId: "pickuphero-1993f",
+        storageBucket: "pickuphero-1993f.firebasestorage.app",
+        messagingSenderId: "234138921429",
+        appId: "1:234138921429:web:61071ce9b8e5e6ce70755c",
+        measurementId: "G-88L5X10BTW",
       };
-      
-      
-      
 
-      try {
-        await window.setDoc(window.doc(window.db, "driver_settings", DRIVER_DOC_ID), payload, { merge: true });
-        btn.innerText = "Saved!";
-        btn.classList.replace('btn-primary', 'btn-success');
-        setTimeout(() => {
-          btn.innerText = originalText;
-          btn.classList.replace('btn-success', 'btn-primary');
-        }, 2000);
-      } catch (e) {
-        console.error("Error saving settings:", e);
-        btn.innerText = "Error Saving";
-      }
-    };
-    
-    
-    
-    document.addEventListener("DOMContentLoaded", () => {
-      initMap();
-      listenForPendingOrders();
-      loadDriverSettings();
-    });
-    
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
 
+      // Attach db to window to allow global AppState functions to execute Firestore queries
+      window.db = db;
 
-    function initMap() {
-      AppState.mapInstance = L.map('map', { zoomControl: false }).setView(AppState.homeBase, 12);
-      
-      // CartoDB Dark Matter
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap, © CARTO'
-      }).addTo(AppState.mapInstance);
+      window.collection = collection;
+      window.query = query;
+      window.where = where;
+      window.onSnapshot = onSnapshot;
+      window.doc = doc;
+      window.updateDoc = updateDoc;
+      window.setDoc = setDoc;
+      window.getDoc = getDoc;
+    </script>
 
-      AppState.layerGroup = L.layerGroup().addTo(AppState.mapInstance);
-      renderHomeBase();
-    }
+    <!-- APPLICATION LOGIC -->
+    <script>
+      // System State
+      const AppState = {
+        workflowPhase: "idle", // idle -> triage -> pickup -> delivery
+        pendingOrders: 0,
+        triageQueue: [], // The generous net array
+        activeQueue: [], // Final confirmed route
+        homeBase: [39.3869, -94.5804],
+        mapInstance: null,
+        homeMarker: null,
+        layerGroup: null, // holds dynamic pins and lines
+      };
 
-    function renderHomeBase() {
-      if(AppState.homeMarker) AppState.mapInstance.removeLayer(AppState.homeMarker);
-      const icon = L.divIcon({ className: 'cluster-pin', html: 'H', iconSize: [30, 30] });
-      AppState.homeMarker = L.marker(AppState.homeBase, { icon: icon, draggable: false }).addTo(AppState.mapInstance);
-      AppState.homeMarker.bindPopup('<div style="text-align:center;"><strong>Home Base</strong><br><button onclick="toggleHomeEdit()" style="margin-top:8px; padding:6px 12px; background:var(--surface-elevated); color:white; border:1px solid var(--border); border-radius:6px;">Edit Base</button></div>');
-    }
+      // Initialize UI and Map
 
-    window.toggleHomeEdit = function() {
-      if(AppState.homeMarker.dragging.enabled()) {
-        AppState.homeMarker.dragging.disable();
-        AppState.homeBase = [AppState.homeMarker.getLatLng().lat, AppState.homeMarker.getLatLng().lng];
-        renderHomeBase();
-      } else {
-        AppState.homeMarker.dragging.enable();
-        AppState.homeMarker.bindPopup('<div style="text-align:center;"><strong>Drag to New Base</strong><br><button onclick="toggleHomeEdit()" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Save Location</button></div>').openPopup();
-      }
-    };
+      const DRIVER_DOC_ID = "hero_driver_main";
 
-    // Modal & Sheet Controls
-    function openModal(id) {
-      document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
-    function closeAllModals() {
-      document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
-    }
-    function toggleBottomSheet() {
-      document.getElementById('activeQueueSheet').classList.toggle('expanded');
-    }
-    
-    
-    
+      window.loadDriverSettings = async function () {
+        try {
+          const docSnap = await window.getDoc(
+            window.doc(window.db, "driver_settings", DRIVER_DOC_ID)
+          );
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.displayName)
+              document.getElementById("driverNameInput").value =
+                data.displayName;
+            if (data.bio)
+              document.getElementById("driverBioInput").value = data.bio;
+            if (data.premiumRate)
+              document.getElementById("premiumRateInput").value =
+                data.premiumRate;
+            if (data.profilePic)
+              document.getElementById("profileImagePreview").src =
+                data.profilePic;
 
-    // Image Upload Preview
+            const killSwitch = document.getElementById("killSwitchToggle");
+            if (data.globalKillSwitch) killSwitch.classList.add("on");
+            else killSwitch.classList.remove("on");
 
-    // Image Upload & Compression
-    window.previewProfileImage = function(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          // Shrink to 300px wide to prevent database overload
-          const scale = 300 / img.width;
-          canvas.width = 300; 
-          canvas.height = img.height * scale;
-          
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          
-          // Convert to compressed JPEG and update UI
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-          document.getElementById('profileImagePreview').src = compressedBase64;
+            const sosToggle = document.getElementById("sosToggle");
+            if (data.sosEnabled) sosToggle.classList.add("on");
+            else sosToggle.classList.remove("on");
+          }
+        } catch (e) {
+          console.error("Error loading settings:", e);
+        }
+      };
+
+      window.saveDriverSettings = async function () {
+        const btn = document.getElementById("saveSettingsBtn");
+        const originalText = btn.innerText;
+        btn.innerText = "Saving...";
+
+        const payload = {
+          displayName: document.getElementById("driverNameInput").value,
+          bio: document.getElementById("driverBioInput").value,
+          globalKillSwitch: document
+            .getElementById("killSwitchToggle")
+            .classList.contains("on"),
+          sosEnabled: document
+            .getElementById("sosToggle")
+            .classList.contains("on"),
+          premiumRate:
+            parseFloat(document.getElementById("premiumRateInput").value) ||
+            50.0,
+          baseLat: AppState.homeBase[0],
+          baseLng: AppState.homeBase[1],
+
+          profilePic: document.getElementById("profileImagePreview").src,
         };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    };
-    
-    
-    
 
-    // Notification Engine (Generous Net Simulation)
-function listenForPendingOrders() {
-      const q = window.query(window.collection(window.db, "orders"), window.where("status", "==", "pending"));
-      
-      window.onSnapshot(q, (snapshot) => {
-        const newOrders = [];
-        
-        snapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          // 1. Create the Pickup Map Node
-          newOrders.push({
-            id: docSnap.id,
-            title: `Pickup: ${data.storeName || 'Store'}`,
-            lat: data.storeLat || 39.4050, // Fallback coordinates if Geocoding API isn't live yet
-            lng: data.storeLng || -94.5700,
-            type: 'pickup'
-          });
-          // 2. Create the Delivery Map Node
-          newOrders.push({
-            id: docSnap.id + "_del", 
-            dbId: docSnap.id, 
-            title: `Delivery: ${data.deliveryAddress || 'Customer'}`,
-            lat: data.deliveryLat || 39.4200,
-            lng: data.deliveryLng || -94.6000,
-            type: 'delivery'
-          });
-        });
-
-        // Trigger audible alert only if the queue grew and driver is idle
-        if (newOrders.length > AppState.triageQueue.length && AppState.workflowPhase === 'idle') {
-          document.getElementById('alertSound').play().catch(e => console.log('Audio blocked.'));
+        try {
+          await window.setDoc(
+            window.doc(window.db, "driver_settings", DRIVER_DOC_ID),
+            payload,
+            { merge: true }
+          );
+          btn.innerText = "Saved!";
+          btn.classList.replace("btn-primary", "btn-success");
+          setTimeout(() => {
+            btn.innerText = originalText;
+            btn.classList.replace("btn-success", "btn-primary");
+          }, 2000);
+        } catch (e) {
+          console.error("Error saving settings:", e);
+          btn.innerText = "Error Saving";
         }
+      };
 
-        AppState.triageQueue = newOrders;
-        AppState.pendingOrders = snapshot.docs.length;
-        
-        const badge = document.getElementById('notificationBadge');
-        badge.innerText = AppState.pendingOrders;
-        badge.style.display = AppState.pendingOrders > 0 ? 'flex' : 'none';
+      document.addEventListener("DOMContentLoaded", () => {
+        initMap();
+        listenForPendingOrders();
+        loadDriverSettings();
       });
-    }
 
-    // Visual Pruning System Engine
-    window.startTriageMode = function() {
-      if(AppState.pendingOrders === 0) return;
-      document.getElementById('notificationBadge').style.display = 'none';
-      closeAllModals();
-      AppState.workflowPhase = 'triage';
-      updateDashboardUI();
-    };
+      function initMap() {
+        AppState.mapInstance = L.map("map", { zoomControl: false }).setView(
+          AppState.homeBase,
+          12
+        );
 
-    function getDistance(p1, p2) {
-      const dy = p1[0] - p2[0];
-      const dx = p1[1] - p2[1];
-      return Math.sqrt(dx * dx + dy * dy);
-    }
+        // CartoDB Dark Matter
+        L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+          {
+            maxZoom: 19,
+            attribution: "© OpenStreetMap, © CARTO",
+          }
+        ).addTo(AppState.mapInstance);
 
-    function drawTriageRoute() {
-      AppState.layerGroup.clearLayers();
-      
-      // Nearest-Neighbor Sorting Logic
-      let current = AppState.homeBase;
-      let unsorted = [...AppState.triageQueue];
-      let sorted = [];
-      
-      while(unsorted.length > 0) {
-        unsorted.sort((a,b) => getDistance(current, [a.lat, a.lng]) - getDistance(current, [b.lat, b.lng]));
-        let next = unsorted.shift();
-        sorted.push(next);
-        current = [next.lat, next.lng];
+        AppState.layerGroup = L.layerGroup().addTo(AppState.mapInstance);
+        renderHomeBase();
       }
-      AppState.triageQueue = sorted; // Save sorted sequence
 
-      // Draw the "Visual String"
-      let latlngs = [AppState.homeBase, ...sorted.map(o => [o.lat, o.lng])];
-      L.polyline(latlngs, {color: '#94a3b8', weight: 3, dashArray: '5, 10'}).addTo(AppState.layerGroup);
+      function renderHomeBase() {
+        if (AppState.homeMarker)
+          AppState.mapInstance.removeLayer(AppState.homeMarker);
+        const icon = L.divIcon({
+          className: "cluster-pin",
+          html: "H",
+          iconSize: [30, 30],
+        });
+        AppState.homeMarker = L.marker(AppState.homeBase, {
+          icon: icon,
+          draggable: false,
+        }).addTo(AppState.mapInstance);
+        AppState.homeMarker.bindPopup(
+          '<div style="text-align:center;"><strong>Home Base</strong><br><button onclick="toggleHomeEdit()" style="margin-top:8px; padding:6px 12px; background:var(--surface-elevated); color:white; border:1px solid var(--border); border-radius:6px;">Edit Base</button></div>'
+        );
+      }
 
-      // Draw Interactive Pruning Pins
-      sorted.forEach((order, index) => {
-        const icon = L.divIcon({ className: 'cluster-pin', html: (index + 1).toString(), iconSize: [30, 30] });
-        const marker = L.marker([order.lat, order.lng], {icon}).addTo(AppState.layerGroup);
-        marker.bindPopup(`
+      window.toggleHomeEdit = function () {
+        if (AppState.homeMarker.dragging.enabled()) {
+          AppState.homeMarker.dragging.disable();
+          AppState.homeBase = [
+            AppState.homeMarker.getLatLng().lat,
+            AppState.homeMarker.getLatLng().lng,
+          ];
+          renderHomeBase();
+        } else {
+          AppState.homeMarker.dragging.enable();
+          AppState.homeMarker
+            .bindPopup(
+              '<div style="text-align:center;"><strong>Drag to New Base</strong><br><button onclick="toggleHomeEdit()" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Save Location</button></div>'
+            )
+            .openPopup();
+        }
+      };
+
+      // Modal & Sheet Controls
+      function openModal(id) {
+        document
+          .querySelectorAll(".modal")
+          .forEach((m) => m.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+      }
+      function closeAllModals() {
+        document
+          .querySelectorAll(".modal")
+          .forEach((m) => m.classList.remove("active"));
+      }
+      function toggleBottomSheet() {
+        document
+          .getElementById("activeQueueSheet")
+          .classList.toggle("expanded");
+      }
+
+      // Image Upload Preview
+
+      // Image Upload & Compression
+      window.previewProfileImage = function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = function () {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // Shrink to 300px wide to prevent database overload
+            const scale = 300 / img.width;
+            canvas.width = 300;
+            canvas.height = img.height * scale;
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Convert to compressed JPEG and update UI
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+            document.getElementById("profileImagePreview").src =
+              compressedBase64;
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      };
+
+      // Notification Engine (Generous Net Simulation)
+      function listenForPendingOrders() {
+        const q = window.query(
+          window.collection(window.db, "orders"),
+          window.where("status", "==", "pending")
+        );
+
+        window.onSnapshot(q, (snapshot) => {
+          const newOrders = [];
+
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            // 1. Create the Pickup Map Node
+            newOrders.push({
+              id: docSnap.id,
+              title: `Pickup: ${data.storeName || "Store"}`,
+              lat: data.storeLat || 39.405, // Fallback coordinates if Geocoding API isn't live yet
+              lng: data.storeLng || -94.57,
+              type: "pickup",
+            });
+            // 2. Create the Delivery Map Node
+            newOrders.push({
+              id: docSnap.id + "_del",
+              dbId: docSnap.id,
+              title: `Delivery: ${data.deliveryAddress || "Customer"}`,
+              lat: data.deliveryLat || 39.42,
+              lng: data.deliveryLng || -94.6,
+              type: "delivery",
+            });
+          });
+
+          // Trigger audible alert only if the queue grew and driver is idle
+          if (
+            newOrders.length > AppState.triageQueue.length &&
+            AppState.workflowPhase === "idle"
+          ) {
+            document
+              .getElementById("alertSound")
+              .play()
+              .catch((e) => console.log("Audio blocked."));
+          }
+
+          AppState.triageQueue = newOrders;
+          AppState.pendingOrders = snapshot.docs.length;
+
+          const badge = document.getElementById("notificationBadge");
+          badge.innerText = AppState.pendingOrders;
+          badge.style.display = AppState.pendingOrders > 0 ? "flex" : "none";
+        });
+      }
+
+      // Visual Pruning System Engine
+      window.startTriageMode = function () {
+        if (AppState.pendingOrders === 0) return;
+        document.getElementById("notificationBadge").style.display = "none";
+        closeAllModals();
+        AppState.workflowPhase = "triage";
+        updateDashboardUI();
+      };
+
+      function getDistance(p1, p2) {
+        const dy = p1[0] - p2[0];
+        const dx = p1[1] - p2[1];
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      function drawTriageRoute() {
+        AppState.layerGroup.clearLayers();
+
+        // Nearest-Neighbor Sorting Logic
+        let current = AppState.homeBase;
+        let unsorted = [...AppState.triageQueue];
+        let sorted = [];
+
+        while (unsorted.length > 0) {
+          unsorted.sort(
+            (a, b) =>
+              getDistance(current, [a.lat, a.lng]) -
+              getDistance(current, [b.lat, b.lng])
+          );
+          let next = unsorted.shift();
+          sorted.push(next);
+          current = [next.lat, next.lng];
+        }
+        AppState.triageQueue = sorted; // Save sorted sequence
+
+        // Draw the "Visual String"
+        let latlngs = [AppState.homeBase, ...sorted.map((o) => [o.lat, o.lng])];
+        L.polyline(latlngs, {
+          color: "#94a3b8",
+          weight: 3,
+          dashArray: "5, 10",
+        }).addTo(AppState.layerGroup);
+
+        // Draw Interactive Pruning Pins
+        sorted.forEach((order, index) => {
+          const icon = L.divIcon({
+            className: "cluster-pin",
+            html: (index + 1).toString(),
+            iconSize: [30, 30],
+          });
+          const marker = L.marker([order.lat, order.lng], { icon }).addTo(
+            AppState.layerGroup
+          );
+          marker.bindPopup(`
           <div style="text-align:center;">
             <strong>${order.title}</strong><br>
             <button onclick="rejectTriageOrder(${order.id})" class="btn btn-emergency" style="padding: 6px 12px; margin-top: 10px; font-size: 0.8rem; border-radius: 6px;">Reject & Redraw</button>
           </div>
         `);
-      });
-      
-      if(latlngs.length > 1) {
-          AppState.mapInstance.fitBounds(latlngs, {padding: [50, 50]});
-      }
-    }
-
-    window.rejectTriageOrder = function(id) {
-      AppState.triageQueue = AppState.triageQueue.filter(o => o.id !== id);
-      drawTriageRoute(); // Instantly recalculates nearest neighbor and redraws map
-      
-      // Update UI text
-      const gSub = document.getElementById('glanceSubtitle');
-      gSub.innerText = `${AppState.triageQueue.length} Stops Remaining.`;
-    };
-
-    // Main State Machine update function
-    function updateDashboardUI() {
-      const gTitle = document.getElementById('glanceTitle');
-      const gSub = document.getElementById('glanceSubtitle');
-      const wfBtn = document.getElementById('workflowBtn');
-      const timeline = document.getElementById('timelineList');
-
-      if (AppState.workflowPhase === 'triage') {
-        gTitle.innerText = "Proposed Route Canvas";
-        gSub.innerText = `${AppState.triageQueue.length} Stops. Tap map pins to reject outliers.`;
-        wfBtn.innerText = "Confirm Route";
-        wfBtn.className = "btn btn-primary";
-        wfBtn.style.display = 'block';
-        
-        
-        
-        wfBtn.onclick = async function() {
-          AppState.activeQueue = AppState.triageQueue.map(t => ({...t, status: 'pending'}));
-          
-          // Broadcast to Firestore that the driver accepted the route
-          for (const node of AppState.activeQueue) {
-             const docId = node.dbId || node.id;
-             if(typeof docId === 'string' && !docId.includes("_del")) {
-                try {
-                   await window.updateDoc(window.doc(window.db, "orders", docId), { status: "in_transit" });
-                } catch(e) { console.error("Database update failed:", e); }
-             }
-          }
-
-          AppState.workflowPhase = 'ready_pickup';
-          AppState.pendingOrders = 0;
-          updateDashboardUI();
-        };
-        
-
-
-        drawTriageRoute();
-        
-        timeline.innerHTML = '';
-        AppState.triageQueue.forEach((o, i) => {
-            timeline.innerHTML += `<li class="timeline-item"><div class="node-card"><strong>Stop ${i+1}: ${o.title}</strong><p style="font-size:0.8rem; color:var(--text-muted);">Distance sorted automatically.</p></div></li>`;
         });
-      }
-      else if (AppState.workflowPhase === 'ready_pickup') {
-        AppState.layerGroup.clearLayers();
-        gTitle.innerText = "Route Locked";
-        gSub.innerText = `${AppState.activeQueue.length} Active Stops`;
-        wfBtn.innerText = "Start Engine";
-        wfBtn.className = "btn btn-primary";
-        wfBtn.onclick = window.advanceWorkflow;
-        drawTimeline();
-      } 
-      else if (AppState.workflowPhase === 'pickup') {
-        gTitle.innerText = "Heading to Pickup";
-        gSub.innerText = "Walmart Supercenter";
-        wfBtn.innerText = "Mark Picked Up";
-        wfBtn.className = "btn btn-secondary";
-        
-        const clusterIcon = L.divIcon({ className: 'cluster-pin', html: '1', iconSize: [36, 36] });
-        L.marker([39.4050, -94.5700], {icon: clusterIcon}).addTo(AppState.layerGroup);
-        AppState.mapInstance.panTo([39.4050, -94.5700]);
-        drawTimeline();
-      }
-      else if (AppState.workflowPhase === 'ready_delivery') {
-        AppState.layerGroup.clearLayers();
-        gTitle.innerText = "Pickups Complete";
-        gSub.innerText = "Ready to start rural loop.";
-        wfBtn.innerText = "Begin Deliveries";
-        wfBtn.className = "btn btn-primary";
-        drawTimeline();
-      }
-      else if (AppState.workflowPhase === 'delivery') {
-        gTitle.innerText = "En Route to John Doe";
-        gSub.innerText = "123 Country Road";
-        wfBtn.innerText = "Arrived & Next";
-        wfBtn.className = "btn btn-success";
 
-        const delIcon = L.divIcon({ className: 'cluster-pin', html: 'D', iconSize: [30, 30] });
-        L.marker([39.4200, -94.6000], {icon: delIcon}).addTo(AppState.layerGroup);
-        L.polyline([[39.4050, -94.5700], [39.4200, -94.6000]], {color: '#ee611c', weight: 4, dashArray: '10, 10'}).addTo(AppState.layerGroup);
-        AppState.mapInstance.fitBounds([[39.4050, -94.5700], [39.4200, -94.6000]], {padding: [50, 50]});
-        drawTimeline();
-      }
-      else if (AppState.workflowPhase === 'complete') {
-        AppState.layerGroup.clearLayers();
-        gTitle.innerText = "Route Complete!";
-        gSub.innerText = "Great job Hero.";
-        wfBtn.style.display = 'none';
-        drawTimeline();
-        setTimeout(() => {
-            AppState.workflowPhase = 'idle';
-            gTitle.innerText = "Idle / No Active Route";
-            gSub.innerText = "Awaiting scheduled runs.";
-            timeline.innerHTML = '<p style="color: var(--text-muted);">Queue is empty.</p>';
-            AppState.mapInstance.setView(AppState.homeBase, 12);
-        }, 3000);
-      }
-    }
-
-    // Standard linear state progression after triage is finished
-    
-    
-    window.advanceWorkflow = async function() {
-      if (AppState.workflowPhase === 'ready_pickup') {
-        AppState.workflowPhase = 'pickup';
-      } else if (AppState.workflowPhase === 'pickup') {
-        AppState.workflowPhase = 'ready_delivery';
-        if(AppState.activeQueue[0]) AppState.activeQueue[0].status = 'completed';
-      } else if (AppState.workflowPhase === 'ready_delivery') {
-        AppState.workflowPhase = 'delivery';
-      } else if (AppState.workflowPhase === 'delivery') {
-        if(AppState.activeQueue[1]) AppState.activeQueue[1].status = 'completed';
-        AppState.workflowPhase = 'complete';
-        
-        // Finalize all orders in the live database
-        for (const node of AppState.activeQueue) {
-          const docId = node.dbId || node.id;
-          if (typeof docId === 'string' && !docId.includes("_del")) {
-            try {
-              await window.updateDoc(window.doc(window.db, "orders", docId), { status: "completed" });
-            } catch(e) { console.error("Failed to mark complete:", e); }
-          }
+        if (latlngs.length > 1) {
+          AppState.mapInstance.fitBounds(latlngs, { padding: [50, 50] });
         }
       }
-      updateDashboardUI();
-    };
-    
 
+      window.rejectTriageOrder = function (id) {
+        AppState.triageQueue = AppState.triageQueue.filter((o) => o.id !== id);
+        drawTriageRoute(); // Instantly recalculates nearest neighbor and redraws map
 
-    function drawTimeline() {
-      const timeline = document.getElementById('timelineList');
-      timeline.innerHTML = '';
+        // Update UI text
+        const gSub = document.getElementById("glanceSubtitle");
+        gSub.innerText = `${AppState.triageQueue.length} Stops Remaining.`;
+      };
 
-      AppState.activeQueue.forEach((node, index) => {
-        let statusClass = '';
-        if (node.status === 'completed') statusClass = 'completed';
-        else if (node.status === 'pending' && ((AppState.workflowPhase === 'pickup' && index === 0) || (AppState.workflowPhase === 'delivery' && index === 1))) statusClass = 'active';
+      // Main State Machine update function
+      function updateDashboardUI() {
+        const gTitle = document.getElementById("glanceTitle");
+        const gSub = document.getElementById("glanceSubtitle");
+        const wfBtn = document.getElementById("workflowBtn");
+        const timeline = document.getElementById("timelineList");
 
-        const li = document.createElement('li');
-        li.className = `timeline-item ${statusClass}`;
-        
-        li.innerHTML = `
+        if (AppState.workflowPhase === "triage") {
+          gTitle.innerText = "Proposed Route Canvas";
+          gSub.innerText = `${AppState.triageQueue.length} Stops. Tap map pins to reject outliers.`;
+          wfBtn.innerText = "Confirm Route";
+          wfBtn.className = "btn btn-primary";
+          wfBtn.style.display = "block";
+
+          wfBtn.onclick = async function () {
+            AppState.activeQueue = AppState.triageQueue.map((t) => ({
+              ...t,
+              status: "pending",
+            }));
+
+            // Broadcast to Firestore that the driver accepted the route
+            for (const node of AppState.activeQueue) {
+              const docId = node.dbId || node.id;
+              if (typeof docId === "string" && !docId.includes("_del")) {
+                try {
+                  await window.updateDoc(
+                    window.doc(window.db, "orders", docId),
+                    { status: "in_transit" }
+                  );
+                } catch (e) {
+                  console.error("Database update failed:", e);
+                }
+              }
+            }
+
+            AppState.workflowPhase = "ready_pickup";
+            AppState.pendingOrders = 0;
+            updateDashboardUI();
+          };
+
+          drawTriageRoute();
+
+          timeline.innerHTML = "";
+          AppState.triageQueue.forEach((o, i) => {
+            timeline.innerHTML += `<li class="timeline-item"><div class="node-card"><strong>Stop ${
+              i + 1
+            }: ${
+              o.title
+            }</strong><p style="font-size:0.8rem; color:var(--text-muted);">Distance sorted automatically.</p></div></li>`;
+          });
+        } else if (AppState.workflowPhase === "ready_pickup") {
+          AppState.layerGroup.clearLayers();
+          gTitle.innerText = "Route Locked";
+          gSub.innerText = `${AppState.activeQueue.length} Active Stops`;
+          wfBtn.innerText = "Start Engine";
+          wfBtn.className = "btn btn-primary";
+          wfBtn.onclick = window.advanceWorkflow;
+          drawTimeline();
+        } else if (AppState.workflowPhase === "pickup") {
+          gTitle.innerText = "Heading to Pickup";
+          gSub.innerText = "Walmart Supercenter";
+          wfBtn.innerText = "Mark Picked Up";
+          wfBtn.className = "btn btn-secondary";
+
+          const clusterIcon = L.divIcon({
+            className: "cluster-pin",
+            html: "1",
+            iconSize: [36, 36],
+          });
+          L.marker([39.405, -94.57], { icon: clusterIcon }).addTo(
+            AppState.layerGroup
+          );
+          AppState.mapInstance.panTo([39.405, -94.57]);
+          drawTimeline();
+        } else if (AppState.workflowPhase === "ready_delivery") {
+          AppState.layerGroup.clearLayers();
+          gTitle.innerText = "Pickups Complete";
+          gSub.innerText = "Ready to start rural loop.";
+          wfBtn.innerText = "Begin Deliveries";
+          wfBtn.className = "btn btn-primary";
+          drawTimeline();
+        } else if (AppState.workflowPhase === "delivery") {
+          gTitle.innerText = "En Route to John Doe";
+          gSub.innerText = "123 Country Road";
+          wfBtn.innerText = "Arrived & Next";
+          wfBtn.className = "btn btn-success";
+
+          const delIcon = L.divIcon({
+            className: "cluster-pin",
+            html: "D",
+            iconSize: [30, 30],
+          });
+          L.marker([39.42, -94.6], { icon: delIcon }).addTo(
+            AppState.layerGroup
+          );
+          L.polyline(
+            [
+              [39.405, -94.57],
+              [39.42, -94.6],
+            ],
+            { color: "#ee611c", weight: 4, dashArray: "10, 10" }
+          ).addTo(AppState.layerGroup);
+          AppState.mapInstance.fitBounds(
+            [
+              [39.405, -94.57],
+              [39.42, -94.6],
+            ],
+            { padding: [50, 50] }
+          );
+          drawTimeline();
+        } else if (AppState.workflowPhase === "complete") {
+          AppState.layerGroup.clearLayers();
+          gTitle.innerText = "Route Complete!";
+          gSub.innerText = "Great job Hero.";
+          wfBtn.style.display = "none";
+          drawTimeline();
+          setTimeout(() => {
+            AppState.workflowPhase = "idle";
+            gTitle.innerText = "Idle / No Active Route";
+            gSub.innerText = "Awaiting scheduled runs.";
+            timeline.innerHTML =
+              '<p style="color: var(--text-muted);">Queue is empty.</p>';
+            AppState.mapInstance.setView(AppState.homeBase, 12);
+          }, 3000);
+        }
+      }
+
+      // Standard linear state progression after triage is finished
+
+      window.advanceWorkflow = async function () {
+        if (AppState.workflowPhase === "ready_pickup") {
+          AppState.workflowPhase = "pickup";
+        } else if (AppState.workflowPhase === "pickup") {
+          AppState.workflowPhase = "ready_delivery";
+          if (AppState.activeQueue[0])
+            AppState.activeQueue[0].status = "completed";
+        } else if (AppState.workflowPhase === "ready_delivery") {
+          AppState.workflowPhase = "delivery";
+        } else if (AppState.workflowPhase === "delivery") {
+          if (AppState.activeQueue[1])
+            AppState.activeQueue[1].status = "completed";
+          AppState.workflowPhase = "complete";
+
+          // Finalize all orders in the live database
+          for (const node of AppState.activeQueue) {
+            const docId = node.dbId || node.id;
+            if (typeof docId === "string" && !docId.includes("_del")) {
+              try {
+                await window.updateDoc(window.doc(window.db, "orders", docId), {
+                  status: "completed",
+                });
+              } catch (e) {
+                console.error("Failed to mark complete:", e);
+              }
+            }
+          }
+        }
+        updateDashboardUI();
+      };
+
+      function drawTimeline() {
+        const timeline = document.getElementById("timelineList");
+        timeline.innerHTML = "";
+
+        AppState.activeQueue.forEach((node, index) => {
+          let statusClass = "";
+          if (node.status === "completed") statusClass = "completed";
+          else if (
+            node.status === "pending" &&
+            ((AppState.workflowPhase === "pickup" && index === 0) ||
+              (AppState.workflowPhase === "delivery" && index === 1))
+          )
+            statusClass = "active";
+
+          const li = document.createElement("li");
+          li.className = `timeline-item ${statusClass}`;
+
+          li.innerHTML = `
           <div class="node-card">
             <div class="node-header">
               <strong>${node.title}</strong>
-              <span style="font-size: 0.8rem; color: var(--text-muted);">${node.type === 'pickup' ? 'Store' : 'Delivery'}</span>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">${
+                node.type === "pickup" ? "Store" : "Delivery"
+              }</span>
             </div>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">${node.type === 'pickup' ? 'Curbside Handoff' : 'Rural Route Drop-off'}</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">${
+              node.type === "pickup"
+                ? "Curbside Handoff"
+                : "Rural Route Drop-off"
+            }</p>
           </div>
         `;
-        timeline.appendChild(li);
-      });
-    }
-  </script>
-</body>
+          timeline.appendChild(li);
+        });
+      }
+    </script>
+  </body>
 </html>
