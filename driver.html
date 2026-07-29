@@ -450,16 +450,19 @@
           <input type="file" accept="image/*" style="display: none;" onchange="previewProfileImage(event)" />
         </label>
       </div>
-
+      
       <div class="form-group">
         <label>Display Name</label>
-        <input type="text" value="Hero Driver" />
+        <input type="text" id="driverNameInput" value="Hero Driver" />
       </div>
 
       <div class="form-group" style="margin-bottom: 35px;">
         <label>Driver Bio (Visible to Customers)</label>
-        <textarea rows="3" placeholder="Write a short bio...">Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursday mornings.</textarea>
+        <textarea id="driverBioInput" rows="3" placeholder="Write a short bio...">Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursday mornings.</textarea>
       </div>
+      
+
+
 
       <!-- System Controls -->
       <h4 style="color: var(--accent); margin-bottom: 15px; text-transform: uppercase; font-size: 0.85rem;">System Controls</h4>
@@ -469,7 +472,10 @@
           <strong>Global Kill Switch</strong>
           <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Stop accepting orders instantly</p>
         </div>
-        <div class="toggle-switch" onclick="this.classList.toggle('on')">
+        
+        
+        
+        <div class="toggle-switch" id="killSwitchToggle" onclick="this.classList.toggle('on')">
           <div class="toggle-knob"></div>
         </div>
       </div>
@@ -480,22 +486,31 @@
             <strong style="color: var(--danger);">SOS Emergency Deliveries</strong>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Accept immediate, high-paying runs</p>
           </div>
-          <div class="toggle-switch on" onclick="this.classList.toggle('on')">
+          <div class="toggle-switch on" id="sosToggle" onclick="this.classList.toggle('on')">
             <div class="toggle-knob"></div>
           </div>
         </div>
         <div class="form-group" style="margin-bottom: 0;">
           <label>Current Premium Rate ($)</label>
-          <input type="number" value="50.00" />
+          <input type="number" id="premiumRateInput" value="50.00" />
         </div>
       </div>
+        
+ 
+      
+      
 
       <!-- Financials -->
       <h4 style="color: var(--accent); margin-bottom: 15px; text-transform: uppercase; font-size: 0.85rem;">Financials</h4>
-      <div class="node-card" style="text-align: center; color: var(--text-muted);">
+      
+      
+      <div class="node-card" style="text-align: center; color: var(--text-muted); margin-bottom: 25px;">
         <p style="margin-bottom: 15px;">Stripe Connect Dashboard</p>
         <button class="btn btn-secondary">View Payouts & Bank</button>
       </div>
+      
+      <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveDriverSettings()">Save Changes</button>
+   
 
     </div>
   </div>
@@ -510,8 +525,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
     import { getAuth } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
-   import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js"; 
-    
+    import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
     
     
 
@@ -539,7 +553,8 @@
     window.onSnapshot = onSnapshot;
     window.doc = doc;
     window.updateDoc = updateDoc;
-    
+    window.setDoc = setDoc;
+    window.getDoc = getDoc;
   </script>
   
   
@@ -560,12 +575,75 @@
     };
 
     // Initialize UI and Map
-    document.addEventListener("DOMContentLoaded", () => {
+    
+    
+    
+    
+    
+    
+    const DRIVER_DOC_ID = "hero_driver_main";
+
+    window.loadDriverSettings = async function() {
+      try {
+        const docSnap = await window.getDoc(window.doc(window.db, "driver_settings", DRIVER_DOC_ID));
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if(data.displayName) document.getElementById('driverNameInput').value = data.displayName;
+          if(data.bio) document.getElementById('driverBioInput').value = data.bio;
+          if(data.premiumRate) document.getElementById('premiumRateInput').value = data.premiumRate;
+          
+          const killSwitch = document.getElementById('killSwitchToggle');
+          if(data.globalKillSwitch) killSwitch.classList.add('on');
+          else killSwitch.classList.remove('on');
+
+          const sosToggle = document.getElementById('sosToggle');
+          if(data.sosEnabled) sosToggle.classList.add('on');
+          else sosToggle.classList.remove('on');
+        }
+      } catch (e) {
+        console.error("Error loading settings:", e);
+      }
+    };
+
+    window.saveDriverSettings = async function() {
+      const btn = document.getElementById('saveSettingsBtn');
+      const originalText = btn.innerText;
+      btn.innerText = "Saving...";
       
+      const payload = {
+        displayName: document.getElementById('driverNameInput').value,
+        bio: document.getElementById('driverBioInput').value,
+        globalKillSwitch: document.getElementById('killSwitchToggle').classList.contains('on'),
+        sosEnabled: document.getElementById('sosToggle').classList.contains('on'),
+        premiumRate: parseFloat(document.getElementById('premiumRateInput').value) || 50.00
+      };
+      
+      
+      
+
+      try {
+        await window.setDoc(window.doc(window.db, "driver_settings", DRIVER_DOC_ID), payload, { merge: true });
+        btn.innerText = "Saved!";
+        btn.classList.replace('btn-primary', 'btn-success');
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.classList.replace('btn-success', 'btn-primary');
+        }, 2000);
+      } catch (e) {
+        console.error("Error saving settings:", e);
+        btn.innerText = "Error Saving";
+      }
+    };
+    
+    
+    
+    document.addEventListener("DOMContentLoaded", () => {
       initMap();
       listenForPendingOrders();
-      
+      loadDriverSettings();
     });
+    
+
 
     function initMap() {
       AppState.mapInstance = L.map('map', { zoomControl: false }).setView(AppState.homeBase, 12);
