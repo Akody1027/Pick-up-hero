@@ -580,26 +580,26 @@
       const db = getFirestore(app);
 
 
-
-
-
-
-
-      // Standard Firebase implementation matches previous backend logic
-      window.appState = {
-        window.collection = collection;
+// Attach Firestore methods and DB to the global window
+      window.db = db;
+      window.collection = collection;
       window.addDoc = addDoc;
       window.onSnapshot = onSnapshot;
       window.doc = doc;
       window.getDoc = getDoc;
       window.setDoc = setDoc;
 
-
-
+      // Standard Firebase implementation matches previous backend logic
+      window.appState = {
         user: null,
         compressedImageBase64: "",
         bookingType: "scheduled"
       };
+
+
+
+
+
 
 
       window.submitOrderToFirebase = async function() {
@@ -637,6 +637,8 @@
           alert("Failed to submit order. Please check your connection.");
         }
       };
+      
+      
     </script>
 
     <!-- UI & MAP SCRIPT -->
@@ -798,6 +800,10 @@
         );
       };
 
+
+      
+      
+      
       window.loadActiveDriver = async function () {
         try {
           const docSnap = await window.getDoc(
@@ -805,17 +811,23 @@
           );
           if (docSnap.exists()) {
             const data = docSnap.data();
-            if (data.profilePic)
-              document.querySelector(".driver-avatar").src = data.profilePic;
-            if (data.displayName)
-              document.getElementById(
-                "sheetSubtitle"
-              ).innerText = `${data.displayName} is running tomorrow morning.`;
+            
+            // 1. Update Profile Image and Name
+            if (data.profilePic) document.querySelector(".driver-avatar").src = data.profilePic;
+            if (data.displayName) document.getElementById("sheetSubtitle").innerText = `${data.displayName} is running tomorrow morning.`;
+            
+            // 2. Update Orange Dot Location if driver has saved one
+            if (data.baseLat && data.baseLng && typeof driverMarker !== 'undefined') {
+              driverMarker.setLatLng([data.baseLat, data.baseLng]);
+              map.panTo([data.baseLat, data.baseLng]);
+            }
           }
         } catch (e) {
-          console.error(e);
+          console.error("Error loading driver data:", e);
         }
       };
+      
+      
     </script>
   </body>
 </html>
