@@ -443,8 +443,7 @@
         color: var(--text);
         border: 1px solid var(--border);
       }
-      
-      
+
       /* --- GOOGLE AUTOCOMPLETE OVERRIDES --- */
       .pac-container {
         z-index: 3000 !important;
@@ -454,17 +453,20 @@
         margin-top: 4px;
         box-shadow: var(--shadow);
       }
-      .pac-item { 
-        color: var(--text-muted); 
-        border-top: 1px solid var(--border); 
-        padding: 8px 12px; 
-        cursor: pointer; 
+      .pac-item {
+        color: var(--text-muted);
+        border-top: 1px solid var(--border);
+        padding: 8px 12px;
+        cursor: pointer;
       }
-      .pac-item:hover { background-color: var(--surface-elevated); }
-      .pac-item-query { color: var(--text); font-size: 1rem; }
+      .pac-item:hover {
+        background-color: var(--surface-elevated);
+      }
+      .pac-item-query {
+        color: var(--text);
+        font-size: 1rem;
+      }
     </style>
-      
-      
   </head>
   <body>
     <!-- Audio Alert Engine -->
@@ -869,19 +871,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             if (data.profilePic)
               document.getElementById("profileImagePreview").src =
                 data.profilePic;
-            
-            // Apply saved map coordinates
+            // Apply saved map coordinates and update map if already drawn
             if (data.baseLat && data.baseLng) {
               AppState.homeBase = [data.baseLat, data.baseLng];
-              // If the map is already drawn, move it to the saved location
               if (AppState.mapInstance) {
                 AppState.mapInstance.setView(AppState.homeBase, 12);
                 renderHomeBase();
               }
             }
-            
-            
-            
 
             const killSwitch = document.getElementById("killSwitchToggle");
             if (data.globalKillSwitch) killSwitch.classList.add("on");
@@ -936,18 +933,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           btn.innerText = "Error Saving";
         }
       };
-      
-      
-document.addEventListener("DOMContentLoaded", () => {
+
+      document.addEventListener("DOMContentLoaded", () => {
         initMap(); // Draw the map immediately
-        
+
         // Delay database fetch by 1 second so Firebase can finish initializing
         setTimeout(() => {
           listenForPendingOrders();
           loadDriverSettings();
         }, 1000);
       });
-
 
       function initMap() {
         AppState.mapInstance = L.map("map", { zoomControl: false }).setView(
