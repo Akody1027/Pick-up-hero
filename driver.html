@@ -923,12 +923,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           btn.innerText = "Error Saving";
         }
       };
-
-      document.addEventListener("DOMContentLoaded", () => {
-        initMap();
-        listenForPendingOrders();
-        loadDriverSettings();
+      
+      
+document.addEventListener("DOMContentLoaded", () => {
+        initMap(); // Draw the map immediately
+        
+        // Delay database fetch by 1 second so Firebase can finish initializing
+        setTimeout(() => {
+          listenForPendingOrders();
+          loadDriverSettings();
+        }, 1000);
       });
+
 
       function initMap() {
         AppState.mapInstance = L.map("map", { zoomControl: false }).setView(
