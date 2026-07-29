@@ -130,6 +130,16 @@
         transform: scale(0.95);
       }
 
+      .fab-btn.locked {
+        background: var(--surface-elevated);
+        box-shadow: none;
+        pointer-events: none;
+        opacity: 0.5;
+      }
+      .fab-btn.locked svg {
+        fill: var(--text-muted);
+      }
+
       /* --- BOTTOM SHEET (Z-Index 900) --- */
       .bottom-sheet {
         position: fixed;
@@ -485,7 +495,7 @@
       </button>
 
       <div class="fab-container">
-        <button class="fab-btn" onclick="openFindHeroModal()">
+        <button class="fab-btn" id="mainFab" onclick="openFindHeroModal()">
           <svg viewBox="0 0 24 24">
             <path
               d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
@@ -512,10 +522,93 @@
       </div>
 
       <div class="modal-content">
-        <!-- STEP 1: LOCATION -->
+        <!-- STEP 1: PICKUP STOPS -->
         <div id="step1Panel" class="step-panel active">
+          <div id="stopsContainer">
+            <!-- Stop 1 Block -->
+            <div
+              class="stop-block"
+              id="stopBlock_1"
+              style="
+                padding-bottom: 15px;
+                border-bottom: 1px solid var(--border);
+                margin-bottom: 15px;
+              "
+            >
+              <h4 style="margin-bottom: 10px; color: var(--accent)">
+                Pickup Stop 1
+              </h4>
+
+              <div class="form-group">
+                <label>Search Store Location</label>
+                <input
+                  type="text"
+                  id="storeSearchInput_1"
+                  placeholder="Walmart, Target, etc..."
+                />
+                <button
+                  class="btn btn-secondary"
+                  style="margin-top: 8px"
+                  onclick="triggerStoreSearch(1)"
+                >
+                  Search Map
+                </button>
+              </div>
+
+              <div
+                id="selectedStoreDisplay_1"
+                style="
+                  display: none;
+                  padding: 15px;
+                  background: var(--surface-elevated);
+                  border-radius: 12px;
+                  border-left: 4px solid var(--accent);
+                  margin-top: 10px;
+                  margin-bottom: 15px;
+                "
+              >
+                <strong id="storeNameDisplay_1">Walmart Supercenter</strong>
+                <p
+                  style="
+                    font-size: 0.85rem;
+                    color: var(--text-muted);
+                    margin-top: 4px;
+                  "
+                >
+                  Location Confirmed
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label>Store Order Number</label>
+                <input
+                  type="text"
+                  id="pickupNumberInput_1"
+                  placeholder="e.g., #98765432"
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            id="addStopBtn"
+            class="btn btn-secondary"
+            onclick="addNewStopBlock()"
+            style="margin-bottom: 10px"
+          >
+            + Add Another Stop ($12.99)
+          </button>
+
+          <div style="flex: 1"></div>
+          <button class="btn btn-primary" onclick="goToStep2()">
+            Next: Delivery Details
+          </button>
+        </div>
+
+        <!-- STEP 2: DELIVERY DETAILS -->
+        <div id="step2Panel" class="step-panel">
           <div class="form-group">
-            <label>Delivery Address</label>
+            <label>Final Delivery Address</label>
             <input
               type="text"
               id="deliveryAddressInput"
@@ -523,65 +616,8 @@
             />
           </div>
 
-          <div class="form-group" style="margin-top: 10px">
-            <label>Search Store Location</label>
-            <input
-              type="text"
-              id="storeSearchInput"
-              placeholder="Walmart, Target, etc..."
-            />
-            <button
-              class="btn btn-secondary"
-              style="margin-top: 8px"
-              onclick="simulateStoreSearch()"
-            >
-              Search Map
-            </button>
-          </div>
-
-          <div
-            id="selectedStoreDisplay"
-            style="
-              display: none;
-              padding: 15px;
-              background: var(--surface-elevated);
-              border-radius: 12px;
-              border-left: 4px solid var(--accent);
-              margin-top: 10px;
-            "
-          >
-            <strong id="storeNameDisplay">Walmart Supercenter</strong>
-            <p
-              style="
-                font-size: 0.85rem;
-                color: var(--text-muted);
-                margin-top: 4px;
-              "
-            >
-              Location Confirmed
-            </p>
-          </div>
-
-          <div style="flex: 1"></div>
-          <button class="btn btn-primary" onclick="goToStep2()">
-            Next: Order Details
-          </button>
-        </div>
-
-        <!-- STEP 2: DETAILS -->
-        <div id="step2Panel" class="step-panel">
           <div class="form-group">
-            <label>Store Order Number</label>
-            <input
-              type="text"
-              id="pickupNumberInput"
-              placeholder="e.g., #98765432"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label>Order Screenshot (Barcode)</label>
+            <label>Order Screenshot (Optional)</label>
             <input
               type="file"
               id="screenshotInput"
@@ -601,6 +637,19 @@
           </div>
 
           <div style="flex: 1"></div>
+          <div
+            style="
+              text-align: center;
+              margin-bottom: 15px;
+              font-size: 1.1rem;
+              font-weight: 600;
+            "
+          >
+            Total Estimated Fee:
+            <span id="totalPriceDisplay" style="color: var(--success)"
+              >$12.99</span
+            >
+          </div>
           <div style="display: flex; gap: 10px">
             <button
               class="btn btn-secondary"
@@ -735,7 +784,25 @@
     </div>
 
     <!-- SOFT LOCATION PROMPT -->
+
     <div class="soft-prompt-overlay" id="locationSoftPrompt">
+      <!-- ACTIVE DELIVERY INTERCEPT PROMPT -->
+      <div class="soft-prompt-overlay" id="activeDeliveryPrompt">
+        <div class="soft-prompt-box">
+          <h3>Delivery In Progress!</h3>
+          <p>
+            You currently have an active Hero on the clock. You cannot place a
+            new order until this run is complete.
+          </p>
+          <button
+            class="btn btn-primary"
+            onclick="dismissActiveDeliveryPrompt()"
+          >
+            Track My Hero
+          </button>
+        </div>
+      </div>
+
       <div class="soft-prompt-box">
         <h3>Allow Location Access?</h3>
         <p>
@@ -776,6 +843,8 @@
         collection,
         addDoc,
         onSnapshot,
+        query,
+        where,
         doc,
         getDoc,
         setDoc,
@@ -798,6 +867,9 @@
       // Attach Firestore methods and DB to the global window
       window.db = db;
       window.collection = collection;
+      window.query = query;
+      window.where = where;
+
       window.addDoc = addDoc;
       window.onSnapshot = onSnapshot;
       window.doc = doc;
@@ -812,29 +884,51 @@
       };
 
       window.submitOrderToFirebase = async function () {
-        const pickupNum = document.getElementById("pickupNumberInput").value;
         const address = document.getElementById("deliveryAddressInput").value;
         const instructions = document.getElementById("instructionsInput").value;
-        const storeName = document.getElementById("storeNameDisplay").innerText;
 
-        if (!pickupNum || !address) {
-          alert("Please enter your delivery address and store order number.");
+        // Loop through the DOM to gather all stops dynamically
+        let stops = [];
+        let stopCount = window.currentStopCount || 1;
+
+        for (let i = 1; i <= stopCount; i++) {
+          const storeName = document.getElementById(
+            `storeNameDisplay_${i}`
+          ).innerText;
+          const pickupNum = document.getElementById(
+            `pickupNumberInput_${i}`
+          ).value;
+
+          if (!pickupNum || storeName === "Walmart Supercenter") {
+            // Ensures they actually searched
+            alert(
+              `Please confirm the store and enter an order number for Stop ${i}.`
+            );
+            return;
+          }
+          stops.push({ storeName: storeName, pickupNumber: pickupNum });
+        }
+
+        if (!address) {
+          alert("Please enter a final delivery address.");
           return;
         }
 
+        const totalCost = stopCount * 12.99;
+
         try {
           const orderData = {
-            pickupNumber: pickupNum,
+            userId: window.appState.userId, // Attaches order to session
             deliveryAddress: address,
             instructions: instructions,
-            storeName: storeName,
+            stops: stops,
+            totalCost: totalCost,
             barcodeImageUrl: window.appState.compressedImageBase64 || "",
             bookingType: window.appState.bookingType,
             status: "pending",
             createdAt: new Date(),
           };
 
-          // Needs window.db assigned from your config block if not done already
           const docRef = await window.addDoc(
             window.collection(window.db, "orders"),
             orderData
@@ -843,7 +937,9 @@
 
           alert("Order successfully sent to Hero Dispatch!");
           closeAllModals();
-          window.listenToMyActiveOrder(docRef.id);
+
+          // Re-check sessions to trigger the UI Lock instantly
+          if (window.checkActiveSession) window.checkActiveSession();
         } catch (error) {
           console.error("Submission failed:", error);
           alert("Failed to submit order. Please check your connection.");
@@ -857,10 +953,12 @@
       let map, driverMarker, storeMarker;
 
       let userMarker;
-      let userLat = null,userLng = null;
+      let userLat = null,
+        userLng = null;
       let placesService;
       let searchMarkers = [];
-        
+      let activeStopContext = 1;
+      window.currentStopCount = 1;
 
       document.addEventListener("DOMContentLoaded", () => {
         initMap();
@@ -869,6 +967,8 @@
         // Delay database fetch by 1 second so Firebase can finish initializing
         setTimeout(() => {
           if (window.loadActiveDriver) window.loadActiveDriver();
+
+          if (window.checkActiveSession) window.checkActiveSession();
         }, 1000);
       });
 
@@ -884,7 +984,9 @@
           // Bind Google Places Autocomplete to the fields
           new google.maps.places.Autocomplete(addressInput);
 
-          const storeAutocomplete = new google.maps.places.Autocomplete(storeInput);
+          const storeAutocomplete = new google.maps.places.Autocomplete(
+            storeInput
+          );
           storeAutocomplete.addListener("place_changed", () => {
             const place = storeAutocomplete.getPlace();
             if (place.geometry) {
@@ -893,10 +995,6 @@
           });
 
           const findHeroInput = document.getElementById("findHeroAddressInput");
-
-
-
-
 
           if (findHeroInput) {
             const heroAutocomplete = new google.maps.places.Autocomplete(
@@ -935,10 +1033,9 @@
           iconSize: [24, 24],
         });
 
-        placesService = new google.maps.places.PlacesService(document.createElement('div'));
-
-
-
+        placesService = new google.maps.places.PlacesService(
+          document.createElement("div")
+        );
 
         driverMarker = L.marker([39.3869, -94.5804], {
           icon: orangeIcon,
@@ -1009,12 +1106,12 @@
         document.getElementById("step2Panel").classList.add("active");
       }
 
+      // Map Interactions
 
-
-
-            // Map Interactions
       function simulateStoreSearch(preselectedPlace = null) {
-        let val = document.getElementById("storeSearchInput").value;
+        let val = document.getElementById(
+          `storeSearchInput_${activeStopContext}`
+        ).value;
         if (!val && !preselectedPlace) {
           alert("Please enter a store name.");
           return;
@@ -1022,58 +1119,75 @@
         closeAllModals();
 
         // Clear previous search results
-        searchMarkers.forEach(m => map.removeLayer(m));
+        searchMarkers.forEach((m) => map.removeLayer(m));
         searchMarkers = [];
 
         const center = driverMarker.getLatLng();
         const storeIcon = L.divIcon({
           className: "custom-store-pin",
           iconSize: [28, 28],
-          iconAnchor: [14, 28], // Anchors the bottom tip of the teardrop
-          popupAnchor: [0, -28] // Opens popup slightly above the pin
+          iconAnchor: [14, 28],
+          popupAnchor: [0, -28],
         });
 
-        // If customer tapped a specific store from autocomplete
         if (preselectedPlace && preselectedPlace.geometry) {
           const lat = preselectedPlace.geometry.location.lat();
           const lng = preselectedPlace.geometry.location.lng();
           val = preselectedPlace.name;
 
           const marker = L.marker([lat, lng], { icon: storeIcon }).addTo(map);
-          marker.bindPopup(`
+          marker
+            .bindPopup(
+              `
             <div style="text-align:center;">
               <strong>${val}</strong><br>
-              <span style="font-size:0.8rem;color:var(--text-muted);">${preselectedPlace.formatted_address || ''}</span><br>
-              <button onclick="confirmStoreSelection('${val.replace(/'/g, "\\'")}')" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Confirm Pin</button>
+              <span style="font-size:0.8rem;color:var(--text-muted);">${
+                preselectedPlace.formatted_address || ""
+              }</span><br>
+              <button onclick="confirmStoreSelection('${val.replace(
+                /'/g,
+                "\\'"
+              )}')" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Confirm Pin</button>
             </div>
-          `).openPopup();
+          `
+            )
+            .openPopup();
 
           searchMarkers.push(marker);
           map.setView([lat, lng], 14);
           return;
         }
 
-        // Otherwise, perform a dynamic driver-centric radius search
         const request = {
           location: new google.maps.LatLng(center.lat, center.lng),
-          radius: '40000', // Approx 25 miles around the driver base
-          query: val
+          radius: "40000",
+          query: val,
         };
 
         placesService.textSearch(request, (results, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
+          if (
+            status === google.maps.places.PlacesServiceStatus.OK &&
+            results.length > 0
+          ) {
             const bounds = L.latLngBounds();
 
-            results.forEach(place => {
+            results.forEach((place) => {
               const lat = place.geometry.location.lat();
               const lng = place.geometry.location.lng();
 
-              const marker = L.marker([lat, lng], { icon: storeIcon }).addTo(map);
+              const marker = L.marker([lat, lng], { icon: storeIcon }).addTo(
+                map
+              );
               marker.bindPopup(`
                 <div style="text-align:center;">
                   <strong>${place.name}</strong><br>
-                  <span style="font-size:0.8rem;color:var(--text-muted);">${place.formatted_address || place.vicinity}</span><br>
-                  <button onclick="confirmStoreSelection('${place.name.replace(/'/g, "\\'")}')" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Confirm Pin</button>
+                  <span style="font-size:0.8rem;color:var(--text-muted);">${
+                    place.formatted_address || place.vicinity
+                  }</span><br>
+                  <button onclick="confirmStoreSelection('${place.name.replace(
+                    /'/g,
+                    "\\'"
+                  )}')" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Confirm Pin</button>
                 </div>
               `);
 
@@ -1081,11 +1195,12 @@
               bounds.extend([lat, lng]);
             });
 
-            // Frame the view to show all found stores and the driver base
             bounds.extend(center);
             map.fitBounds(bounds, { padding: [50, 50] });
           } else {
-            alert("No stores found near the Hero's base. Try a different search.");
+            alert(
+              "No stores found near the Hero's base. Try a different search."
+            );
             openAddModal();
           }
         });
@@ -1094,23 +1209,17 @@
       function confirmStoreSelection(name) {
         map.closePopup();
 
-        // Wipe search markers to prevent clutter
-        searchMarkers.forEach(m => map.removeLayer(m));
+        searchMarkers.forEach((m) => map.removeLayer(m));
         searchMarkers = [];
 
-        document.getElementById("storeNameDisplay").innerText = name;
-        document.getElementById("selectedStoreDisplay").style.display = "block";
+        document.getElementById(
+          `storeNameDisplay_${activeStopContext}`
+        ).innerText = name;
+        document.getElementById(
+          `selectedStoreDisplay_${activeStopContext}`
+        ).style.display = "block";
         openAddModal();
       }
-
-
-
-
-
-
-
-
-
 
       // Utils
 
@@ -1261,6 +1370,104 @@
           );
           map.fitBounds(bounds, { padding: [70, 70] });
         }, 1500);
+      }
+
+      // --- SESSION & MULTI-STOP LOGIC ---
+
+      window.checkActiveSession = function () {
+        const q = window.query(
+          window.collection(window.db, "orders"),
+          window.where("userId", "==", window.appState.userId)
+        );
+
+        window.onSnapshot(q, (snapshot) => {
+          let hasActive = false;
+          let activeId = null;
+
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.status === "pending" || data.status === "in_transit") {
+              hasActive = true;
+              activeId = docSnap.id;
+            }
+          });
+
+          const fab = document.getElementById("mainFab");
+          if (hasActive) {
+            fab.classList.add("locked");
+            document.getElementById("activeDeliveryPrompt").style.display =
+              "flex";
+            window.listenToMyActiveOrder(activeId);
+          } else {
+            fab.classList.remove("locked");
+          }
+        });
+      };
+
+      function dismissActiveDeliveryPrompt() {
+        document.getElementById("activeDeliveryPrompt").style.display = "none";
+        document.getElementById("trackerSheet").style.transform =
+          "translateY(0)";
+      }
+
+      function bindStoreAutocomplete(index) {
+        const input = document.getElementById(`storeSearchInput_${index}`);
+        if (input) {
+          const ac = new google.maps.places.Autocomplete(input);
+          ac.addListener("place_changed", () => {
+            const place = ac.getPlace();
+            if (place.geometry) {
+              activeStopContext = index;
+              simulateStoreSearch(place);
+            }
+          });
+        }
+      }
+
+      function triggerStoreSearch(index) {
+        activeStopContext = index;
+        simulateStoreSearch();
+      }
+
+      function addNewStopBlock() {
+        if (window.currentStopCount >= 3) return;
+        window.currentStopCount++;
+
+        const container = document.getElementById("stopsContainer");
+        const newBlock = document.createElement("div");
+        newBlock.className = "stop-block";
+        newBlock.id = `stopBlock_${window.currentStopCount}`;
+        newBlock.style =
+          "padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 15px;";
+
+        newBlock.innerHTML = `
+          <h4 style="margin-bottom: 10px; color: var(--accent);">Pickup Stop ${window.currentStopCount}</h4>
+          <div class="form-group">
+            <label>Search Store Location</label>
+            <input type="text" id="storeSearchInput_${window.currentStopCount}" placeholder="Walmart, Target, etc..." />
+            <button class="btn btn-secondary" style="margin-top: 8px" onclick="triggerStoreSearch(${window.currentStopCount})">Search Map</button>
+          </div>
+          <div id="selectedStoreDisplay_${window.currentStopCount}" style="display: none; padding: 15px; background: var(--surface-elevated); border-radius: 12px; border-left: 4px solid var(--accent); margin-top: 10px; margin-bottom: 15px;">
+            <strong id="storeNameDisplay_${window.currentStopCount}">Pending...</strong>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Location Confirmed</p>
+          </div>
+          <div class="form-group">
+            <label>Store Order Number</label>
+            <input type="text" id="pickupNumberInput_${window.currentStopCount}" placeholder="e.g., #98765432" />
+          </div>
+        `;
+
+        container.appendChild(newBlock);
+        bindStoreAutocomplete(window.currentStopCount); // Bind smart search to new input instantly
+
+        // Update Price
+        document.getElementById("totalPriceDisplay").innerText =
+          "$" + (window.currentStopCount * 12.99).toFixed(2);
+
+        // Hide button if max reached
+        if (window.currentStopCount >= 3) {
+          document.getElementById("addStopBtn").style.display = "none";
+        }
       }
     </script>
   </body>
