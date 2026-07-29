@@ -26,7 +26,7 @@
         --success: #22c55e;
         --danger: #ef4444;
         --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      }
+      } 
 
       * {
         box-sizing: border-box;
@@ -629,6 +629,8 @@
               </div>
             </div>
 
+          </div>
+
             
                      
           
@@ -768,7 +770,7 @@
               font-weight: 600;
             "
             >— OR —</span
-          >
+          > 
         </div>
 
         <button
@@ -803,11 +805,10 @@
       </div>
     </div>
     
-    
+     
     
   
-
-        <!-- ACTIVE DELIVERY INTERCEPT PROMPT -->
+    <!-- ACTIVE DELIVERY INTERCEPT PROMPT -->
     <div class="soft-prompt-overlay" id="activeDeliveryPrompt">
       <div class="soft-prompt-box">
         <h3>Delivery In Progress!</h3>
@@ -837,9 +838,8 @@
       </div>
     </div>
 
-
     
-   
+    
     
 
     <!-- LEAFLET MAP JS -->
@@ -1019,20 +1019,27 @@
           google.maps.places
         ) {
           const addressInput = document.getElementById("deliveryAddressInput");
-          const storeInput = document.getElementById("storeSearchInput");
-
-          // Bind Google Places Autocomplete to the fields
+          
+          
+          
+          
+           // Bind Google Places Autocomplete to the final delivery address
           new google.maps.places.Autocomplete(addressInput);
 
-          const storeAutocomplete = new google.maps.places.Autocomplete(
-            storeInput
-          );
-          storeAutocomplete.addListener("place_changed", () => {
-            const place = storeAutocomplete.getPlace();
-            if (place.geometry) {
-              simulateStoreSearch(place);
-            }
-          });
+          // Bind smart search to the dynamic first pickup stop
+          bindStoreAutocomplete(1);
+
+          
+          
+          
+          
+          
+          
+           
+          
+          
+          
+          
 
           const findHeroInput = document.getElementById("findHeroAddressInput");
 
@@ -1263,6 +1270,15 @@
 
       // Utils
 
+      
+      
+      
+      
+      
+      
+      
+      
+      
             function openInfoTooltip() {
         document.getElementById("infoTooltipPrompt").style.display = "flex";
       }
@@ -1280,7 +1296,7 @@
           if (i !== index) {
             const otherBlock = document.getElementById(`stopBlock_${i}`);
             if (otherBlock) otherBlock.classList.add("collapsed");
-          }
+          } 
         }
       }
 
