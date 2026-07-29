@@ -871,14 +871,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             if (data.profilePic)
               document.getElementById("profileImagePreview").src =
                 data.profilePic;
-            // Apply saved map coordinates and update map if already drawn
+            
+            // Apply saved map coordinates
             if (data.baseLat && data.baseLng) {
               AppState.homeBase = [data.baseLat, data.baseLng];
+              // If the map is already drawn, move it to the saved location
               if (AppState.mapInstance) {
                 AppState.mapInstance.setView(AppState.homeBase, 12);
                 renderHomeBase();
               }
             }
+            
+            
+            
+     
 
             const killSwitch = document.getElementById("killSwitchToggle");
             if (data.globalKillSwitch) killSwitch.classList.add("on");
@@ -987,6 +993,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             AppState.homeMarker.getLatLng().lat,
             AppState.homeMarker.getLatLng().lng,
           ];
+          // Silently trigger the database save in the background
+          if (window.saveDriverSettings) window.saveDriverSettings();
+          
           renderHomeBase();
         } else {
           AppState.homeMarker.dragging.enable();
