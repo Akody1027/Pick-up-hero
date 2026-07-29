@@ -621,7 +621,10 @@
         bio: document.getElementById('driverBioInput').value,
         globalKillSwitch: document.getElementById('killSwitchToggle').classList.contains('on'),
         sosEnabled: document.getElementById('sosToggle').classList.contains('on'),
-        premiumRate: parseFloat(document.getElementById('premiumRateInput').value) || 50.00
+        premiumRate: parseFloat(document.getElementById('premiumRateInput').value) || 50.00,
+        baseLat: AppState.homeBase[0],
+        baseLng: AppState.homeBase[1]
+        
         , profilePic: document.getElementById('profileImagePreview').src
         
       };
