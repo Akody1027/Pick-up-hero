@@ -433,12 +433,36 @@
 
   <!-- LEAFLET MAP JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqlDSF6sSZqagHDlFCw2K-v4lRQQCK6Ew&libraries=places"></script>
 
   <!-- FIREBASE SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
     import { getAuth } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
     import { getFirestore } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+    
+    
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyDhSqKn5eg_X-c8uNMjp7BTDWgIpV8dnvI",
+      authDomain: "pickuphero-1993f.firebaseapp.com",
+      projectId: "pickuphero-1993f",
+      storageBucket: "pickuphero-1993f.firebasestorage.app",
+      messagingSenderId: "234138921429",
+      appId: "1:234138921429:web:61071ce9b8e5e6ce70755c",
+      measurementId: "G-88L5X10BTW"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    
+    
+    
+    
+    
+    
 
     // Standard Firebase implementation matches previous backend logic
     window.appState = {
