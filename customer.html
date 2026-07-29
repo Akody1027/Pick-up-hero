@@ -1070,7 +1070,6 @@
               typeof driverMarker !== "undefined"
             ) {
               driverMarker.setLatLng([data.baseLat, data.baseLng]);
-              map.panTo([data.baseLat, data.baseLng]);
             }
           }
         } catch (e) {
@@ -1137,14 +1136,15 @@
           userMarker.setLatLng([userLat, userLng]);
           userMarker.setOpacity(1);
 
-          // Place the hero slightly offset to simulate a nearby driver
-          const heroLat = userLat + 0.012;
-          const heroLng = userLng + 0.012;
-          driverMarker.setLatLng([heroLat, heroLng]);
+          // Reveal the hero's true database location
           driverMarker.setOpacity(1);
 
-          // Center map on the user
-          map.setView([userLat, userLng], 13);
+          // Zoom the map to perfectly frame both the customer and the hero
+          const bounds = L.latLngBounds(
+            [userLat, userLng],
+            driverMarker.getLatLng()
+          );
+          map.fitBounds(bounds, { padding: [70, 70] });
         }, 1500);
       }
     </script>
