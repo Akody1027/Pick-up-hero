@@ -510,7 +510,10 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
     import { getAuth } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+   import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js"; 
+    
+    
+    
 
     const firebaseConfig = {
       apiKey: "AIzaSyDhSqKn5eg_X-c8uNMjp7BTDWgIpV8dnvI",
@@ -528,6 +531,15 @@
     
     // Attach db to window to allow global AppState functions to execute Firestore queries
     window.db = db;
+    
+    
+    window.collection = collection;
+    window.query = query;
+    window.where = where;
+    window.onSnapshot = onSnapshot;
+    window.doc = doc;
+    window.updateDoc = updateDoc;
+    
   </script>
   
   
@@ -549,8 +561,10 @@
 
     // Initialize UI and Map
     document.addEventListener("DOMContentLoaded", () => {
+      
       initMap();
-      simulateIncomingOrder(); // Demo function
+      listenForPendingOrders();
+      
     });
 
     function initMap() {
@@ -606,22 +620,45 @@
     };
 
     // Notification Engine (Generous Net Simulation)
-    function simulateIncomingOrder() {
-      setTimeout(() => {
-        document.getElementById('alertSound').play().catch(e => console.log('Audio blocked.'));
+function listenForPendingOrders() {
+      const q = window.query(window.collection(window.db, "orders"), window.where("status", "==", "pending"));
+      
+      window.onSnapshot(q, (snapshot) => {
+        const newOrders = [];
         
-        // Simulating the wide net of incoming orders
-        AppState.triageQueue = [
-          { id: 101, title: 'Walmart Order #123', lat: 39.4050, lng: -94.5700, type: 'pickup' },
-          { id: 102, title: 'Delivery: John Doe', lat: 39.4200, lng: -94.6000, type: 'delivery' },
-          { id: 103, title: 'Delivery: Sarah Smith', lat: 39.4350, lng: -94.4900, type: 'delivery' } // The Eastern Outlier
-        ];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          // 1. Create the Pickup Map Node
+          newOrders.push({
+            id: docSnap.id,
+            title: `Pickup: ${data.storeName || 'Store'}`,
+            lat: data.storeLat || 39.4050, // Fallback coordinates if Geocoding API isn't live yet
+            lng: data.storeLng || -94.5700,
+            type: 'pickup'
+          });
+          // 2. Create the Delivery Map Node
+          newOrders.push({
+            id: docSnap.id + "_del", 
+            dbId: docSnap.id, 
+            title: `Delivery: ${data.deliveryAddress || 'Customer'}`,
+            lat: data.deliveryLat || 39.4200,
+            lng: data.deliveryLng || -94.6000,
+            type: 'delivery'
+          });
+        });
+
+        // Trigger audible alert only if the queue grew and driver is idle
+        if (newOrders.length > AppState.triageQueue.length && AppState.workflowPhase === 'idle') {
+          document.getElementById('alertSound').play().catch(e => console.log('Audio blocked.'));
+        }
+
+        AppState.triageQueue = newOrders;
+        AppState.pendingOrders = snapshot.docs.length;
         
-        AppState.pendingOrders = AppState.triageQueue.length;
         const badge = document.getElementById('notificationBadge');
         badge.innerText = AppState.pendingOrders;
-        badge.style.display = 'flex';
-      }, 2000);
+        badge.style.display = AppState.pendingOrders > 0 ? 'flex' : 'none';
+      });
     }
 
     // Visual Pruning System Engine
@@ -699,12 +736,27 @@
         wfBtn.className = "btn btn-primary";
         wfBtn.style.display = 'block';
         
-        wfBtn.onclick = function() {
+        
+        
+        wfBtn.onclick = async function() {
           AppState.activeQueue = AppState.triageQueue.map(t => ({...t, status: 'pending'}));
+          
+          // Broadcast to Firestore that the driver accepted the route
+          for (const node of AppState.activeQueue) {
+             const docId = node.dbId || node.id;
+             if(typeof docId === 'string' && !docId.includes("_del")) {
+                try {
+                   await window.updateDoc(window.doc(window.db, "orders", docId), { status: "in_transit" });
+                } catch(e) { console.error("Database update failed:", e); }
+             }
+          }
+
           AppState.workflowPhase = 'ready_pickup';
           AppState.pendingOrders = 0;
           updateDashboardUI();
         };
+        
+
 
         drawTriageRoute();
         
@@ -770,7 +822,9 @@
     }
 
     // Standard linear state progression after triage is finished
-    window.advanceWorkflow = function() {
+    
+    
+    window.advanceWorkflow = async function() {
       if (AppState.workflowPhase === 'ready_pickup') {
         AppState.workflowPhase = 'pickup';
       } else if (AppState.workflowPhase === 'pickup') {
@@ -781,9 +835,21 @@
       } else if (AppState.workflowPhase === 'delivery') {
         if(AppState.activeQueue[1]) AppState.activeQueue[1].status = 'completed';
         AppState.workflowPhase = 'complete';
+        
+        // Finalize all orders in the live database
+        for (const node of AppState.activeQueue) {
+          const docId = node.dbId || node.id;
+          if (typeof docId === 'string' && !docId.includes("_del")) {
+            try {
+              await window.updateDoc(window.doc(window.db, "orders", docId), { status: "completed" });
+            } catch(e) { console.error("Failed to mark complete:", e); }
+          }
+        }
       }
       updateDashboardUI();
     };
+    
+
 
     function drawTimeline() {
       const timeline = document.getElementById('timelineList');
