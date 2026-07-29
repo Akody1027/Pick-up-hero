@@ -585,10 +585,8 @@
           createdAt: new Date()
         });
 
-        alert("Account successfully created! Welcome to Pick Up Hero.");
-        closeModal();
-        document.getElementById('heroSignupForm').reset();
-
+         window.location.href = "customer.html";
+        
       } catch (error) {
         console.error("Error signing up: ", error);
         alert("Error: " + error.message);
