@@ -1657,52 +1657,6 @@
         });
       };
 
-      function dismissActiveDeliveryPrompt() {
-        document.getElementById("activeDeliveryPrompt").style.display = "none";
-        document.getElementById("trackerSheet").style.transform =
-          "translateY(0)";
-
-        // Setup coordinates using Maps LatLng objects to pass to Google
-        const heroLoc = {
-          lat: driverMarker.getLatLng().lat,
-          lng: driverMarker.getLatLng().lng,
-        };
-
-        // Pass exact coordinates to Google Directions, not ambiguous store names
-        const actualStops = order.stops.map((stop) => {
-          // Fallback for older orders that lack coordinate data
-          if (!stop.lat || !stop.lng) return stop.storeName;
-          return { lat: stop.lat, lng: stop.lng };
-        });
-        const actualDelivery = order.deliveryAddress;
-
-        driverMarker.setOpacity(1);
-
-        // Execute Google Directions route drawing
-        drawGoogleRoute(heroLoc, mockStops, mockDelivery);
-
-        // Inject the styled vertical stops list
-        const timeline = document.getElementById("activeStopsTimeline");
-        timeline.innerHTML = `
-          <div class="timeline-item">
-            <div class="timeline-title">Hero En Route</div>
-            <div class="timeline-subtitle">Starting delivery run</div>
-          </div>
-          <div class="timeline-item">
-            <div class="timeline-title">Pickup Stop 1</div>
-            <div class="timeline-subtitle">Walmart Supercenter</div>
-          </div>
-          <div class="timeline-item">
-            <div class="timeline-title">Pickup Stop 2</div>
-            <div class="timeline-subtitle">Target</div>
-          </div>
-          <div class="timeline-item">
-            <div class="timeline-title">Final Delivery</div>
-            <div class="timeline-subtitle">Home Address</div>
-          </div>
-        `;
-      }
-
       // --- BOTTOM SHEET DRAG LOGIC ---
       const sheet = document.getElementById("trackerSheet");
       let startY,
@@ -1868,7 +1822,9 @@
           lng: driverMarker.getLatLng().lng,
         };
 
-        const actualStops = order.stops.map((stop) => stop.storeName);
+        const actualStops = order.stops.map((stop) => {
+          return { lat: stop.lat, lng: stop.lng };
+        });
         const actualDelivery = order.deliveryAddress;
 
         driverMarker.setOpacity(1);
@@ -1956,7 +1912,7 @@
 
         newBlock.innerHTML = `
           <div class="stop-summary" onclick="toggleStop(${newIndex})">
-            <strong id="summaryText_${newIndex}">📍 Stop ${newIndex}</strong>
+            <strong id="summaryText_${newIndex}"> Stop ${newIndex}</strong>
             <span style="color: var(--accent); font-size: 0.8rem;">Edit</span>
           </div>
           
