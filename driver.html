@@ -1,3 +1,7 @@
+  
+
+
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -22,7 +26,7 @@
         --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
-        --border: #333333;
+        --border: #333333; 
         --success: #22c55e;
         --danger: #ef4444;
         --shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
@@ -1182,8 +1186,104 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         gSub.innerText = `${AppState.triageQueue.length} Stops Remaining.`;
       };
 
-      // Main State Machine update function
-      function updateDashboardUI() {
+      
+      
+            // --- ROUTING & DISTANCE MATRIX UTILS ---
+      let activeRouteLayer = null;
+
+      function decodePolyline(encoded) {
+        let points = [];
+        let index = 0, len = encoded.length; 
+        let lat = 0, lng = 0;
+
+        while (index < len) {
+          let b, shift = 0, result = 0; 
+          do {
+            b = encoded.charAt(index++).charCodeAt(0) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+          } while (b >= 0x20);
+          let dlat = result & 1 ? ~(result >> 1) : result >> 1;
+          lat += dlat;
+
+          shift = 0; result = 0;
+          do {
+            b = encoded.charAt(index++).charCodeAt(0) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+          } while (b >= 0x20);
+          let dlng = result & 1 ? ~(result >> 1) : result >> 1;
+          lng += dlng;
+
+          points.push([lat / 1e5, lng / 1e5]);
+        }
+        return points;
+      }
+
+      function drawActualRoute(origin, waypoints, destination) {
+        if (activeRouteLayer) AppState.mapInstance.removeLayer(activeRouteLayer);
+        const directionsService = new google.maps.DirectionsService();
+        
+        const request = {
+          origin: new google.maps.LatLng(origin[0], origin[1]),
+          destination: new google.maps.LatLng(destination[0], destination[1]),
+          waypoints: waypoints.map(wp => ({ location: new google.maps.LatLng(wp[0], wp[1]), stopover: true })),
+          travelMode: google.maps.TravelMode.DRIVING,
+        };
+
+        directionsService.route(request, (result, status) => {
+          if (status === google.maps.DirectionsStatus.OK) {
+            const encodedPath = result.routes[0].overview_polyline;
+            const decodedCoords = decodePolyline(encodedPath);
+            activeRouteLayer = L.polyline(decodedCoords, {
+              color: "var(--accent)", weight: 5, opacity: 0.9, lineJoin: "round"
+            }).addTo(AppState.layerGroup);
+            AppState.mapInstance.fitBounds(activeRouteLayer.getBounds(), { padding: [60, 60] });
+          } else {
+            console.error("Directions request failed:", status);
+          }
+        });
+      }
+
+      function groupPickups(queue) {
+        let groups = {};
+        queue.filter(q => q.type === 'pickup').forEach(p => {
+          let key = `${p.lat}_${p.lng}`;
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(p);
+        });
+        return Object.values(groups);
+      }
+
+      async function sortDeliveriesByTime(originLat, originLng, deliveries) {
+        return new Promise((resolve) => {
+          if (deliveries.length === 0) return resolve([]);
+          const service = new google.maps.DistanceMatrixService();
+          const destinations = deliveries.map(d => new google.maps.LatLng(d.lat, d.lng));
+          const origin = new google.maps.LatLng(originLat, originLng);
+          
+          service.getDistanceMatrix({
+            origins: [origin],
+            destinations: destinations,
+            travelMode: 'DRIVING'
+          }, (response, status) => {
+            if (status === 'OK') {
+              const results = response.rows[0].elements;
+              let mapped = deliveries.map((d, i) => ({
+                ...d,
+                durationVal: results[i].status === 'OK' ? results[i].duration.value : 999999
+              }));
+              mapped.sort((a, b) => a.durationVal - b.durationVal);
+              resolve(mapped);
+            } else {
+              resolve(deliveries); // Fallback to unsorted if API fails
+            }
+          });
+        });
+      }
+
+      // --- STATE MACHINE ---
+      async function updateDashboardUI() {
         const gTitle = document.getElementById("glanceTitle");
         const gSub = document.getElementById("glanceSubtitle");
         const wfBtn = document.getElementById("workflowBtn");
@@ -1197,186 +1297,237 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           wfBtn.style.display = "block";
 
           wfBtn.onclick = async function () {
-            AppState.activeQueue = AppState.triageQueue.map((t) => ({
-              ...t,
-              status: "pending",
-            }));
-
-            // Broadcast to Firestore that the driver accepted the route
-            for (const node of AppState.activeQueue) {
-              const docId = node.dbId || node.id;
-              if (typeof docId === "string" && !docId.includes("_del")) {
-                try {
-                  await window.updateDoc(
-                    window.doc(window.db, "orders", docId),
-                    { status: "in_transit" }
-                  );
-                } catch (e) {
-                  console.error("Database update failed:", e);
-                }
-              }
-            }
-
+            AppState.activeQueue = AppState.triageQueue.map((t) => ({ ...t, status: "pending" }));
             AppState.workflowPhase = "ready_pickup";
             AppState.pendingOrders = 0;
             updateDashboardUI();
           };
 
           drawTriageRoute();
-
           timeline.innerHTML = "";
           AppState.triageQueue.forEach((o, i) => {
-            timeline.innerHTML += `<li class="timeline-item"><div class="node-card"><strong>Stop ${
-              i + 1
-            }: ${
-              o.title
-            }</strong><p style="font-size:0.8rem; color:var(--text-muted);">Distance sorted automatically.</p></div></li>`;
+            timeline.innerHTML += `<li class="timeline-item"><div class="node-card"><strong>Stop ${i + 1}: ${o.title}</strong><p style="font-size:0.8rem; color:var(--text-muted);">Distance sorted automatically.</p></div></li>`;
           });
+
         } else if (AppState.workflowPhase === "ready_pickup") {
           AppState.layerGroup.clearLayers();
           gTitle.innerText = "Route Locked";
-          gSub.innerText = `${AppState.activeQueue.length} Active Stops`;
-          wfBtn.innerText = "Start Engine";
+          
+          const groupedPickups = groupPickups(AppState.activeQueue);
+          gSub.innerText = `${groupedPickups.length} Grouped Pickup Locations`;
+          wfBtn.innerText = "Start Pickups";
           wfBtn.className = "btn btn-primary";
-          wfBtn.onclick = window.advanceWorkflow;
-          drawTimeline();
-        } else if (AppState.workflowPhase === "pickup") {
-          gTitle.innerText = "Heading to Pickup";
-          gSub.innerText = "Walmart Supercenter";
-          wfBtn.innerText = "Mark Picked Up";
-          wfBtn.className = "btn btn-secondary";
+          wfBtn.onclick = () => { AppState.workflowPhase = "pickup"; updateDashboardUI(); };
+          
+          if (groupedPickups.length > 0) {
+            drawActualRoute(
+              AppState.homeBase, 
+              groupedPickups.slice(0, -1).map(g => [g[0].lat, g[0].lng]), 
+              [groupedPickups[groupedPickups.length-1][0].lat, groupedPickups[groupedPickups.length-1][0].lng]
+            );
 
-          const clusterIcon = L.divIcon({
-            className: "cluster-pin",
-            html: "1",
-            iconSize: [36, 36],
-          });
-          L.marker([39.405, -94.57], { icon: clusterIcon }).addTo(
-            AppState.layerGroup
-          );
-          AppState.mapInstance.panTo([39.405, -94.57]);
-          drawTimeline();
+            groupedPickups.forEach((group, index) => {
+              const clusterIcon = L.divIcon({
+                className: "cluster-pin",
+                html: group.length > 1 ? group.length.toString() : "P",
+                iconSize: [36, 36],
+              });
+              L.marker([group[0].lat, group[0].lng], { icon: clusterIcon }).addTo(AppState.layerGroup);
+            });
+          }
+          drawPickupTimeline();
+
+        } else if (AppState.workflowPhase === "pickup") {
+          gTitle.innerText = "Active Pickups";
+          gSub.innerText = "Secure items and mark complete.";
+          wfBtn.style.display = "none"; // Action is inside the cards now
+          drawPickupTimeline();
+
         } else if (AppState.workflowPhase === "ready_delivery") {
           AppState.layerGroup.clearLayers();
           gTitle.innerText = "Pickups Complete";
-          gSub.innerText = "Ready to start rural loop.";
+          gSub.innerText = "Calculating fastest delivery route...";
+          wfBtn.style.display = "none";
+          timeline.innerHTML = "<p style='color: var(--text-muted);'>Sorting via Google Distance Matrix...</p>";
+
+          const currentLoc = AppState.homeBase; // In production, replace with live driver GPS
+          let deliveries = AppState.activeQueue.filter(q => q.type === 'delivery');
+          
+          const sortedDeliveries = await sortDeliveriesByTime(currentLoc[0], currentLoc[1], deliveries);
+          
+          AppState.activeQueue = [
+            ...AppState.activeQueue.filter(q => q.type === 'pickup'),
+            ...sortedDeliveries
+          ];
+          
+          gSub.innerText = `${sortedDeliveries.length} Deliveries Sorted.`;
           wfBtn.innerText = "Begin Deliveries";
           wfBtn.className = "btn btn-primary";
-          drawTimeline();
-        } else if (AppState.workflowPhase === "delivery") {
-          gTitle.innerText = "En Route to John Doe";
-          gSub.innerText = "123 Country Road";
-          wfBtn.innerText = "Arrived & Next";
-          wfBtn.className = "btn btn-success";
+          wfBtn.style.display = "block";
+          wfBtn.onclick = () => { AppState.workflowPhase = "delivery"; updateDashboardUI(); };
+          
+          if (sortedDeliveries.length > 0) {
+            drawActualRoute(
+              currentLoc,
+              sortedDeliveries.slice(0, -1).map(d => [d.lat, d.lng]),
+              [sortedDeliveries[sortedDeliveries.length-1].lat, sortedDeliveries[sortedDeliveries.length-1].lng]
+            );
 
-          const delIcon = L.divIcon({
-            className: "cluster-pin",
-            html: "D",
-            iconSize: [30, 30],
-          });
-          L.marker([39.42, -94.6], { icon: delIcon }).addTo(
-            AppState.layerGroup
-          );
-          L.polyline(
-            [
-              [39.405, -94.57],
-              [39.42, -94.6],
-            ],
-            { color: "#ee611c", weight: 4, dashArray: "10, 10" }
-          ).addTo(AppState.layerGroup);
-          AppState.mapInstance.fitBounds(
-            [
-              [39.405, -94.57],
-              [39.42, -94.6],
-            ],
-            { padding: [50, 50] }
-          );
-          drawTimeline();
+            sortedDeliveries.forEach((d, i) => {
+              const delIcon = L.divIcon({ className: "cluster-pin", html: (i+1).toString(), iconSize: [30, 30] });
+              L.marker([d.lat, d.lng], { icon: delIcon }).addTo(AppState.layerGroup);
+            });
+          }
+          drawDeliveryTimeline();
+
+        } else if (AppState.workflowPhase === "delivery") {
+          const nextDelivery = AppState.activeQueue.find(q => q.type === 'delivery' && q.status !== 'completed');
+          
+          if (!nextDelivery) {
+            AppState.workflowPhase = "complete";
+            return updateDashboardUI();
+          }
+          
+          gTitle.innerText = `En Route: ${nextDelivery.title}`;
+          gSub.innerText = "Navigating to drop-off.";
+          wfBtn.innerText = "Delivered Next Stop";
+          wfBtn.className = "btn btn-success";
+          wfBtn.style.display = "block";
+          
+          wfBtn.onclick = async () => {
+            const cleanId = (nextDelivery.dbId || nextDelivery.id).replace('_del', '');
+            try {
+              await window.updateDoc(window.doc(window.db, "orders", cleanId), { status: "completed" });
+            } catch (e) { console.error(e); }
+            nextDelivery.status = "completed";
+            updateDashboardUI();
+          };
+          
+          drawDeliveryTimeline();
+
         } else if (AppState.workflowPhase === "complete") {
           AppState.layerGroup.clearLayers();
+          if (activeRouteLayer) AppState.mapInstance.removeLayer(activeRouteLayer);
           gTitle.innerText = "Route Complete!";
-          gSub.innerText = "Great job Hero.";
-          wfBtn.style.display = "none";
-          drawTimeline();
-          setTimeout(() => {
+          gSub.innerText = "Verify payments & finalize run.";
+          
+          wfBtn.innerText = "Deliveries Completed";
+          wfBtn.className = "btn btn-primary";
+          wfBtn.style.display = "block";
+          wfBtn.onclick = () => {
             AppState.workflowPhase = "idle";
-            gTitle.innerText = "Idle / No Active Route";
-            gSub.innerText = "Awaiting scheduled runs.";
-            timeline.innerHTML =
-              '<p style="color: var(--text-muted);">Queue is empty.</p>';
+            AppState.activeQueue = [];
+            AppState.triageQueue = [];
+            updateDashboardUI();
             AppState.mapInstance.setView(AppState.homeBase, 12);
-          }, 3000);
+          };
+          
+          timeline.innerHTML = '<li class="timeline-item"><div class="node-card"><strong>All Drops Complete</strong><p style="font-size:0.8rem; color:var(--text-muted);">Payouts secured via Stripe.</p></div></li>';
+        
+        } else if (AppState.workflowPhase === "idle") {
+          gTitle.innerText = "Idle / No Active Route";
+          gSub.innerText = "Awaiting scheduled runs.";
+          wfBtn.style.display = "none";
+          timeline.innerHTML = '<p style="color: var(--text-muted);">Queue is empty.</p>';
         }
       }
 
-      // Standard linear state progression after triage is finished
+      // --- CUSTOM TIMELINES & ACTIONS ---
 
-      window.advanceWorkflow = async function () {
-        if (AppState.workflowPhase === "ready_pickup") {
-          AppState.workflowPhase = "pickup";
-        } else if (AppState.workflowPhase === "pickup") {
+      window.markPickupComplete = async function(dbId) {
+        const item = AppState.activeQueue.find(i => (i.dbId || i.id) === dbId && i.type === 'pickup');
+        if (!item) return;
+
+        // Broadcast to customer that item is picked up and driver is en route
+        const cleanId = (dbId).toString().replace('_del', '');
+        try {
+          await window.updateDoc(window.doc(window.db, "orders", cleanId), { status: "in_transit" });
+        } catch(e) { console.error("Firebase update failed", e); }
+        
+        item.status = "completed";
+        
+        // Transition to delivery if all pickups are complete
+        const pendingPickups = AppState.activeQueue.filter(i => i.type === 'pickup' && i.status !== 'completed');
+        if (pendingPickups.length === 0) {
           AppState.workflowPhase = "ready_delivery";
-          if (AppState.activeQueue[0])
-            AppState.activeQueue[0].status = "completed";
-        } else if (AppState.workflowPhase === "ready_delivery") {
-          AppState.workflowPhase = "delivery";
-        } else if (AppState.workflowPhase === "delivery") {
-          if (AppState.activeQueue[1])
-            AppState.activeQueue[1].status = "completed";
-          AppState.workflowPhase = "complete";
-
-          // Finalize all orders in the live database
-          for (const node of AppState.activeQueue) {
-            const docId = node.dbId || node.id;
-            if (typeof docId === "string" && !docId.includes("_del")) {
-              try {
-                await window.updateDoc(window.doc(window.db, "orders", docId), {
-                  status: "completed",
-                });
-              } catch (e) {
-                console.error("Failed to mark complete:", e);
-              }
-            }
-          }
+          updateDashboardUI();
+        } else {
+          drawPickupTimeline();
         }
-        updateDashboardUI();
       };
 
-      function drawTimeline() {
+      function drawPickupTimeline() {
         const timeline = document.getElementById("timelineList");
         timeline.innerHTML = "";
+        
+        const pickups = AppState.activeQueue.filter(q => q.type === 'pickup');
+        
+        pickups.forEach((node) => {
+          const isDone = node.status === 'completed';
+          const btnHTML = isDone 
+            ? `<button class="btn btn-secondary" style="margin-top:10px; padding:8px; font-size:0.85rem;" disabled>Picked Up ✓</button>`
+            : `<button class="btn btn-primary" style="margin-top:10px; padding:8px; font-size:0.85rem;" onclick="markPickupComplete('${node.dbId || node.id}')">Items Picked Up</button>`;
 
-        AppState.activeQueue.forEach((node, index) => {
-          let statusClass = "";
-          if (node.status === "completed") statusClass = "completed";
-          else if (
-            node.status === "pending" &&
-            ((AppState.workflowPhase === "pickup" && index === 0) ||
-              (AppState.workflowPhase === "delivery" && index === 1))
-          )
-            statusClass = "active";
-
-          const li = document.createElement("li");
-          li.className = `timeline-item ${statusClass}`;
-
-          li.innerHTML = `
-          <div class="node-card">
-            <div class="node-header">
-              <strong>${node.title}</strong>
-              <span style="font-size: 0.8rem; color: var(--text-muted);">${
-                node.type === "pickup" ? "Store" : "Delivery"
-              }</span>
-            </div>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">${
-              node.type === "pickup"
-                ? "Curbside Handoff"
-                : "Rural Route Drop-off"
-            }</p>
-          </div>
-        `;
-          timeline.appendChild(li);
+          timeline.innerHTML += `
+            <li class="timeline-item ${isDone ? 'completed' : 'active'}">
+              <div class="node-card">
+                <div class="node-header">
+                  <strong>${node.title}</strong>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
+                ${AppState.workflowPhase === "pickup" ? btnHTML : ''}
+              </div>
+            </li>
+          `;
         });
       }
+
+      function drawDeliveryTimeline() {
+        const timeline = document.getElementById("timelineList");
+        timeline.innerHTML = "";
+        
+        const deliveries = AppState.activeQueue.filter(q => q.type === 'delivery');
+        let activeFound = false;
+
+        deliveries.forEach((node) => {
+          let statusClass = "";
+          if (node.status === "completed") {
+            statusClass = "completed";
+          } else if (!activeFound) {
+            statusClass = "active";
+            activeFound = true;
+          }
+
+          timeline.innerHTML += `
+            <li class="timeline-item ${statusClass}">
+              <div class="node-card">
+                <div class="node-header">
+                  <strong>${node.title}</strong>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Rural Route Drop-off</p>
+              </div>
+            </li>
+          `;
+        });
+      }
+
+      
+      
+      
+      
+      
+      
+      
+  
+      
     </script>
   </body>
 </html>
+
+
+
+
+
+
+
+
