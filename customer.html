@@ -12,16 +12,16 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
-
+ 
     <style>
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
-        --accent-hover: #d95314;
+        --accent-hover: #d95314; 
         --text: #ffffff;
-        --text-muted: #94a3b8;
+        --text-muted: #94a3b8; 
         --border: #333333;
         --success: #22c55e;
         --danger: #ef4444;
@@ -183,6 +183,73 @@
       }
 
       /* --- MODAL SYSTEM (Z-Index 2000) --- */
+      
+            /* --- TRACKER SHEET DRAG & TIMELINE --- */
+      .drag-handle {
+        width: 40px;
+        height: 5px;
+        background: var(--border);
+        border-radius: 3px;
+        margin: 0 auto 15px auto;
+        cursor: grab;
+      }
+      
+      .stop-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        position: relative;
+        padding-left: 20px;
+        margin-top: 5px;
+      }
+      
+      .stop-timeline::before {
+        content: '';
+        position: absolute;
+        left: 3px;
+        top: 8px;
+        bottom: 8px;
+        width: 2px;
+        background: var(--accent);
+      }
+      
+      .timeline-item {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -22px;
+        top: 4px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid var(--surface);
+        box-shadow: 0 0 0 1px var(--accent);
+      }
+      
+      .timeline-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+      
+      .timeline-subtitle {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+
+      
+      
+      
+      
+      
+      
       .modal {
         position: fixed;
         top: 100%;
@@ -509,6 +576,11 @@
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       "
     >
+      
+      
+      
+      
+    <div class="drag-handle"></div>
       <div class="sheet-header">
         <img
           src="https://via.placeholder.com/150"
@@ -520,23 +592,13 @@
           <p id="sheetSubtitle">Hero is running tomorrow morning.</p>
         </div>
       </div>
-      <div style="display: flex; gap: 10px">
-        <button
-          class="btn btn-secondary"
-          style="padding: 12px; font-size: 0.9rem"
-          onclick="openAddModal('scheduled')"
-        >
-          Book Slot ($12.99)
-        </button>
-        <button
-          class="btn btn-primary"
-          style="padding: 12px; font-size: 0.9rem"
-          onclick="openAddModal('emergency')"
-        >
-          SOS ($50.00)
-        </button>
+      <div class="stop-timeline" id="activeStopsTimeline">
+        <!-- Timeline injected dynamically via JS -->
       </div>
     </div>
+
+    
+    
 
     <!-- BOTTOM NAVIGATION BAR -->
     <nav class="bottom-nav">
@@ -609,7 +671,7 @@
                 <div style="display: flex; gap: 10px;">
                   <div class="form-group" style="flex: 2;">
                     <label>Store Order Number *</label>
-                    <input type="text" id="pickupNumberInput_1" placeholder="e.g., #98765432" />
+                     <input type="text" id="pickupNumberInput_1" placeholder="e.g., #98765432" />
                   </div>
                   <div class="form-group" style="flex: 1;">
                     <label>PIN <span class="tooltip-icon" onclick="openInfoTooltip()">?</span></label>
@@ -1519,11 +1581,188 @@
           }
         });
       };
+      
+      
 
       function dismissActiveDeliveryPrompt() {
         document.getElementById("activeDeliveryPrompt").style.display = "none";
         document.getElementById("trackerSheet").style.transform =
           "translateY(0)";
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+                // Setup coordinates using Maps LatLng objects to pass to Google
+        const heroLoc = { lat: driverMarker.getLatLng().lat, lng: driverMarker.getLatLng().lng };
+        
+        // Mock Stop Data - Replace these with real DB pulls in production
+        const mockStops = [
+            { lat: heroLoc.lat + 0.015, lng: heroLoc.lng + 0.015 },
+            { lat: heroLoc.lat + 0.025, lng: heroLoc.lng - 0.010 }
+        ];
+        const mockDelivery = { lat: heroLoc.lat - 0.020, lng: heroLoc.lng - 0.025 };
+
+        const storeIcon = L.divIcon({
+          className: "custom-store-pin",
+          iconSize: [28, 28],
+          iconAnchor: [14, 28],
+        });
+
+        // Plot visual markers
+        mockStops.forEach(stop => L.marker([stop.lat, stop.lng], {icon: storeIcon}).addTo(map));
+        L.marker([mockDelivery.lat, mockDelivery.lng], {icon: storeIcon}).addTo(map);
+
+        driverMarker.setOpacity(1);
+
+        // Execute Google Directions route drawing
+        drawGoogleRoute(heroLoc, mockStops, mockDelivery);
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        // Inject the styled vertical stops list
+        const timeline = document.getElementById("activeStopsTimeline");
+        timeline.innerHTML = `
+          <div class="timeline-item">
+            <div class="timeline-title">Hero En Route</div>
+            <div class="timeline-subtitle">Starting delivery run</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-title">Pickup Stop 1</div>
+            <div class="timeline-subtitle">Walmart Supercenter</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-title">Pickup Stop 2</div>
+            <div class="timeline-subtitle">Target</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-title">Final Delivery</div>
+            <div class="timeline-subtitle">Home Address</div>
+          </div>
+        `;
+      }
+
+      // --- BOTTOM SHEET DRAG LOGIC ---
+      const sheet = document.getElementById("trackerSheet");
+      let startY, currentY, isDragging = false;
+
+      sheet.addEventListener("touchstart", (e) => {
+        startY = e.touches[0].clientY;
+        isDragging = true;
+        sheet.style.transition = "none"; // Remove transition for smooth dragging
+      });
+
+      sheet.addEventListener("touchmove", (e) => {
+        if (!isDragging) return;
+        currentY = e.touches[0].clientY;
+        const deltaY = currentY - startY;
+        
+        // Prevent dragging the sheet up off the screen
+        if (deltaY > 0) { 
+           sheet.style.transform = `translateY(${deltaY}px)`;
+        }
+      });
+
+      sheet.addEventListener("touchend", (e) => {
+        isDragging = false;
+        sheet.style.transition = "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
+        const deltaY = currentY - startY;
+        
+        // If swiped down more than 100px, push to a peek state. Otherwise snap back to full.
+        if (deltaY > 100) {
+          sheet.style.transform = "translateY(75%)"; 
+        } else {
+          sheet.style.transform = "translateY(0)"; 
+        }
+      });
+
+      
+            // --- ROUTING & TRACK HERO LOGIC ---
+      let activeRouteLayer = null;
+
+      function decodePolyline(encoded) {
+        let points = [];
+        let index = 0, len = encoded.length;
+        let lat = 0, lng = 0;
+        
+        while (index < len) {
+          let b, shift = 0, result = 0;
+          do {
+            b = encoded.charAt(index++).charCodeAt(0) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+          } while (b >= 0x20);
+          let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+          lat += dlat;
+          
+          shift = 0;
+          result = 0;
+          do {
+            b = encoded.charAt(index++).charCodeAt(0) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+          } while (b >= 0x20);
+          let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+          lng += dlng;
+          
+          points.push([lat / 1e5, lng / 1e5]);
+        }
+        return points;
+      }
+
+      function drawGoogleRoute(heroLocation, stopsArray, deliveryLocation) {
+        if (activeRouteLayer) map.removeLayer(activeRouteLayer);
+
+        const directionsService = new google.maps.DirectionsService();
+        
+        const waypoints = stopsArray.map(coord => ({
+            location: new google.maps.LatLng(coord.lat, coord.lng),
+            stopover: true
+        }));
+
+        const request = {
+            origin: new google.maps.LatLng(heroLocation.lat, heroLocation.lng),
+            destination: new google.maps.LatLng(deliveryLocation.lat, deliveryLocation.lng),
+            waypoints: waypoints,
+            travelMode: google.maps.TravelMode.DRIVING,
+        };
+
+        directionsService.route(request, (result, status) => {
+            if (status === google.maps.DirectionsStatus.OK) {
+                const encodedPath = result.routes[0].overview_polyline;
+                const decodedCoords = decodePolyline(encodedPath);
+
+                activeRouteLayer = L.polyline(decodedCoords, {
+                    color: 'var(--accent)',
+                    weight: 5,
+                    opacity: 0.9,
+                    lineJoin: 'round'
+                }).addTo(map);
+
+                map.fitBounds(activeRouteLayer.getBounds(), { padding: [60, 60] });
+            } else {
+                console.error("Directions request failed due to " + status);
+            }
+        });
       }
 
       function bindStoreAutocomplete(index) {
@@ -1545,8 +1784,7 @@
         simulateStoreSearch();
       }
 
-      
-            function addNewStopBlock() {
+      function addNewStopBlock() {
         let activeStops = 0;
         for (let i = 1; i <= window.currentStopCount; i++) {
           if (document.getElementById(`stopBlock_${i}`)) activeStops++;
@@ -1554,7 +1792,6 @@
         
         if (activeStops >= 3) return;
         
-        // Collapse current blocks
         for (let i = 1; i <= window.currentStopCount; i++) {
           const block = document.getElementById(`stopBlock_${i}`);
           if (block) {
@@ -1623,16 +1860,13 @@
         bindStoreAutocomplete(newIndex);
 
         updateTotalCost();
-
+ 
         activeStops++;
         if (activeStops >= 3) {
           document.getElementById("addStopBtn").style.display = "none";
         }
       }
 
-      
-      
-      
       
       
       
