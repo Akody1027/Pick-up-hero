@@ -1564,6 +1564,9 @@
 
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
+
+           window.appState.activeOrder = data;
+
             if (data.status === "pending" || data.status === "in_transit") {
               hasActive = true;
               activeId = docSnap.id;
