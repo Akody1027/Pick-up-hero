@@ -1728,20 +1728,27 @@
         }
         return points;
       }
-
-      function drawGoogleRoute(heroLocation, stopsArray, deliveryLocation) {
+      
+      
+      
+      
+      
+      
+      
+      
+            function drawGoogleRoute(heroLocation, stopsArray, deliveryLocation) {
         if (activeRouteLayer) map.removeLayer(activeRouteLayer);
 
         const directionsService = new google.maps.DirectionsService();
         
-        const waypoints = stopsArray.map(coord => ({
-            location: new google.maps.LatLng(coord.lat, coord.lng),
+        const waypoints = stopsArray.map(addressString => ({
+            location: addressString,
             stopover: true
         }));
 
         const request = {
-            origin: new google.maps.LatLng(heroLocation.lat, heroLocation.lng),
-            destination: new google.maps.LatLng(deliveryLocation.lat, deliveryLocation.lng),
+            origin: heroLocation,
+            destination: deliveryLocation,
             waypoints: waypoints,
             travelMode: google.maps.TravelMode.DRIVING,
         };
@@ -1759,11 +1766,74 @@
                 }).addTo(map);
 
                 map.fitBounds(activeRouteLayer.getBounds(), { padding: [60, 60] });
+
+                const storeIcon = L.divIcon({
+                  className: "custom-store-pin",
+                  iconSize: [28, 28],
+                  iconAnchor: [14, 28],
+                });
+
+                const legs = result.routes[0].legs;
+                
+                for (let i = 0; i < legs.length - 1; i++) {
+                    const wp = legs[i].end_location;
+                    L.marker([wp.lat(), wp.lng()], {icon: storeIcon}).addTo(map);
+                }
+                
+                const finalDest = legs[legs.length - 1].end_location;
+                L.marker([finalDest.lat(), finalDest.lng()], {icon: storeIcon}).addTo(map);
+
             } else {
                 console.error("Directions request failed due to " + status);
             }
         });
       }
+
+      function dismissActiveDeliveryPrompt() {
+        document.getElementById("activeDeliveryPrompt").style.display = "none";
+        document.getElementById("trackerSheet").style.transform = "translateY(0)";
+
+        const order = window.appState.activeOrder;
+        if (!order) return;
+
+        const heroLoc = { lat: driverMarker.getLatLng().lat, lng: driverMarker.getLatLng().lng };
+        
+        const actualStops = order.stops.map(stop => stop.storeName);
+        const actualDelivery = order.deliveryAddress;
+
+        driverMarker.setOpacity(1);
+
+        drawGoogleRoute(heroLoc, actualStops, actualDelivery);
+
+        const timeline = document.getElementById("activeStopsTimeline");
+        let timelineHTML = `
+          <div class="timeline-item">
+            <div class="timeline-title">Hero En Route</div>
+            <div class="timeline-subtitle">Starting delivery run</div>
+          </div>
+        `;
+        
+        order.stops.forEach((stop, index) => {
+           timelineHTML += `
+            <div class="timeline-item">
+              <div class="timeline-title">Pickup Stop ${index + 1}</div>
+              <div class="timeline-subtitle">${stop.storeName}</div>
+            </div>
+           `;
+        });
+
+        timelineHTML += `
+          <div class="timeline-item">
+            <div class="timeline-title">Final Delivery</div>
+            <div class="timeline-subtitle">${order.deliveryAddress}</div>
+          </div>
+        `;
+        timeline.innerHTML = timelineHTML;
+      }
+
+      
+      
+     
 
       function bindStoreAutocomplete(index) {
         const input = document.getElementById(`storeSearchInput_${index}`);
