@@ -1611,6 +1611,8 @@
             }
           });
 
+          if (hasActive) window.appState.currentOrderId = activeId;
+
           const fab = document.getElementById("mainFab");
           if (hasActive) {
             fab.classList.add("locked");
@@ -1796,6 +1798,31 @@
         });
       }
 
+      window.cancelActiveOrder = async function () {
+        const orderId = window.appState.currentOrderId;
+        if (!orderId) return;
+
+        if (
+          confirm(
+            "Are you sure you want to cancel this delivery? This cannot be undone."
+          )
+        ) {
+          try {
+            await window.setDoc(
+              window.doc(window.db, "orders", orderId),
+              { status: "cancelled" },
+              { merge: true }
+            );
+
+            // Reload the page to securely flush the application state, map layers, and UI locks
+            window.location.reload();
+          } catch (err) {
+            console.error("Cancellation failed:", err);
+            alert("Failed to cancel the order. Please check your connection.");
+          }
+        }
+      };
+
       function dismissActiveDeliveryPrompt() {
         document.getElementById("activeDeliveryPrompt").style.display = "none";
         document.getElementById("trackerSheet").style.transform =
@@ -1838,6 +1865,7 @@
             <div class="timeline-title">Final Delivery</div>
             <div class="timeline-subtitle">${order.deliveryAddress}</div>
           </div>
+          <button class="btn btn-emergency" style="margin-top: 25px; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;" onclick="cancelActiveOrder()">Cancel Delivery</button>
         `;
         timeline.innerHTML = timelineHTML;
       }
