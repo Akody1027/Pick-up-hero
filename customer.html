@@ -571,7 +571,28 @@
           <p id="sheetSubtitle">Hero is running tomorrow morning.</p>
         </div>
       </div>
-      <div class="stop-timeline" id="activeStopsTimeline">
+
+      <div
+        id="defaultSheetActions"
+        style="display: flex; gap: 10px; width: 100%"
+      >
+        <button
+          class="btn btn-secondary"
+          style="padding: 12px; font-size: 0.9rem; flex: 1"
+          onclick="openAddModal('scheduled')"
+        >
+          Book Slot ($12.99)
+        </button>
+        <button
+          class="btn btn-primary"
+          style="padding: 12px; font-size: 0.9rem; flex: 1"
+          onclick="openAddModal('emergency')"
+        >
+          SOS ($50.00)
+        </button>
+      </div>
+
+      <div class="stop-timeline" id="activeStopsTimeline" style="display: none">
         <!-- Timeline injected dynamically via JS -->
       </div>
     </div>
@@ -1614,13 +1635,24 @@
           if (hasActive) window.appState.currentOrderId = activeId;
 
           const fab = document.getElementById("mainFab");
+
+          const defaultActions = document.getElementById("defaultSheetActions");
+          const timeline = document.getElementById("activeStopsTimeline");
+
           if (hasActive) {
             fab.classList.add("locked");
             document.getElementById("activeDeliveryPrompt").style.display =
               "flex";
+            if (defaultActions) defaultActions.style.display = "none";
+            if (timeline) timeline.style.display = "flex";
             window.listenToMyActiveOrder(activeId);
           } else {
             fab.classList.remove("locked");
+            if (defaultActions) defaultActions.style.display = "flex";
+            if (timeline) {
+              timeline.style.display = "none";
+              timeline.innerHTML = "";
+            }
           }
         });
       };
