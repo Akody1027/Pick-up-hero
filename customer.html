@@ -1602,13 +1602,26 @@
       
       
       
+      
+      
       window.loadActiveDriver = async function () {
         try {
-          // 1. Permanently Anchor a Default Business Home Base (Fallback when Off Duty)
+          // 1. Permanently Anchor a Default Business Home Base & Profile Data (Fallback when Off Duty)
           window.onSnapshot(window.collection(window.db, "driver_settings"), (settingsSnap) => {
             if (!settingsSnap.empty) {
               settingsSnap.forEach((doc) => {
                 const settingsData = doc.data();
+                
+                // Permanently bind the profile image regardless of online status
+                if (settingsData.profilePic) document.querySelector(".driver-avatar").src = settingsData.profilePic;
+                
+                // Only update the Name & Bio if the customer is NOT actively tracking a live delivery
+                const isTracking = document.getElementById("activeStopsTimeline").style.display === "flex";
+                if (!isTracking) {
+                  if (settingsData.displayName) document.getElementById("sheetTitle").innerText = settingsData.displayName;
+                  if (settingsData.bio) document.getElementById("sheetSubtitle").innerText = settingsData.bio;
+                }
+
                 // Iterate through all settings and show the first valid base location it finds
                 if (settingsData.baseLat && settingsData.baseLng && typeof driverMarker !== "undefined") {
                   if (driverMarker.options.opacity === 0) {
@@ -1629,7 +1642,7 @@
           window.onSnapshot(driversQuery, async (querySnapshot) => {
             if (querySnapshot.empty) {
               if (typeof window.liveDriverMarker !== "undefined") window.liveDriverMarker.setOpacity(0);
-              document.getElementById("sheetSubtitle").innerText = "No Heroes currently online.";
+              // Intentionally NOT overwriting the bio subtitle here anymore
               return;
             }
 
@@ -1642,8 +1655,7 @@
             
             if (settingsSnap.exists()) {
               const sData = settingsSnap.data();
-              if (sData.profilePic) document.querySelector(".driver-avatar").src = sData.profilePic;
-              if (sData.displayName) document.getElementById("sheetSubtitle").innerText = `${sData.displayName} is active in your area.`;
+              // UI bindings are now handled entirely by the persistent global listener above
               
               // Ensure the home base matches the currently online driver
               if (sData.baseLat && sData.baseLng && typeof driverMarker !== "undefined") {
@@ -1654,9 +1666,7 @@
 
             // CRITICAL FIX: Prevent Leaflet crash by checking for valid coordinates before rendering
             if (typeof window.liveDriverMarker !== "undefined" && locData.lat && locData.lng) {
-              
               const targetPos = { lat: locData.lat, lng: locData.lng };
-              
               if (window.liveDriverMarker.options.opacity === 0) {
                 window.liveDriverMarker.setLatLng([locData.lat, locData.lng]);
                 window.liveDriverMarker.setOpacity(1);
@@ -1670,7 +1680,9 @@
           console.error("Error loading dynamic driver data:", e);
         }
       };
- 
+      
+      
+
       
       
       
