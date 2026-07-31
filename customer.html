@@ -1563,6 +1563,15 @@
               document.getElementById(
                 "sheetSubtitle"
               ).innerText = `${data.displayName} is running tomorrow morning.`;
+
+            // Restore the missing base location sync
+            if (
+              data.baseLat &&
+              data.baseLng &&
+              typeof driverMarker !== "undefined"
+            ) {
+              driverMarker.setLatLng([data.baseLat, data.baseLng]);
+            }
           }
 
           window.onSnapshot(
