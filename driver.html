@@ -891,12 +891,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.updateDoc = updateDoc;
       window.setDoc = setDoc;
       window.getDoc = getDoc;
-      
-      
+
       // Fire the application boot sequence now that Firebase is guaranteed loaded
       if (window.bootApplication) window.bootApplication();
-
-      
     </script>
 
     <!-- APPLICATION LOGIC -->
@@ -907,7 +904,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         pendingOrders: 0,
         triageQueue: [], // The generous net array
         activeQueue: [], // Final confirmed route
-        homeBase: [39.3869, -94.5804],
+        homeBase: null,
         mapInstance: null,
         homeMarker: null,
         layerGroup: null, // holds dynamic pins and lines
@@ -918,11 +915,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       AppState.isInitialLoad = true;
       let DRIVER_DOC_ID = null;
 
-      
-      
-      
-      
-      window.bootApplication = function() {
+      window.bootApplication = function () {
         window.auth.onAuthStateChanged((user) => {
           if (user) {
             DRIVER_DOC_ID = user.uid;
@@ -943,15 +936,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }, 1000);
         });
       };
-
-      
- 
-      
-      
-      
-      
-      
-      
 
       window.loadDriverSettings = async function () {
         try {
@@ -1038,11 +1022,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       function initMap() {
         AppState.mapInstance = L.map("map", { zoomControl: false }).setView(
-          AppState.homeBase,
-          12
+          [39.8283, -98.5795],
+          4
         );
 
-        // CartoDB Dark Matter
         L.tileLayer(
           "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
           {
@@ -1053,18 +1036,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         AppState.layerGroup = L.layerGroup().addTo(AppState.mapInstance);
 
-        const liveIcon = L.divIcon({
-          className: "cluster-pin live-pin-override",
-          html: "➤",
-          iconSize: [26, 26],
-          iconAnchor: [13, 13],
-        });
-
-        AppState.liveDriverMarker = L.marker(AppState.homeBase, {
-          icon: liveIcon,
-          zIndexOffset: 1000,
-        }).addTo(AppState.mapInstance);
-
         const style = document.createElement("style");
         style.innerHTML = `
           .live-pin-override {
@@ -1073,15 +1044,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             color: #ffffff !important;
             font-size: 1.1rem !important;
             transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
           }
         `;
         document.head.appendChild(style);
 
-        renderHomeBase();
         startTelemetry();
       }
 
       function renderHomeBase() {
+        if (!AppState.homeBase) return;
+
         if (AppState.homeMarker)
           AppState.mapInstance.removeLayer(AppState.homeMarker);
         const icon = L.divIcon({
@@ -1194,14 +1170,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
 
             if (data.deliveryAddress) {
-              newOrders.push({
-                id: docSnap.id + "_del",
-                dbId: docSnap.id,
-                title: `Delivery: ${data.deliveryAddress}`,
-                lat: data.deliveryLat || 39.42,
-                lng: data.deliveryLng || -94.6,
-                type: "delivery",
-              });
+              if (data.deliveryLat && data.deliveryLng) {
+                newOrders.push({
+                  id: docSnap.id + "_del",
+                  dbId: docSnap.id,
+                  title: `Delivery: ${data.deliveryAddress}`,
+                  lat: data.deliveryLat,
+                  lng: data.deliveryLng,
+                  type: "delivery",
+                });
+              } else {
+                console.warn(
+                  `Order ${docSnap.id} skipped: Missing strict coordinate payload.`
+                );
+              }
             }
           });
 
@@ -1318,7 +1300,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
 
-                if (AppState.liveDriverMarker) {
+                if (!AppState.liveDriverMarker) {
+                  const liveIcon = L.divIcon({
+                    className: "cluster-pin live-pin-override",
+                    html: "➤",
+                    iconSize: [26, 26],
+                    iconAnchor: [13, 13],
+                  });
+                  AppState.liveDriverMarker = L.marker([lat, lng], {
+                    icon: liveIcon,
+                    zIndexOffset: 1000,
+                  }).addTo(AppState.mapInstance);
+                } else {
                   AppState.liveDriverMarker.setLatLng([lat, lng]);
                 }
 
