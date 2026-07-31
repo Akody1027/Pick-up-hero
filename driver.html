@@ -976,6 +976,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         setTimeout(() => {
           listenForPendingOrders();
           loadDriverSettings();
+          window.hydrateDutyStatus();
         }, 1000);
       });
 
@@ -1166,6 +1167,27 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           badge.style.display = AppState.pendingOrders > 0 ? "flex" : "none";
         });
       }
+
+      window.hydrateDutyStatus = async function () {
+        try {
+          const docSnap = await window.getDoc(
+            window.doc(window.db, "driver_locations", DRIVER_DOC_ID)
+          );
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.isOnline) {
+              AppState.isOnline = true;
+              const btn = document.getElementById("dutyToggleBtn");
+              if (btn) {
+                btn.innerText = "On Duty";
+                btn.classList.add("active");
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error hydrating duty status on load:", e);
+        }
+      };
 
       window.toggleDutyStatus = async function () {
         AppState.isOnline = !AppState.isOnline;
