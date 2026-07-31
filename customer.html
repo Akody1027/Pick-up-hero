@@ -1616,6 +1616,11 @@
                 const locData = locationSnap.data();
                 const targetPos = { lat: locData.lat, lng: locData.lng };
 
+                if (locData.isOnline === false) {
+                  window.liveDriverMarker.setOpacity(0);
+                  return;
+                }
+
                 if (window.liveDriverMarker.options.opacity === 0) {
                   // Snap to first read and reveal
                   window.liveDriverMarker.setLatLng([locData.lat, locData.lng]);
