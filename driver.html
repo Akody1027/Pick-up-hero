@@ -672,7 +672,7 @@
         >
           <label style="position: relative; cursor: pointer; display: block">
             <img
-              src="https://via.placeholder.com/150"
+              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>"
               id="profileImagePreview"
               style="
                 width: 110px;
@@ -681,8 +681,10 @@
                 object-fit: cover;
                 border: 3px solid var(--surface-elevated);
                 box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+                background-color: var(--surface);
               "
             />
+
             <div
               style="
                 position: absolute;
@@ -880,7 +882,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       // Attach db to window to allow global AppState functions to execute Firestore queries
       window.db = db;
-
+      window.auth = auth;
       window.collection = collection;
       window.query = query;
       window.where = where;
@@ -907,7 +909,28 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       // Initialize UI and Map
 
-      const DRIVER_DOC_ID = "hero_driver_main";
+      AppState.isInitialLoad = true;
+      let DRIVER_DOC_ID = null;
+
+      window.auth.onAuthStateChanged((user) => {
+        if (user) {
+          DRIVER_DOC_ID = user.uid;
+        } else {
+          console.warn(
+            "Unauthenticated driver session. Firing anonymous mock ID."
+          );
+          DRIVER_DOC_ID =
+            "anon_driver_" + Math.random().toString(36).substr(2, 9);
+        }
+
+        initMap();
+
+        setTimeout(() => {
+          listenForPendingOrders();
+          loadDriverSettings();
+          window.initializeShiftState();
+        }, 1000);
+      });
 
       window.loadDriverSettings = async function () {
         try {
@@ -991,17 +1014,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           btn.innerText = "Error Saving";
         }
       };
-
-      document.addEventListener("DOMContentLoaded", () => {
-        initMap(); // Draw the map immediately
-
-        // Delay database fetch by 1 second so Firebase can finish initializing
-        setTimeout(() => {
-          listenForPendingOrders();
-          loadDriverSettings();
-          window.initializeShiftState();
-        }, 1000);
-      });
 
       function initMap() {
         AppState.mapInstance = L.map("map", { zoomControl: false }).setView(
@@ -1173,6 +1185,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           });
 
           if (
+            !AppState.isInitialLoad &&
             newOrders.length > AppState.triageQueue.length &&
             AppState.workflowPhase === "idle"
           ) {
@@ -1181,6 +1194,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               .play()
               .catch(() => console.log("Audio blocked."));
           }
+          AppState.isInitialLoad = false;
 
           AppState.triageQueue = newOrders;
           AppState.pendingOrders = snapshot.docs.length;
