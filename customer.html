@@ -1207,8 +1207,8 @@
 
       function initMap() {
         map = L.map("map", { zoomControl: false }).setView(
-          [39.3869, -94.5804],
-          12
+          [39.8283, -98.5795],
+          4
         );
 
         // Dark Mode Tile Layer (CartoDB Dark Matter)
@@ -1229,7 +1229,7 @@
           document.createElement("div")
         );
 
-        driverMarker = L.marker([39.3869, -94.5804], {
+        driverMarker = L.marker([39.8283, -98.5795], {
           icon: orangeIcon,
         }).addTo(map);
 
@@ -1238,17 +1238,47 @@
           iconSize: [18, 18],
         });
 
-        userMarker = L.marker([0, 0], {
+        userMarker = L.marker([39.8283, -98.5795], {
           icon: whiteDotIcon,
         }).addTo(map);
         userMarker.setOpacity(0);
+
+        // --- NEW LIVE TELEMETRY PIN ---
+        const liveIcon = L.divIcon({
+          className: "custom-orange-pin live-pin-override",
+          html: "➤",
+          iconSize: [26, 26],
+          iconAnchor: [13, 13],
+        });
+
+        window.liveDriverMarker = L.marker([39.8283, -98.5795], {
+          icon: liveIcon,
+          zIndexOffset: 1000,
+        }).addTo(map);
+        window.liveDriverMarker.setOpacity(0);
+
+        const style = document.createElement("style");
+        style.innerHTML = `
+          .live-pin-override {
+            background: #000000 !important;
+            border-color: #ffffff !important;
+            color: #ffffff !important;
+            font-size: 1.1rem !important;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+          }
+        `;
+        document.head.appendChild(style);
 
         driverMarker.on("click", function () {
           document.getElementById("trackerSheet").style.transform =
             "translateY(0)";
         });
 
-        driverMarker.setOpacity(0); // Hide marker initially until search completes
+        driverMarker.setOpacity(0); // Hide base marker initially
       }
 
       // Modal Controls
@@ -1564,28 +1594,42 @@
                 "sheetSubtitle"
               ).innerText = `${data.displayName} is running tomorrow morning.`;
 
-            // Restore the missing base location sync
+            // Securely place the stationary orange base pin
             if (
               data.baseLat &&
               data.baseLng &&
               typeof driverMarker !== "undefined"
             ) {
               driverMarker.setLatLng([data.baseLat, data.baseLng]);
+              driverMarker.setOpacity(1);
             }
           }
 
+          // Route telemetry to the black arrow pin
           window.onSnapshot(
             window.doc(window.db, "driver_locations", "hero_driver_main"),
             (locationSnap) => {
               if (
                 locationSnap.exists() &&
-                typeof driverMarker !== "undefined"
+                typeof window.liveDriverMarker !== "undefined"
               ) {
                 const locData = locationSnap.data();
-                const currentPos = driverMarker.getLatLng();
                 const targetPos = { lat: locData.lat, lng: locData.lng };
 
-                animateMarker(driverMarker, currentPos, targetPos, 2500);
+                if (window.liveDriverMarker.options.opacity === 0) {
+                  // Snap to first read and reveal
+                  window.liveDriverMarker.setLatLng([locData.lat, locData.lng]);
+                  window.liveDriverMarker.setOpacity(1);
+                } else {
+                  // Animate subsequent telemetry pings
+                  const currentPos = window.liveDriverMarker.getLatLng();
+                  animateMarker(
+                    window.liveDriverMarker,
+                    currentPos,
+                    targetPos,
+                    2500
+                  );
+                }
               }
             }
           );
@@ -1655,10 +1699,7 @@
           userMarker.setLatLng([userLat, userLng]);
           userMarker.setOpacity(1);
 
-          // Reveal the hero's true database location
-          driverMarker.setOpacity(1);
-
-          // Zoom the map to perfectly frame both the customer and the hero
+          // Zoom the map to perfectly frame the customer and the driver's stationary base
           const bounds = L.latLngBounds(
             [userLat, userLng],
             driverMarker.getLatLng()
