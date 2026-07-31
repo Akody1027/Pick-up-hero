@@ -891,6 +891,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.updateDoc = updateDoc;
       window.setDoc = setDoc;
       window.getDoc = getDoc;
+      
+      
+      // Fire the application boot sequence now that Firebase is guaranteed loaded
+      if (window.bootApplication) window.bootApplication();
+
+      
     </script>
 
     <!-- APPLICATION LOGIC -->
@@ -912,25 +918,40 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       AppState.isInitialLoad = true;
       let DRIVER_DOC_ID = null;
 
-      window.auth.onAuthStateChanged((user) => {
-        if (user) {
-          DRIVER_DOC_ID = user.uid;
-        } else {
-          console.warn(
-            "Unauthenticated driver session. Firing anonymous mock ID."
-          );
-          DRIVER_DOC_ID =
-            "anon_driver_" + Math.random().toString(36).substr(2, 9);
-        }
+      
+      
+      
+      
+      window.bootApplication = function() {
+        window.auth.onAuthStateChanged((user) => {
+          if (user) {
+            DRIVER_DOC_ID = user.uid;
+          } else {
+            console.warn(
+              "Unauthenticated driver session. Firing anonymous mock ID."
+            );
+            DRIVER_DOC_ID =
+              "anon_driver_" + Math.random().toString(36).substr(2, 9);
+          }
 
-        initMap();
+          initMap();
 
-        setTimeout(() => {
-          listenForPendingOrders();
-          loadDriverSettings();
-          window.initializeShiftState();
-        }, 1000);
-      });
+          setTimeout(() => {
+            listenForPendingOrders();
+            loadDriverSettings();
+            window.initializeShiftState();
+          }, 1000);
+        });
+      };
+
+      
+ 
+      
+      
+      
+      
+      
+      
 
       window.loadDriverSettings = async function () {
         try {
