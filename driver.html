@@ -942,6 +942,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           const docSnap = await window.getDoc(
             window.doc(window.db, "driver_settings", DRIVER_DOC_ID)
           );
+
+          let hasSavedLocation = false;
+
           if (docSnap.exists()) {
             const data = docSnap.data();
             if (data.displayName)
@@ -956,14 +959,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               document.getElementById("profileImagePreview").src =
                 data.profilePic;
 
-            // Apply saved map coordinates
             if (data.baseLat && data.baseLng) {
               AppState.homeBase = [data.baseLat, data.baseLng];
-              // If the map is already drawn, move it to the saved location
-              if (AppState.mapInstance) {
-                AppState.mapInstance.setView(AppState.homeBase, 12);
-                renderHomeBase();
-              }
+              hasSavedLocation = true;
             }
 
             const killSwitch = document.getElementById("killSwitchToggle");
@@ -973,6 +971,35 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             const sosToggle = document.getElementById("sosToggle");
             if (data.sosEnabled) sosToggle.classList.add("on");
             else sosToggle.classList.remove("on");
+          }
+
+          // --- NATIVE GEOLOCATION FALLBACK ---
+          if (!hasSavedLocation) {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (position) => {
+                  AppState.homeBase = [
+                    position.coords.latitude,
+                    position.coords.longitude,
+                  ];
+                  if (AppState.mapInstance) {
+                    AppState.mapInstance.setView(AppState.homeBase, 12);
+                    renderHomeBase();
+                  }
+                },
+                (error) => {
+                  console.error("GPS Fallback Error:", error);
+                  alert("Please enable location access to set your Home Base.");
+                },
+                { enableHighAccuracy: true }
+              );
+            }
+          } else {
+            // Apply the saved database location
+            if (AppState.mapInstance) {
+              AppState.mapInstance.setView(AppState.homeBase, 12);
+              renderHomeBase();
+            }
           }
         } catch (e) {
           console.error("Error loading settings:", e);
