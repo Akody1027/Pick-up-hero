@@ -970,9 +970,40 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         ).addTo(AppState.mapInstance);
 
         AppState.layerGroup = L.layerGroup().addTo(AppState.mapInstance);
+        
+        
+        
+                const liveIcon = L.divIcon({
+          className: "cluster-pin live-pin-override",
+          html: "➤",
+          iconSize: [26, 26],
+          iconAnchor: [13, 13],
+        });
+        
+        AppState.liveDriverMarker = L.marker(AppState.homeBase, {
+          icon: liveIcon,
+          zIndexOffset: 1000
+        }).addTo(AppState.mapInstance);
+
+        const style = document.createElement('style');
+        style.innerHTML = `
+          .live-pin-override {
+            background: #000000 !important;
+            border-color: #ffffff !important;
+            color: #ffffff !important;
+            font-size: 1.1rem !important;
+            transform: rotate(-45deg);
+          }
+        `;
+        document.head.appendChild(style);
+
         renderHomeBase();
+        startTelemetry();
       }
 
+         
+      
+      
       function renderHomeBase() {
         if (AppState.homeMarker)
           AppState.mapInstance.removeLayer(AppState.homeMarker);
@@ -1059,9 +1090,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         };
         reader.readAsDataURL(file);
       };
-
-      // Notification Engine (Generous Net Simulation)
-      function listenForPendingOrders() {
+      
+      
+      
+      
+      
+      
+            function listenForPendingOrders() {
         const q = window.query(
           window.collection(window.db, "orders"),
           window.where("status", "==", "pending")
@@ -1072,34 +1107,34 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            // 1. Create the Pickup Map Node
-            newOrders.push({
-              id: docSnap.id,
-              title: `Pickup: ${data.storeName || "Store"}`,
-              lat: data.storeLat || 39.405, // Fallback coordinates if Geocoding API isn't live yet
-              lng: data.storeLng || -94.57,
-              type: "pickup",
-            });
-            // 2. Create the Delivery Map Node
-            newOrders.push({
-              id: docSnap.id + "_del",
-              dbId: docSnap.id,
-              title: `Delivery: ${data.deliveryAddress || "Customer"}`,
-              lat: data.deliveryLat || 39.42,
-              lng: data.deliveryLng || -94.6,
-              type: "delivery",
-            });
+            
+            if (data.stops && Array.isArray(data.stops)) {
+              data.stops.forEach((stop, index) => {
+                newOrders.push({
+                  id: docSnap.id + "_pickup_" + index,
+                  dbId: docSnap.id,
+                  title: `Pickup: ${stop.storeName || "Store"}`,
+                  lat: stop.lat,
+                  lng: stop.lng,
+                  type: "pickup",
+                });
+              });
+            }
+
+            if (data.deliveryAddress) {
+              newOrders.push({
+                id: docSnap.id + "_del",
+                dbId: docSnap.id,
+                title: `Delivery: ${data.deliveryAddress}`,
+                lat: data.deliveryLat || 39.42, 
+                lng: data.deliveryLng || -94.6, 
+                type: "delivery",
+              });
+            }
           });
 
-          // Trigger audible alert only if the queue grew and driver is idle
-          if (
-            newOrders.length > AppState.triageQueue.length &&
-            AppState.workflowPhase === "idle"
-          ) {
-            document
-              .getElementById("alertSound")
-              .play()
-              .catch((e) => console.log("Audio blocked."));
+          if (newOrders.length > AppState.triageQueue.length && AppState.workflowPhase === "idle") {
+            document.getElementById("alertSound").play().catch(() => console.log("Audio blocked."));
           }
 
           AppState.triageQueue = newOrders;
@@ -1110,6 +1145,43 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           badge.style.display = AppState.pendingOrders > 0 ? "flex" : "none";
         });
       }
+
+      function startTelemetry() {
+        setInterval(() => {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+              const lat = position.coords.latitude;
+              const lng = position.coords.longitude;
+              
+              if (AppState.liveDriverMarker) {
+                AppState.liveDriverMarker.setLatLng([lat, lng]);
+              }
+
+              try {
+                await window.setDoc(
+                  window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+                  { lat: lat, lng: lng, timestamp: new Date() },
+                  { merge: true }
+                );
+              } catch (e) { console.error("Telemetry failed:", e); }
+            }, (error) => console.error("GPS Error:", error), { enableHighAccuracy: true });
+          }
+        }, 30000);
+      }
+
+      
+      
+      
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
 
       // Visual Pruning System Engine
       window.startTriageMode = function () {
@@ -1128,6 +1200,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       function drawTriageRoute() {
         AppState.layerGroup.clearLayers();
+        
+        
+        
+        
+        
+        
 
         // Nearest-Neighbor Sorting Logic
         let current = AppState.homeBase;
@@ -1523,7 +1601,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
     </script>
   </body>
 </html>
-
 
 
 
