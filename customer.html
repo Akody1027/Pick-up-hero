@@ -1613,11 +1613,13 @@
                 const settingsData = doc.data();
                 
 
-                // Permanently bind the profile image regardless of online status
+                
+                
                 if (settingsData.profilePic) {
+                  // Bind profile image to the bottom sheet
                   document.querySelector(".driver-avatar").src = settingsData.profilePic;
 
-                  // Overlay the profile image on the map pins
+                  // 1. The Live Telemetry Pin (Dynamic Driver Face)
                   const faceIcon = L.divIcon({
                     className: "custom-orange-pin",
                     html: `<img src="${settingsData.profilePic}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`,
@@ -1625,14 +1627,27 @@
                     iconAnchor: [21, 21]
                   });
 
-                  if (typeof driverMarker !== "undefined") {
-                    driverMarker.setIcon(faceIcon);
-                  }
-                  
                   if (typeof window.liveDriverMarker !== "undefined") {
                     window.liveDriverMarker.setIcon(faceIcon);
                   }
+
+                  // 2. The Stationary Home Base Pin (Custom Hub Icon)
+                  // REPLACE the URL below with the link to your custom shopping cart or logo
+                  const customBaseImageUrl = "cart.png";
+
+                  const baseIcon = L.divIcon({
+                    className: "custom-orange-pin",
+                    html: `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"><img src="${customBaseImageUrl}" style="width: 45%; height: 45%; object-fit: contain; filter: invert(1);"></div>`,
+                    iconSize: [42, 42],
+                    iconAnchor: [21, 21]
+                  });
+
+                  if (typeof driverMarker !== "undefined") {
+                    driverMarker.setIcon(baseIcon);
+                  }
                 }
+                
+     
                 
                 
                 // Only update the Name & Bio if the customer is NOT actively tracking a live delivery
