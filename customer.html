@@ -1124,9 +1124,9 @@
         try {
           const orderData = {
             userId: window.appState.userId,
-            deliveryAddress: address,            
+            deliveryAddress: address,
             deliveryLat: window.appState.deliveryLat || null,
-            deliveryLng: window.appState.deliveryLng || null,      
+            deliveryLng: window.appState.deliveryLng || null,
             instructions: instructions,
             stops: stops,
             totalCost: totalCost,
@@ -1602,64 +1602,71 @@
 
       window.loadActiveDriver = async function () {
         try {
-          const docSnap = await window.getDoc(
-            window.doc(window.db, "driver_settings", "hero_driver_main")
+          const driversQuery = window.query(
+            window.collection(window.db, "driver_locations"),
+            window.where("isOnline", "==", true)
           );
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data.profilePic)
-              document.querySelector(".driver-avatar").src = data.profilePic;
-            if (data.displayName)
-              document.getElementById(
-                "sheetSubtitle"
-              ).innerText = `${data.displayName} is running tomorrow morning.`;
 
-            // Securely place the stationary orange base pin
-            if (
-              data.baseLat &&
-              data.baseLng &&
-              typeof driverMarker !== "undefined"
-            ) {
-              driverMarker.setLatLng([data.baseLat, data.baseLng]);
-              driverMarker.setOpacity(1);
+          window.onSnapshot(driversQuery, async (querySnapshot) => {
+            if (querySnapshot.empty) {
+              if (typeof window.liveDriverMarker !== "undefined")
+                window.liveDriverMarker.setOpacity(0);
+              if (typeof driverMarker !== "undefined")
+                driverMarker.setOpacity(0);
+              document.getElementById("sheetSubtitle").innerText =
+                "No Heroes currently online.";
+              return;
             }
-          }
 
-          // Route telemetry to the black arrow pin
-          window.onSnapshot(
-            window.doc(window.db, "driver_locations", "hero_driver_main"),
-            (locationSnap) => {
+            const locationSnap = querySnapshot.docs[0];
+            const activeDriverId = locationSnap.id;
+            const locData = locationSnap.data();
+
+            const settingsSnap = await window.getDoc(
+              window.doc(window.db, "driver_settings", activeDriverId)
+            );
+
+            if (settingsSnap.exists()) {
+              const settingsData = settingsSnap.data();
+              if (settingsData.profilePic)
+                document.querySelector(".driver-avatar").src =
+                  settingsData.profilePic;
+              if (settingsData.displayName)
+                document.getElementById(
+                  "sheetSubtitle"
+                ).innerText = `${settingsData.displayName} is active in your area.`;
+
               if (
-                locationSnap.exists() &&
-                typeof window.liveDriverMarker !== "undefined"
+                settingsData.baseLat &&
+                settingsData.baseLng &&
+                typeof driverMarker !== "undefined"
               ) {
-                const locData = locationSnap.data();
-                const targetPos = { lat: locData.lat, lng: locData.lng };
-
-                if (!locData.isOnline) {
-                  window.liveDriverMarker.setOpacity(0);
-                  return;
-                }
-
-                if (window.liveDriverMarker.options.opacity === 0) {
-                  // Snap to first read and reveal
-                  window.liveDriverMarker.setLatLng([locData.lat, locData.lng]);
-                  window.liveDriverMarker.setOpacity(1);
-                } else {
-                  // Animate subsequent telemetry pings
-                  const currentPos = window.liveDriverMarker.getLatLng();
-                  animateMarker(
-                    window.liveDriverMarker,
-                    currentPos,
-                    targetPos,
-                    2500
-                  );
-                }
+                driverMarker.setLatLng([
+                  settingsData.baseLat,
+                  settingsData.baseLng,
+                ]);
+                driverMarker.setOpacity(1);
               }
             }
-          );
+
+            if (typeof window.liveDriverMarker !== "undefined") {
+              const targetPos = { lat: locData.lat, lng: locData.lng };
+              if (window.liveDriverMarker.options.opacity === 0) {
+                window.liveDriverMarker.setLatLng([locData.lat, locData.lng]);
+                window.liveDriverMarker.setOpacity(1);
+              } else {
+                const currentPos = window.liveDriverMarker.getLatLng();
+                animateMarker(
+                  window.liveDriverMarker,
+                  currentPos,
+                  targetPos,
+                  2500
+                );
+              }
+            }
+          });
         } catch (e) {
-          console.error("Error loading driver data:", e);
+          console.error("Error loading dynamic driver data:", e);
         }
       };
 
