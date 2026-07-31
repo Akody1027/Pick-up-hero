@@ -1033,12 +1033,27 @@
       window.setDoc = setDoc;
 
       // Standard Firebase implementation matches previous backend logic
+
       window.appState = {
         user: null,
-        userId: "customer_123", // Keep mock ID for testing UI locks
+        userId: null,
         bookingType: "scheduled",
-        compressedImages: {}, // Store multiple images by stop index
+        compressedImages: {},
       };
+
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          window.appState.user = user;
+          window.appState.userId = user.uid;
+          if (window.checkActiveSession) window.checkActiveSession();
+        } else {
+          console.warn(
+            "Unauthenticated session. Firing anonymous sign-in for testing."
+          );
+          window.appState.userId =
+            "anon_" + Math.random().toString(36).substr(2, 9);
+        }
+      });
 
       window.submitOrderToFirebase = async function () {
         const address = document.getElementById("deliveryAddressInput").value;
@@ -1508,6 +1523,33 @@
         );
       };
 
+      let animationFrameId;
+
+      function animateMarker(marker, startPos, endPos, duration) {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+        const startTime = performance.now();
+
+        function step(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+
+          const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+          const currentLat =
+            startPos.lat + (endPos.lat - startPos.lat) * easeProgress;
+          const currentLng =
+            startPos.lng + (endPos.lng - startPos.lng) * easeProgress;
+
+          marker.setLatLng([currentLat, currentLng]);
+
+          if (progress < 1) {
+            animationFrameId = requestAnimationFrame(step);
+          }
+        }
+        animationFrameId = requestAnimationFrame(step);
+      }
+
       window.loadActiveDriver = async function () {
         try {
           const docSnap = await window.getDoc(
@@ -1515,24 +1557,29 @@
           );
           if (docSnap.exists()) {
             const data = docSnap.data();
-
-            // 1. Update Profile Image and Name
             if (data.profilePic)
               document.querySelector(".driver-avatar").src = data.profilePic;
             if (data.displayName)
               document.getElementById(
                 "sheetSubtitle"
               ).innerText = `${data.displayName} is running tomorrow morning.`;
-
-            // 2. Update Orange Dot Location if driver has saved one
-            if (
-              data.baseLat &&
-              data.baseLng &&
-              typeof driverMarker !== "undefined"
-            ) {
-              driverMarker.setLatLng([data.baseLat, data.baseLng]);
-            }
           }
+
+          window.onSnapshot(
+            window.doc(window.db, "driver_locations", "hero_driver_main"),
+            (locationSnap) => {
+              if (
+                locationSnap.exists() &&
+                typeof driverMarker !== "undefined"
+              ) {
+                const locData = locationSnap.data();
+                const currentPos = driverMarker.getLatLng();
+                const targetPos = { lat: locData.lat, lng: locData.lng };
+
+                animateMarker(driverMarker, currentPos, targetPos, 2500);
+              }
+            }
+          );
         } catch (e) {
           console.error("Error loading driver data:", e);
         }
