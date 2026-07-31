@@ -1612,8 +1612,28 @@
               settingsSnap.forEach((doc) => {
                 const settingsData = doc.data();
                 
+
                 // Permanently bind the profile image regardless of online status
-                if (settingsData.profilePic) document.querySelector(".driver-avatar").src = settingsData.profilePic;
+                if (settingsData.profilePic) {
+                  document.querySelector(".driver-avatar").src = settingsData.profilePic;
+
+                  // Overlay the profile image on the map pins
+                  const faceIcon = L.divIcon({
+                    className: "custom-orange-pin",
+                    html: `<img src="${settingsData.profilePic}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`,
+                    iconSize: [42, 42],
+                    iconAnchor: [21, 21]
+                  });
+
+                  if (typeof driverMarker !== "undefined") {
+                    driverMarker.setIcon(faceIcon);
+                  }
+                  
+                  if (typeof window.liveDriverMarker !== "undefined") {
+                    window.liveDriverMarker.setIcon(faceIcon);
+                  }
+                }
+                
                 
                 // Only update the Name & Bio if the customer is NOT actively tracking a live delivery
                 const isTracking = document.getElementById("activeStopsTimeline").style.display === "flex";
@@ -1660,7 +1680,7 @@
               // Ensure the home base matches the currently online driver
               if (sData.baseLat && sData.baseLng && typeof driverMarker !== "undefined") {
                 driverMarker.setLatLng([sData.baseLat, sData.baseLng]);
-                driverMarker.setOpacity(1);
+                driverMarker.setOpacity(1); 
               }
             }
 
