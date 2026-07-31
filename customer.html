@@ -1599,9 +1599,28 @@
         }
         animationFrameId = requestAnimationFrame(step);
       }
-
+      
+      
+      
       window.loadActiveDriver = async function () {
         try {
+          // 1. Permanently Anchor a Default Business Home Base (Fallback when Off Duty)
+          window.onSnapshot(window.collection(window.db, "driver_settings"), (settingsSnap) => {
+            if (!settingsSnap.empty) {
+              settingsSnap.forEach((doc) => {
+                const settingsData = doc.data();
+                // Iterate through all settings and show the first valid base location it finds
+                if (settingsData.baseLat && settingsData.baseLng && typeof driverMarker !== "undefined") {
+                  if (driverMarker.options.opacity === 0) {
+                    driverMarker.setLatLng([settingsData.baseLat, settingsData.baseLng]);
+                    driverMarker.setOpacity(1); 
+                  }
+                }
+              });
+            }
+          });
+
+          // 2. Track Live Telemetry Only When Online
           const driversQuery = window.query(
             window.collection(window.db, "driver_locations"),
             window.where("isOnline", "==", true)
@@ -1609,11 +1628,8 @@
 
           window.onSnapshot(driversQuery, async (querySnapshot) => {
             if (querySnapshot.empty) {
-              if (typeof window.liveDriverMarker !== "undefined")
-                window.liveDriverMarker.setOpacity(0);
-
-              document.getElementById("sheetSubtitle").innerText =
-                "No Heroes currently online.";
+              if (typeof window.liveDriverMarker !== "undefined") window.liveDriverMarker.setOpacity(0);
+              document.getElementById("sheetSubtitle").innerText = "No Heroes currently online.";
               return;
             }
 
@@ -1621,46 +1637,30 @@
             const activeDriverId = locationSnap.id;
             const locData = locationSnap.data();
 
-            const settingsSnap = await window.getDoc(
-              window.doc(window.db, "driver_settings", activeDriverId)
-            );
-
+            // 3. Anchor precisely to the ACTIVE driver
+            const settingsSnap = await window.getDoc(window.doc(window.db, "driver_settings", activeDriverId));
+            
             if (settingsSnap.exists()) {
-              const settingsData = settingsSnap.data();
-              if (settingsData.profilePic)
-                document.querySelector(".driver-avatar").src =
-                  settingsData.profilePic;
-              if (settingsData.displayName)
-                document.getElementById(
-                  "sheetSubtitle"
-                ).innerText = `${settingsData.displayName} is active in your area.`;
-
-              if (
-                settingsData.baseLat &&
-                settingsData.baseLng &&
-                typeof driverMarker !== "undefined"
-              ) {
-                driverMarker.setLatLng([
-                  settingsData.baseLat,
-                  settingsData.baseLng,
-                ]);
+              const sData = settingsSnap.data();
+              if (sData.profilePic) document.querySelector(".driver-avatar").src = sData.profilePic;
+              if (sData.displayName) document.getElementById("sheetSubtitle").innerText = `${sData.displayName} is active in your area.`;
+              
+              // Ensure the home base matches the currently online driver
+              if (sData.baseLat && sData.baseLng && typeof driverMarker !== "undefined") {
+                driverMarker.setLatLng([sData.baseLat, sData.baseLng]);
                 driverMarker.setOpacity(1);
               }
             }
 
-            if (typeof window.liveDriverMarker !== "undefined") {
-              const targetPos = { lat: locData.lat, lng: locData.lng };
+            // CRITICAL FIX: Prevent Leaflet crash by checking for valid coordinates before rendering
+            if (typeof window.liveDriverMarker !== "undefined" && locData.lat && locData.lng) {
+              const targetPos = { lat: locData.lat, locData.lng };
               if (window.liveDriverMarker.options.opacity === 0) {
                 window.liveDriverMarker.setLatLng([locData.lat, locData.lng]);
                 window.liveDriverMarker.setOpacity(1);
               } else {
                 const currentPos = window.liveDriverMarker.getLatLng();
-                animateMarker(
-                  window.liveDriverMarker,
-                  currentPos,
-                  targetPos,
-                  2500
-                );
+                animateMarker(window.liveDriverMarker, currentPos, targetPos, 2500);
               }
             }
           });
@@ -1668,7 +1668,13 @@
           console.error("Error loading dynamic driver data:", e);
         }
       };
-
+ 
+      
+      
+      
+      
+      
+      
       function openFindHeroModal() {
         closeAllModals();
         document.getElementById("findHeroModal").classList.add("active");
