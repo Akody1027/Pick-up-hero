@@ -444,6 +444,29 @@
         border: 1px solid var(--border);
       }
 
+      /* --- CUSTOM MAP PINS --- */
+      .custom-store-pin {
+        background-color: var(--accent);
+        width: 28px;
+        height: 28px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid #ffffff;
+        box-shadow: -3px 3px 10px rgba(0, 0, 0, 0.5);
+        position: relative;
+      }
+      .custom-store-pin::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 10px;
+        height: 10px;
+        background-color: #ffffff;
+        border-radius: 50%;
+      }
+
       /* --- DUTY STATUS UI --- */
       .duty-toggle-container {
         position: absolute;
@@ -1316,20 +1339,53 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
         AppState.triageQueue = sorted; // Save sorted sequence
 
-        // Draw the "Visual String"
-        let latlngs = [AppState.homeBase, ...sorted.map((o) => [o.lat, o.lng])];
-        L.polyline(latlngs, {
-          color: "#94a3b8",
-          weight: 3,
-          dashArray: "5, 10",
-        }).addTo(AppState.layerGroup);
+        // Draw Street-Snapped Polyline via Google Directions
+        if (sorted.length > 0) {
+          const directionsService = new google.maps.DirectionsService();
+          const origin = new google.maps.LatLng(
+            AppState.homeBase[0],
+            AppState.homeBase[1]
+          );
+          const destination = new google.maps.LatLng(
+            sorted[sorted.length - 1].lat,
+            sorted[sorted.length - 1].lng
+          );
 
-        // Draw Interactive Pruning Pins
-        sorted.forEach((order, index) => {
+          const waypoints = sorted.slice(0, -1).map((stop) => ({
+            location: new google.maps.LatLng(stop.lat, stop.lng),
+            stopover: true,
+          }));
+
+          directionsService.route(
+            {
+              origin: origin,
+              destination: destination,
+              waypoints: waypoints,
+              travelMode: google.maps.TravelMode.DRIVING,
+            },
+            (result, status) => {
+              if (status === google.maps.DirectionsStatus.OK) {
+                const encodedPath = result.routes[0].overview_polyline;
+                const decodedCoords = decodePolyline(encodedPath);
+                L.polyline(decodedCoords, {
+                  color: "var(--accent)",
+                  weight: 5,
+                  opacity: 0.9,
+                  lineJoin: "round",
+                }).addTo(AppState.layerGroup);
+              }
+            }
+          );
+        }
+
+        // Draw Interactive Pruning Pins with Customer-Style Teardrop
+        sorted.forEach((order) => {
           const icon = L.divIcon({
-            className: "cluster-pin",
-            html: (index + 1).toString(),
-            iconSize: [30, 30],
+            className: "custom-store-pin",
+            html: "",
+            iconSize: [28, 28],
+            iconAnchor: [14, 28],
+            popupAnchor: [0, -28],
           });
           const marker = L.marker([order.lat, order.lng], { icon }).addTo(
             AppState.layerGroup
@@ -1337,12 +1393,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           marker.bindPopup(`
           <div style="text-align:center;">
             <strong>${order.title}</strong><br>
-            <button onclick="rejectTriageOrder(${order.id})" class="btn btn-emergency" style="padding: 6px 12px; margin-top: 10px; font-size: 0.8rem; border-radius: 6px;">Reject & Redraw</button>
+            <button onclick="rejectTriageOrder('${order.id}')" class="btn btn-emergency" style="padding: 6px 12px; margin-top: 10px; font-size: 0.8rem; border-radius: 6px;">Reject & Redraw</button>
           </div>
         `);
         });
 
-        if (latlngs.length > 1) {
+        if (sorted.length > 0) {
+          let latlngs = [
+            AppState.homeBase,
+            ...sorted.map((o) => [o.lat, o.lng]),
+          ];
           AppState.mapInstance.fitBounds(latlngs, { padding: [50, 50] });
         }
       }
@@ -1532,11 +1592,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               ]
             );
 
-            groupedPickups.forEach((group, index) => {
+            groupedPickups.forEach((group) => {
               const clusterIcon = L.divIcon({
-                className: "cluster-pin",
-                html: group.length > 1 ? group.length.toString() : "P",
-                iconSize: [36, 36],
+                className: "custom-store-pin",
+                html: "",
+                iconSize: [28, 28],
+                iconAnchor: [14, 28],
+                popupAnchor: [0, -28],
               });
               L.marker([group[0].lat, group[0].lng], {
                 icon: clusterIcon,
@@ -1592,11 +1654,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               ]
             );
 
-            sortedDeliveries.forEach((d, i) => {
+            sortedDeliveries.forEach((d) => {
               const delIcon = L.divIcon({
-                className: "cluster-pin",
-                html: (i + 1).toString(),
-                iconSize: [30, 30],
+                className: "custom-store-pin",
+                html: "",
+                iconSize: [28, 28],
+                iconAnchor: [14, 28],
+                popupAnchor: [0, -28],
               });
               L.marker([d.lat, d.lng], { icon: delIcon }).addTo(
                 AppState.layerGroup
