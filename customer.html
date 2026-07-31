@@ -1611,8 +1611,7 @@
             if (querySnapshot.empty) {
               if (typeof window.liveDriverMarker !== "undefined")
                 window.liveDriverMarker.setOpacity(0);
-              if (typeof driverMarker !== "undefined")
-                driverMarker.setOpacity(0);
+
               document.getElementById("sheetSubtitle").innerText =
                 "No Heroes currently online.";
               return;
