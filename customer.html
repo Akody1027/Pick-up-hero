@@ -1616,7 +1616,7 @@
                 const locData = locationSnap.data();
                 const targetPos = { lat: locData.lat, lng: locData.lng };
 
-                if (locData.isOnline === false) {
+                if (!locData.isOnline) {
                   window.liveDriverMarker.setOpacity(0);
                   return;
                 }
