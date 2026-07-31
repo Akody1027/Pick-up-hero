@@ -1639,10 +1639,12 @@
 
         btn.innerHTML = '<div class="search-spinner"></div> Searching...';
 
-        // Fallback coordinates if they typed an address but autocomplete didn't capture it
         if (!userLat || !userLng) {
-          userLat = 39.3869;
-          userLng = -94.5804;
+          alert(
+            "Please select a specific location from the dropdown or use your device GPS."
+          );
+          btn.innerHTML = "Find Hero";
+          return;
         }
 
         setTimeout(() => {
