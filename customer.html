@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Pick Up Hero - Delivery</title>
+    <title>Pick Up Hero - Driver Command</title>
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -25,7 +25,7 @@
         --border: #333333;
         --success: #22c55e;
         --danger: #ef4444;
-        --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        --shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
       }
 
       * {
@@ -33,7 +33,7 @@
         margin: 0;
         padding: 0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif;
+          sans-serif;
       }
 
       body,
@@ -45,7 +45,7 @@
         width: 100vw;
       }
 
-      /* --- MAP LAYER (Z-Index 0) --- */
+      /* --- MAP LAYER --- */
       #map {
         width: 100vw;
         height: 100vh;
@@ -55,16 +55,186 @@
         z-index: 0;
       }
 
-      /* --- BOTTOM NAVIGATION BAR (Z-Index 1000) --- */
+      /* --- TOP NOTIFICATION BELL --- */
+      .top-controls {
+        position: absolute;
+        top: env(safe-area-inset-top, 20px);
+        right: 20px;
+        z-index: 1000;
+      }
+
+      .bell-btn {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        position: relative;
+      }
+
+      .bell-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: var(--text);
+      }
+
+      .badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: var(--accent);
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 800;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--bg);
+        display: none;
+      }
+
+      /* --- DRAGGABLE BOTTOM SHEET (ACTIVE QUEUE) --- */
+      .bottom-sheet {
+        position: absolute;
+        bottom: 80px; /* Above Nav Bar */
+        left: 0;
+        width: 100%;
+        height: 75vh;
+        background: rgba(30, 30, 30, 0.95);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 24px 24px 0 0;
+        z-index: 900;
+        border-top: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(calc(100% - 130px)); /* Minimized state */
+        display: flex;
+        flex-direction: column;
+      }
+
+      .bottom-sheet.expanded {
+        transform: translateY(0);
+      }
+
+      .drag-handle-area {
+        width: 100%;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: grab;
+        border-bottom: 1px solid transparent;
+      }
+
+      .bottom-sheet.expanded .drag-handle-area {
+        border-bottom: 1px solid var(--border);
+      }
+
+      .drag-handle {
+        width: 40px;
+        height: 5px;
+        background: var(--text-muted);
+        border-radius: 5px;
+        margin-bottom: 15px;
+      }
+
+      .glance-status {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+      }
+
+      .glance-status h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      .glance-status p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
+      .sheet-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: none;
+      }
+
+      .bottom-sheet.expanded .sheet-content {
+        display: block;
+      }
+
+      /* Vertical Timeline */
+      .timeline {
+        border-left: 2px solid var(--border);
+        margin-left: 10px;
+        padding-left: 25px;
+        list-style: none;
+      }
+
+      .timeline-item {
+        position: relative;
+        margin-bottom: 25px;
+      }
+
+      .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: -32px;
+        top: 4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--surface-elevated);
+        border: 2px solid var(--border);
+        z-index: 2;
+      }
+
+      .timeline-item.active::before {
+        background: var(--accent);
+        border-color: var(--surface);
+        box-shadow: 0 0 10px rgba(238, 97, 28, 0.5);
+      }
+
+      .timeline-item.completed::before {
+        background: var(--success);
+        border-color: var(--surface);
+      }
+
+      .node-card {
+        background: var(--surface-elevated);
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+      }
+
+      .node-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      /* --- BOTTOM NAVIGATION BAR --- */
       .bottom-nav {
-        position: fixed;
+        position: absolute;
         bottom: 0;
         left: 0;
         width: 100%;
         height: 80px;
-        background: rgba(30, 30, 30, 0.95);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
+        background: rgba(18, 18, 18, 0.98);
         display: flex;
         justify-content: space-around;
         align-items: center;
@@ -83,7 +253,6 @@
         gap: 6px;
         cursor: pointer;
         width: 60px;
-        transition: color 0.2s ease;
       }
 
       .nav-btn svg {
@@ -91,11 +260,9 @@
         height: 24px;
         fill: currentColor;
       }
-
       .nav-btn.active {
         color: var(--accent);
       }
-
       .nav-btn span {
         font-size: 0.7rem;
         font-weight: 600;
@@ -117,7 +284,6 @@
         border: none;
         box-shadow: 0 4px 20px rgba(238, 97, 28, 0.4);
         cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
 
       .fab-btn svg {
@@ -126,131 +292,14 @@
         fill: white;
       }
 
-      .fab-btn:active {
-        transform: scale(0.95);
-      }
-
-      .fab-btn.locked {
-        background: var(--surface-elevated);
-        box-shadow: none;
-        pointer-events: none;
-        opacity: 0.5;
-      }
-      .fab-btn.locked svg {
-        fill: var(--text-muted);
-      }
-
-      /* --- BOTTOM SHEET (Z-Index 900) --- */
-      .bottom-sheet {
-        position: fixed;
-        bottom: 100px;
-        left: 15px;
-        right: 15px;
-        background: var(--surface);
-        border-radius: 20px;
-        padding: 20px;
-        z-index: 900;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-      }
-
-      .sheet-header {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-      }
-
-      .driver-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: var(--border);
-        object-fit: cover;
-      }
-
-      .sheet-info h3 {
-        font-size: 1.1rem;
-        color: var(--text);
-        margin-bottom: 4px;
-      }
-
-      .sheet-info p {
-        font-size: 0.85rem;
-        color: var(--text-muted);
-      }
-
-      /* --- MODAL SYSTEM (Z-Index 2000) --- */
-
-      /* --- TRACKER SHEET DRAG & TIMELINE --- */
-      .drag-handle {
-        width: 40px;
-        height: 5px;
-        background: var(--border);
-        border-radius: 3px;
-        margin: 0 auto 15px auto;
-        cursor: grab;
-      }
-
-      .stop-timeline {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        position: relative;
-        padding-left: 20px;
-        margin-top: 5px;
-      }
-
-      .stop-timeline::before {
-        content: "";
-        position: absolute;
-        left: 3px;
-        top: 8px;
-        bottom: 8px;
-        width: 2px;
-        background: var(--accent);
-      }
-
-      .timeline-item {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .timeline-item::before {
-        content: "";
-        position: absolute;
-        left: -22px;
-        top: 4px;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--accent);
-        border: 2px solid var(--surface);
-        box-shadow: 0 0 0 1px var(--accent);
-      }
-
-      .timeline-title {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--text);
-      }
-
-      .timeline-subtitle {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-      }
+      /* --- MODALS --- */
 
       .modal {
         position: fixed;
         top: 100%;
         left: 0;
-        width: 100vw;
-        height: 80%;
-        height: 80dvh;
-
+        width: 100%;
+        height: 100%;
         background: var(--bg);
         z-index: 2000;
         transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -266,14 +315,15 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 20px 20px 15px;
+        padding: 20px;
         border-bottom: 1px solid var(--border);
         background: var(--surface);
       }
 
-      .modal-header h2 {
-        font-size: 1.2rem;
-        font-weight: 700;
+      .modal-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
       }
 
       .close-btn {
@@ -285,36 +335,22 @@
         color: var(--text);
         font-size: 1.2rem;
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .modal-content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
       }
 
       /* --- FORMS & BUTTONS --- */
       .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
+        margin-bottom: 20px;
       }
-
       .form-group label {
+        display: block;
         font-size: 0.85rem;
         font-weight: 600;
         color: var(--text-muted);
+        margin-bottom: 8px;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
       }
-
       .form-group input,
+      .form-group select,
       .form-group textarea {
         width: 100%;
         padding: 16px;
@@ -324,9 +360,7 @@
         color: var(--text);
         font-size: 1rem;
         outline: none;
-        transition: border-color 0.2s ease;
       }
-
       .form-group input:focus,
       .form-group textarea:focus {
         border-color: var(--accent);
@@ -335,61 +369,82 @@
       .btn {
         width: 100%;
         padding: 16px;
-        border-radius: 14px;
+        border-radius: 12px;
         border: none;
         font-weight: 700;
         font-size: 1rem;
         cursor: pointer;
         text-align: center;
-        transition: background 0.2s ease;
       }
-
       .btn-primary {
         background: var(--accent);
         color: white;
       }
-
-      .btn-primary:hover {
-        background: var(--accent-hover);
-      }
-
       .btn-secondary {
         background: var(--surface-elevated);
         color: var(--text);
         border: 1px solid var(--border);
       }
-
+      .btn-success {
+        background: var(--success);
+        color: white;
+      }
       .btn-emergency {
         background: rgba(239, 68, 68, 0.1);
         color: var(--danger);
         border: 1px solid rgba(239, 68, 68, 0.3);
       }
 
-      /* --- STEP PANELS --- */
-      .step-panel {
-        display: none;
-        flex-direction: column;
-        gap: 20px;
+      /* Custom Toggles */
+      .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 28px;
+        background: var(--surface-elevated);
+        border-radius: 30px;
+        border: 1px solid var(--border);
+        cursor: pointer;
       }
-      .step-panel.active {
+      .toggle-switch.on {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .toggle-knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 22px;
+        height: 22px;
+        background: white;
+        border-radius: 50%;
+        transition: left 0.2s;
+      }
+      .toggle-switch.on .toggle-knob {
+        left: 24px;
+      }
+
+      /* Map Cluster Badges */
+      .cluster-pin {
+        background: var(--accent);
+        border: 3px solid var(--surface);
+        border-radius: 50%;
+        color: white;
+        font-weight: bold;
         display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        font-size: 0.9rem;
+      }
+
+      .leaflet-popup-content-wrapper,
+      .leaflet-popup-tip {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
       }
 
       /* --- CUSTOM MAP PINS --- */
-      .custom-orange-pin {
-        background-color: var(--accent);
-        border: 3px solid var(--surface);
-        border-radius: 50%;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
-      }
-
-      .custom-user-dot {
-        background-color: #ffffff;
-        border: 4px solid #1a73e8;
-        border-radius: 50%;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-      }
-
       .custom-store-pin {
         background-color: var(--accent);
         width: 28px;
@@ -412,11 +467,30 @@
         border-radius: 50%;
       }
 
-      .leaflet-popup-content-wrapper,
-      .leaflet-popup-tip {
-        background: var(--surface);
-        color: var(--text);
-        border: 1px solid var(--border);
+      /* --- DUTY STATUS UI --- */
+      .duty-toggle-container {
+        position: absolute;
+        top: env(safe-area-inset-top, 20px);
+        left: 20px;
+        z-index: 1000;
+      }
+
+      .duty-btn {
+        background-color: #808080;
+        color: #ffffff;
+        border: 2px solid #ffffff;
+        padding: 10px 18px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+      }
+
+      .duty-btn.active {
+        background-color: var(--success);
+        border-color: var(--success);
       }
 
       /* --- GOOGLE AUTOCOMPLETE OVERRIDES --- */
@@ -441,545 +515,330 @@
         color: var(--text);
         font-size: 1rem;
       }
-
-      /* --- NEW SEARCH MODAL & PROMPT --- */
-      .soft-prompt-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 3000;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
-      }
-
-      .soft-prompt-box {
-        background: var(--surface);
-        padding: 24px;
-        border-radius: 16px;
-        width: 85%;
-        max-width: 340px;
-        border: 1px solid var(--border);
-        box-shadow: var(--shadow);
-        text-align: center;
-      }
-
-      .soft-prompt-box h3 {
-        margin-bottom: 12px;
-        color: var(--text);
-      }
-      .soft-prompt-box p {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        margin-bottom: 20px;
-      }
-      .prompt-actions {
-        display: flex;
-        gap: 12px;
-      }
-
-      .search-spinner {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 3px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: #fff;
-        animation: spin 1s ease-in-out infinite;
-        vertical-align: middle;
-        margin-right: 8px;
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      /* --- STOP ACCORDION & TOOLTIPS --- */
-      .stop-block {
-        transition: all 0.3s ease;
-        overflow: hidden;
-      }
-      .stop-block.collapsed .stop-details {
-        display: none;
-      }
-      .stop-summary {
-        display: none;
-        padding: 12px 15px;
-        background: var(--surface-elevated);
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        cursor: pointer;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .stop-block.collapsed .stop-summary {
-        display: flex;
-      }
-      .tooltip-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: var(--accent);
-        color: white;
-        font-size: 0.7rem;
-        font-weight: bold;
-        cursor: pointer;
-        margin-left: 8px;
-      }
-      #card-element {
-        padding: 16px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        margin-bottom: 15px;
-      }
     </style>
   </head>
   <body>
-    <!-- MAP BASE -->
+    <!-- Audio Alert Engine -->
+    <audio
+      id="alertSound"
+      src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+      preload="auto"
+    ></audio>
+
+    <!-- MAP LAYER -->
     <div id="map"></div>
 
-    <!-- FLOATING BOTTOM SHEET (Active Status / Announcements) -->
+    <!-- DUTY STATUS LAYER -->
+    <div class="duty-toggle-container">
+      <button id="dutyToggleBtn" class="duty-btn" onclick="toggleDutyStatus()">
+        Off Duty
+      </button>
+    </div>
 
-    <div
-      class="bottom-sheet"
-      id="trackerSheet"
-      style="
-        transform: translateY(150%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      "
-    >
-      <div class="drag-handle"></div>
-      <div class="sheet-header">
-        <img
-          src="https://via.placeholder.com/150"
-          class="driver-avatar"
-          alt="Hero"
-        />
-        <div class="sheet-info">
-          <h3 id="sheetTitle">Scheduled Run Active</h3>
-          <p id="sheetSubtitle">Hero is running tomorrow morning.</p>
+    <!-- TOP COMMAND CENTER -->
+    <div class="top-controls">
+      <button class="bell-btn" onclick="startTriageMode()">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
+          />
+        </svg>
+        <div class="badge" id="notificationBadge">0</div>
+      </button>
+    </div>
+
+    <!-- DRAGGABLE TIMELINE QUEUE -->
+    <div class="bottom-sheet" id="activeQueueSheet">
+      <div class="drag-handle-area" onclick="toggleBottomSheet()">
+        <div class="drag-handle"></div>
+        <div class="glance-status">
+          <div>
+            <h3 id="glanceTitle">Idle / No Active Route</h3>
+            <p id="glanceSubtitle">Awaiting scheduled runs.</p>
+          </div>
+          <button
+            id="workflowBtn"
+            class="btn btn-primary"
+            style="width: auto; padding: 10px 20px; display: none"
+            onclick="advanceWorkflow()"
+          >
+            Start Route
+          </button>
         </div>
       </div>
 
-      <div
-        id="defaultSheetActions"
-        style="display: flex; gap: 10px; width: 100%"
-      >
-        <button
-          class="btn btn-secondary"
-          style="padding: 12px; font-size: 0.9rem; flex: 1"
-          onclick="openAddModal('scheduled')"
+      <div class="sheet-content">
+        <h4
+          style="
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+          "
         >
-          Book Slot ($12.99)
-        </button>
-        <button
-          class="btn btn-primary"
-          style="padding: 12px; font-size: 0.9rem; flex: 1"
-          onclick="openAddModal('emergency')"
-        >
-          SOS ($50.00)
-        </button>
-      </div>
-
-      <div class="stop-timeline" id="activeStopsTimeline" style="display: none">
-        <!-- Timeline injected dynamically via JS -->
+          Route Timeline
+        </h4>
+        <ul class="timeline" id="timelineList">
+          <!-- Injected via JS based on state -->
+          <p style="color: var(--text-muted)">Queue is empty.</p>
+        </ul>
       </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION BAR -->
+    <!-- BOTTOM NAVIGATION -->
     <nav class="bottom-nav">
       <button class="nav-btn active" id="navHome" onclick="closeAllModals()">
         <svg viewBox="0 0 24 24">
           <path d="M12 3l10 9h-3v9h-14v-9h-3l10-9z" />
         </svg>
-        <span>Home</span>
+        <span>Map</span>
       </button>
 
       <div class="fab-container">
-        <button class="fab-btn" id="mainFab" onclick="openFindHeroModal()">
+        <button class="fab-btn" onclick="openModal('scheduleModal')">
           <svg viewBox="0 0 24 24">
-            <path
-              d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
-            />
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
           </svg>
         </button>
       </div>
 
-      <button class="nav-btn" id="navProfile" onclick="openSettingsModal()">
+      <button
+        class="nav-btn"
+        id="navProfile"
+        onclick="openModal('settingsModal')"
+      >
         <svg viewBox="0 0 24 24">
           <path
-            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+            d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"
           />
         </svg>
         <span>Settings</span>
       </button>
     </nav>
 
-    <!-- FULL SCREEN MODAL: ADD PICKUP -->
-    <div id="addModal" class="modal">
+    <!-- MODAL: SCHEDULE ROUTE (+) -->
+    <div id="scheduleModal" class="modal">
       <div class="modal-header">
-        <h2>New Delivery Request</h2>
+        <h2>New Route Block</h2>
         <button class="close-btn" onclick="closeAllModals()">✕</button>
       </div>
-
       <div class="modal-content">
-        <!-- STEP 1: PICKUP STOPS -->
-        <div id="step1Panel" class="step-panel active">
-          <div id="stopsContainer">
-            <!-- Stop 1 Block -->
-            <div
-              class="stop-block"
-              id="stopBlock_1"
-              style="
-                padding-bottom: 15px;
-                border-bottom: 1px solid var(--border);
-                margin-bottom: 15px;
-              "
-            >
-              <div class="stop-summary" onclick="toggleStop(1)">
-                <strong id="summaryText_1">📍 Stop 1</strong>
-                <span style="color: var(--accent); font-size: 0.8rem"
-                  >Edit</span
-                >
-              </div>
-
-              <div class="stop-details" id="stopDetails_1">
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 10px;
-                  "
-                >
-                  <h4 style="color: var(--accent)">Pickup Stop 1</h4>
-                </div>
-
-                <div class="form-group">
-                  <label>Search Store Location</label>
-                  <input
-                    type="text"
-                    id="storeSearchInput_1"
-                    placeholder="Walmart, Target, etc..."
-                  />
-                  <button
-                    class="btn btn-secondary"
-                    style="margin-top: 8px"
-                    onclick="triggerStoreSearch(1)"
-                  >
-                    Search Map
-                  </button>
-                </div>
-
-                <div
-                  id="selectedStoreDisplay_1"
-                  style="
-                    display: none;
-                    padding: 15px;
-                    background: var(--surface-elevated);
-                    border-radius: 12px;
-                    border-left: 4px solid var(--accent);
-                    margin-top: 10px;
-                    margin-bottom: 15px;
-                  "
-                >
-                  <strong id="storeNameDisplay_1">Walmart Supercenter</strong>
-                  <p
-                    style="
-                      font-size: 0.85rem;
-                      color: var(--text-muted);
-                      margin-top: 4px;
-                    "
-                  >
-                    Location Confirmed
-                  </p>
-                </div>
-
-                <div style="display: flex; gap: 10px">
-                  <div class="form-group" style="flex: 2">
-                    <label>Store Order Number *</label>
-                    <input
-                      type="text"
-                      id="pickupNumberInput_1"
-                      placeholder="e.g., #98765432"
-                    />
-                  </div>
-                  <div class="form-group" style="flex: 1">
-                    <label
-                      >PIN
-                      <span class="tooltip-icon" onclick="openInfoTooltip()"
-                        >?</span
-                      ></label
-                    >
-                    <input
-                      type="text"
-                      id="pickupPinInput_1"
-                      placeholder="1234"
-                    />
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label>Order Screenshot (Optional)</label>
-                  <input
-                    type="file"
-                    id="screenshotInput_1"
-                    accept="image/*"
-                    onchange="handleImageCompress(event, 1)"
-                    style="padding: 10px"
-                  />
-                </div>
-
-                <div class="form-group">
-                  <label>Curbside Instructions (Optional)</label>
-                  <textarea
-                    id="curbsideInstructionsInput_1"
-                    rows="2"
-                    placeholder="Spot 4, blue Honda..."
-                  ></textarea>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button
-            id="addStopBtn"
-            class="btn btn-secondary"
-            onclick="addNewStopBlock()"
-            style="margin-bottom: 10px"
-          >
-            + Add Another Stop ($12.99)
-          </button>
-
-          <div style="flex: 1"></div>
-          <button class="btn btn-primary" onclick="goToStep2()">
-            Next: Delivery Details
-          </button>
+        <div class="form-group">
+          <label>Date</label>
+          <select>
+            <option>Today</option>
+            <option>Tomorrow</option>
+          </select>
         </div>
-
-        <!-- STEP 2: DELIVERY DETAILS -->
-        <div id="step2Panel" class="step-panel">
-          <div class="form-group">
-            <label>Final Delivery Address</label>
-            <input
-              type="text"
-              id="deliveryAddressInput"
-              placeholder="Enter your rural address..."
-            />
+        <div style="display: flex; gap: 15px">
+          <div class="form-group" style="flex: 1">
+            <label>Start Time</label>
+            <input type="time" value="08:00" />
           </div>
-
-          <div class="form-group">
-            <label>Delivery Instructions</label>
-            <textarea
-              id="instructionsInput"
-              rows="3"
-              placeholder="Leave at back door..."
-            ></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Payment Method</label>
-            <div id="card-element">
-              <span style="color: var(--text-muted); font-size: 0.9rem"
-                >Card securely saved via Stripe Elements</span
-              >
-            </div>
-          </div>
-
-          <div style="flex: 1"></div>
-
-          <div
-            style="
-              text-align: center;
-              margin-bottom: 15px;
-              font-size: 1.1rem;
-              font-weight: 600;
-            "
-          >
-            Total Estimated Fee:
-            <span id="totalPriceDisplay" style="color: var(--success)"
-              >$12.99</span
-            >
-          </div>
-          <div style="display: flex; gap: 10px">
-            <button
-              class="btn btn-secondary"
-              style="flex: 1"
-              onclick="goToStep1()"
-            >
-              Back
-            </button>
-            <button
-              class="btn btn-primary"
-              style="flex: 2"
-              onclick="submitOrderToFirebase()"
-            >
-              Confirm & Reserve
-            </button>
+          <div class="form-group" style="flex: 1">
+            <label>End Time</label>
+            <input type="time" value="13:00" />
           </div>
         </div>
+        <div class="form-group">
+          <label>Max Stops (Capacity)</label>
+          <input type="number" value="6" />
+        </div>
+        <button
+          class="btn btn-primary"
+          onclick="alert('Route block published to customers!'); closeAllModals();"
+        >
+          Publish Run
+        </button>
       </div>
     </div>
 
-    <!-- FULL SCREEN MODAL: SETTINGS -->
+    <!-- MODAL: MASTER SETTINGS -->
     <div id="settingsModal" class="modal">
       <div class="modal-header">
-        <h2>Customer Profile</h2>
-        <button class="close-btn" onclick="closeAllModals()">✕</button>
-      </div>
-
-      <div class="modal-content">
-        <div class="form-group">
-          <label>Full Name</label>
-          <input type="text" id="customerNameInput" placeholder="Your Name" />
-        </div>
-        <div class="form-group">
-          <label>Phone Number</label>
-          <input
-            type="tel"
-            id="customerPhoneInput"
-            placeholder="(555) 555-5555"
-          />
-        </div>
-
-        <div style="flex: 1"></div>
-        <button
-          class="btn btn-primary"
-          id="saveCustomerBtn"
-          onclick="alert('Profile Saved!')"
-          style="margin-bottom: 10px"
-        >
-          Save Profile
-        </button>
-        <button class="btn btn-secondary" style="margin-bottom: 10px">
-          Contact Support
-        </button>
-        <button class="btn btn-emergency">Delete Account</button>
-      </div>
-    </div>
-
-    <!-- FULL SCREEN MODAL: FIND HERO -->
-    <div id="findHeroModal" class="modal">
-      <div class="modal-header">
-        <h2>Find Nearby Hero</h2>
+        <h2>Driver Settings</h2>
         <button class="close-btn" onclick="closeAllModals()">✕</button>
       </div>
       <div class="modal-content">
-        <div class="form-group">
-          <label>Pickup Location</label>
-          <input
-            type="text"
-            id="findHeroAddressInput"
-            placeholder="Enter address or landmark..."
-          />
-        </div>
-
-        <div style="text-align: center; margin: 10px 0">
-          <span
-            style="
-              color: var(--text-muted);
-              font-size: 0.9rem;
-              font-weight: 600;
-            "
-            >— OR —</span
-          >
-        </div>
-
-        <button
-          class="btn btn-secondary"
-          onclick="promptLocationAccess()"
+        <!-- Profile Block with Circular Uploader -->
+        <div
           style="
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
+            margin-bottom: 25px;
           "
         >
-          <svg
-            viewBox="0 0 24 24"
-            style="width: 20px; height: 20px; fill: currentColor"
-          >
-            <path
-              d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"
+          <label style="position: relative; cursor: pointer; display: block">
+            <img
+              src="https://via.placeholder.com/150"
+              id="profileImagePreview"
+              style="
+                width: 110px;
+                height: 110px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 3px solid var(--surface-elevated);
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+              "
             />
-          </svg>
-          Use My Location
-        </button>
+            <div
+              style="
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                background: var(--accent);
+                color: white;
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 3px solid var(--surface);
+                font-weight: bold;
+                font-size: 1.4rem;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+              "
+            >
+              +
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              style="display: none"
+              onchange="previewProfileImage(event)"
+            />
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Display Name</label>
+          <input type="text" id="driverNameInput" value="Hero Driver" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 35px">
+          <label>Driver Bio (Visible to Customers)</label>
+          <textarea
+            id="driverBioInput"
+            rows="3"
+            placeholder="Write a short bio..."
+          >
+Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursday mornings.</textarea
+          >
+        </div>
+
+        <!-- System Controls -->
+        <h4
+          style="
+            color: var(--accent);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+          "
+        >
+          System Controls
+        </h4>
+
+        <div
+          class="node-card"
+          style="
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <div>
+            <strong>Global Kill Switch</strong>
+            <p
+              style="
+                font-size: 0.8rem;
+                color: var(--text-muted);
+                margin-top: 4px;
+              "
+            >
+              Stop accepting orders instantly
+            </p>
+          </div>
+
+          <div
+            class="toggle-switch"
+            id="killSwitchToggle"
+            onclick="this.classList.toggle('on')"
+          >
+            <div class="toggle-knob"></div>
+          </div>
+        </div>
+
+        <div class="node-card" style="margin-bottom: 30px">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 15px;
+            "
+          >
+            <div>
+              <strong style="color: var(--danger)"
+                >SOS Emergency Deliveries</strong
+              >
+              <p
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  margin-top: 4px;
+                "
+              >
+                Accept immediate, high-paying runs
+              </p>
+            </div>
+            <div
+              class="toggle-switch on"
+              id="sosToggle"
+              onclick="this.classList.toggle('on')"
+            >
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 0">
+            <label>Current Premium Rate ($)</label>
+            <input type="number" id="premiumRateInput" value="50.00" />
+          </div>
+        </div>
+
+        <!-- Financials -->
+        <h4
+          style="
+            color: var(--accent);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+          "
+        >
+          Financials
+        </h4>
+
+        <div
+          class="node-card"
+          style="
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 25px;
+          "
+        >
+          <p style="margin-bottom: 15px">Stripe Connect Dashboard</p>
+          <button class="btn btn-secondary">View Payouts & Bank</button>
+        </div>
 
         <button
           class="btn btn-primary"
-          id="executeSearchBtn"
-          onclick="executeHeroSearch()"
-          style="margin-top: 25px"
+          id="saveSettingsBtn"
+          onclick="saveDriverSettings()"
         >
-          Find Hero
-        </button>
-      </div>
-    </div>
-
-    <!-- ACTIVE DELIVERY INTERCEPT PROMPT -->
-    <div class="soft-prompt-overlay" id="activeDeliveryPrompt">
-      <div class="soft-prompt-box">
-        <h3>Delivery In Progress!</h3>
-        <p>
-          You currently have an active Hero on the clock. You cannot place a new
-          order until this run is complete.
-        </p>
-        <button class="btn btn-primary" onclick="dismissActiveDeliveryPrompt()">
-          Track My Hero
-        </button>
-      </div>
-    </div>
-
-    <!-- SOFT LOCATION PROMPT -->
-    <div class="soft-prompt-overlay" id="locationSoftPrompt">
-      <div class="soft-prompt-box">
-        <h3>Allow Location Access?</h3>
-        <p>
-          We need your location to find the nearest available Hero for your
-          pickup.
-        </p>
-        <div class="prompt-actions">
-          <button
-            class="btn btn-secondary"
-            style="flex: 1"
-            onclick="handleLocationDeny()"
-          >
-            No
-          </button>
-          <button
-            class="btn btn-primary"
-            style="flex: 1"
-            onclick="handleLocationAllow()"
-          >
-            Yes
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- CUSTOM TOOLTIP PROMPT -->
-    <div class="soft-prompt-overlay" id="infoTooltipPrompt">
-      <div class="soft-prompt-box">
-        <h3>Help Your Hero!</h3>
-        <p>
-          Providing your pickup PIN, curbside instructions, or a barcode
-          screenshot prevents delays and stops the driver from having to call
-          you.
-        </p>
-        <button class="btn btn-primary" onclick="closeInfoTooltip()">
-          Got it!
+          Save Changes
         </button>
       </div>
     </div>
@@ -993,17 +852,16 @@
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
       import { getAuth } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
-
       import {
         getFirestore,
         collection,
-        addDoc,
-        onSnapshot,
         query,
         where,
+        onSnapshot,
         doc,
-        getDoc,
+        updateDoc,
         setDoc,
+        getDoc,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -1020,242 +878,159 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
 
-      // Attach Firestore methods and DB to the global window
+      // Attach db to window to allow global AppState functions to execute Firestore queries
       window.db = db;
+
       window.collection = collection;
       window.query = query;
       window.where = where;
-
-      window.addDoc = addDoc;
       window.onSnapshot = onSnapshot;
       window.doc = doc;
-      window.getDoc = getDoc;
+      window.updateDoc = updateDoc;
       window.setDoc = setDoc;
-
-      // Standard Firebase implementation matches previous backend logic
-
-      window.appState = {
-        user: null,
-        userId: null,
-        bookingType: "scheduled",
-        compressedImages: {},
-      };
-
-      auth.onAuthStateChanged((user) => {
-        if (user) {
-          window.appState.user = user;
-          window.appState.userId = user.uid;
-          if (window.checkActiveSession) window.checkActiveSession();
-        } else {
-          console.warn(
-            "Unauthenticated session. Firing anonymous sign-in for testing."
-          );
-          window.appState.userId =
-            "anon_" + Math.random().toString(36).substr(2, 9);
-        }
-      });
-
-      window.submitOrderToFirebase = async function () {
-        const address = document.getElementById("deliveryAddressInput").value;
-        const instructions = document.getElementById("instructionsInput").value;
-
-        let stops = [];
-        let stopCount = window.currentStopCount || 1;
-        let activeStopsFound = 0;
-
-        for (let i = 1; i <= stopCount; i++) {
-          const block = document.getElementById(`stopBlock_${i}`);
-          if (!block) continue; // Skip if it was removed
-
-          const displayEl = document.getElementById(`storeNameDisplay_${i}`);
-          const storeName = displayEl.innerText;
-          const storeLat = displayEl.dataset.lat;
-          const storeLng = displayEl.dataset.lng;
-
-          const pickupNum = document.getElementById(
-            `pickupNumberInput_${i}`
-          ).value;
-          const pinNum =
-            document.getElementById(`pickupPinInput_${i}`).value || "";
-          const curbsideInst =
-            document.getElementById(`curbsideInstructionsInput_${i}`).value ||
-            "";
-          const base64Img = window.appState.compressedImages[i] || "";
-
-          if (!pickupNum || storeName === "Pending...") {
-            alert(
-              `Please confirm the store and enter an order number for Stop ${i}.`
-            );
-            return;
-          }
-
-          stops.push({
-            storeName: storeName,
-            lat: parseFloat(storeLat),
-            lng: parseFloat(storeLng),
-            pickupNumber: pickupNum,
-            pin: pinNum,
-            curbsideInstructions: curbsideInst,
-            barcodeImageUrl: base64Img,
-          });
-
-          activeStopsFound++;
-        }
-
-        if (activeStopsFound === 0) {
-          alert("You must have at least one pickup stop.");
-          return;
-        }
-
-        if (!address) {
-          alert("Please enter a final delivery address.");
-          return;
-        }
-
-        const totalCost = activeStopsFound * 12.99;
-
-        try {
-          const orderData = {
-            userId: window.appState.userId,
-            deliveryAddress: address,
-            instructions: instructions,
-            stops: stops,
-            totalCost: totalCost,
-            bookingType: window.appState.bookingType,
-            status: "pending",
-            createdAt: new Date(),
-          };
-
-          const docRef = await window.addDoc(
-            window.collection(window.db, "orders"),
-            orderData
-          );
-          window.appState.currentOrderId = docRef.id;
-
-          alert(
-            `Payment of $${totalCost.toFixed(
-              2
-            )} authorized via Stripe. Order sent to Hero Dispatch!`
-          );
-          closeAllModals();
-
-          if (window.checkActiveSession) window.checkActiveSession();
-        } catch (error) {
-          console.error("Submission failed:", error);
-          alert("Failed to submit order. Please check your connection.");
-        }
-      };
+      window.getDoc = getDoc;
     </script>
 
-    <!-- UI & MAP SCRIPT -->
-
+    <!-- APPLICATION LOGIC -->
     <script>
-      let map, driverMarker, storeMarker;
+      // System State
+      const AppState = {
+        workflowPhase: "idle", // idle -> triage -> pickup -> delivery
+        pendingOrders: 0,
+        triageQueue: [], // The generous net array
+        activeQueue: [], // Final confirmed route
+        homeBase: [39.3869, -94.5804],
+        mapInstance: null,
+        homeMarker: null,
+        layerGroup: null, // holds dynamic pins and lines
+      };
 
-      let userMarker;
-      let userLat = null,
-        userLng = null;
-      let placesService;
-      let searchMarkers = [];
-      let activeStopContext = 1;
-      window.currentStopCount = 1;
+      // Initialize UI and Map
+
+      const DRIVER_DOC_ID = "hero_driver_main";
+
+      window.loadDriverSettings = async function () {
+        try {
+          const docSnap = await window.getDoc(
+            window.doc(window.db, "driver_settings", DRIVER_DOC_ID)
+          );
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.displayName)
+              document.getElementById("driverNameInput").value =
+                data.displayName;
+            if (data.bio)
+              document.getElementById("driverBioInput").value = data.bio;
+            if (data.premiumRate)
+              document.getElementById("premiumRateInput").value =
+                data.premiumRate;
+            if (data.profilePic)
+              document.getElementById("profileImagePreview").src =
+                data.profilePic;
+
+            // Apply saved map coordinates
+            if (data.baseLat && data.baseLng) {
+              AppState.homeBase = [data.baseLat, data.baseLng];
+              // If the map is already drawn, move it to the saved location
+              if (AppState.mapInstance) {
+                AppState.mapInstance.setView(AppState.homeBase, 12);
+                renderHomeBase();
+              }
+            }
+
+            const killSwitch = document.getElementById("killSwitchToggle");
+            if (data.globalKillSwitch) killSwitch.classList.add("on");
+            else killSwitch.classList.remove("on");
+
+            const sosToggle = document.getElementById("sosToggle");
+            if (data.sosEnabled) sosToggle.classList.add("on");
+            else sosToggle.classList.remove("on");
+          }
+        } catch (e) {
+          console.error("Error loading settings:", e);
+        }
+      };
+
+      window.saveDriverSettings = async function () {
+        const btn = document.getElementById("saveSettingsBtn");
+        const originalText = btn.innerText;
+        btn.innerText = "Saving...";
+
+        const payload = {
+          displayName: document.getElementById("driverNameInput").value,
+          bio: document.getElementById("driverBioInput").value,
+          globalKillSwitch: document
+            .getElementById("killSwitchToggle")
+            .classList.contains("on"),
+          sosEnabled: document
+            .getElementById("sosToggle")
+            .classList.contains("on"),
+          premiumRate:
+            parseFloat(document.getElementById("premiumRateInput").value) ||
+            50.0,
+          baseLat: AppState.homeBase[0],
+          baseLng: AppState.homeBase[1],
+
+          profilePic: document.getElementById("profileImagePreview").src,
+        };
+
+        try {
+          await window.setDoc(
+            window.doc(window.db, "driver_settings", DRIVER_DOC_ID),
+            payload,
+            { merge: true }
+          );
+          btn.innerText = "Saved!";
+          btn.classList.replace("btn-primary", "btn-success");
+          setTimeout(() => {
+            btn.innerText = originalText;
+            btn.classList.replace("btn-success", "btn-primary");
+          }, 2000);
+        } catch (e) {
+          console.error("Error saving settings:", e);
+          btn.innerText = "Error Saving";
+        }
+      };
 
       document.addEventListener("DOMContentLoaded", () => {
-        initMap();
-        initAutocomplete(); // Run this immediately so Google inputs work
+        initMap(); // Draw the map immediately
 
         // Delay database fetch by 1 second so Firebase can finish initializing
         setTimeout(() => {
-          if (window.loadActiveDriver) window.loadActiveDriver();
-
-          if (window.checkActiveSession) window.checkActiveSession();
+          listenForPendingOrders();
+          loadDriverSettings();
+          window.initializeShiftState();
         }, 1000);
       });
 
-      function initAutocomplete() {
-        if (
-          typeof google !== "undefined" &&
-          google.maps &&
-          google.maps.places
-        ) {
-          const addressInput = document.getElementById("deliveryAddressInput");
-
-          // Bind Google Places Autocomplete to the final delivery address
-          new google.maps.places.Autocomplete(addressInput);
-
-          // Bind smart search to the dynamic first pickup stop
-          bindStoreAutocomplete(1);
-
-          const findHeroInput = document.getElementById("findHeroAddressInput");
-
-          if (findHeroInput) {
-            const heroAutocomplete = new google.maps.places.Autocomplete(
-              findHeroInput
-            );
-            heroAutocomplete.addListener("place_changed", () => {
-              const place = heroAutocomplete.getPlace();
-              if (place.geometry) {
-                userLat = place.geometry.location.lat();
-                userLng = place.geometry.location.lng();
-              }
-            });
-          }
-        } else {
-          console.error("Google Maps API failed to load.");
-        }
-      }
-
       function initMap() {
-        map = L.map("map", { zoomControl: false }).setView(
-          [39.8283, -98.5795],
-          4
+        AppState.mapInstance = L.map("map", { zoomControl: false }).setView(
+          AppState.homeBase,
+          12
         );
 
-        // Dark Mode Tile Layer (CartoDB Dark Matter)
+        // CartoDB Dark Matter
         L.tileLayer(
           "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
           {
             maxZoom: 19,
             attribution: "© OpenStreetMap, © CARTO",
           }
-        ).addTo(map);
+        ).addTo(AppState.mapInstance);
 
-        const orangeIcon = L.divIcon({
-          className: "custom-orange-pin",
-          iconSize: [24, 24],
-        });
+        AppState.layerGroup = L.layerGroup().addTo(AppState.mapInstance);
 
-        placesService = new google.maps.places.PlacesService(
-          document.createElement("div")
-        );
-
-        driverMarker = L.marker([39.8283, -98.5795], {
-          icon: orangeIcon,
-        }).addTo(map);
-
-        const whiteDotIcon = L.divIcon({
-          className: "custom-user-dot",
-          iconSize: [18, 18],
-        });
-
-        userMarker = L.marker([39.8283, -98.5795], {
-          icon: whiteDotIcon,
-        }).addTo(map);
-        userMarker.setOpacity(0);
-
-        // --- NEW LIVE TELEMETRY PIN ---
         const liveIcon = L.divIcon({
-          className: "custom-orange-pin live-pin-override",
+          className: "cluster-pin live-pin-override",
           html: "➤",
           iconSize: [26, 26],
           iconAnchor: [13, 13],
         });
 
-        window.liveDriverMarker = L.marker([39.8283, -98.5795], {
+        AppState.liveDriverMarker = L.marker(AppState.homeBase, {
           icon: liveIcon,
           zIndexOffset: 1000,
-        }).addTo(map);
-        window.liveDriverMarker.setOpacity(0);
+        }).addTo(AppState.mapInstance);
 
         const style = document.createElement("style");
         style.innerHTML = `
@@ -1265,539 +1040,385 @@
             color: #ffffff !important;
             font-size: 1.1rem !important;
             transform: rotate(-45deg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
           }
         `;
         document.head.appendChild(style);
 
-        driverMarker.on("click", function () {
-          document.getElementById("trackerSheet").style.transform =
-            "translateY(0)";
+        renderHomeBase();
+        startTelemetry();
+      }
+
+      function renderHomeBase() {
+        if (AppState.homeMarker)
+          AppState.mapInstance.removeLayer(AppState.homeMarker);
+        const icon = L.divIcon({
+          className: "cluster-pin",
+          html: "H",
+          iconSize: [30, 30],
         });
-
-        driverMarker.setOpacity(0); // Hide base marker initially
+        AppState.homeMarker = L.marker(AppState.homeBase, {
+          icon: icon,
+          draggable: false,
+        }).addTo(AppState.mapInstance);
+        AppState.homeMarker.bindPopup(
+          '<div style="text-align:center;"><strong>Home Base</strong><br><button onclick="toggleHomeEdit()" style="margin-top:8px; padding:6px 12px; background:var(--surface-elevated); color:white; border:1px solid var(--border); border-radius:6px;">Edit Base</button></div>'
+        );
       }
 
-      // Modal Controls
-      function openAddModal(type = "scheduled") {
-        window.appState.bookingType = type;
-        document.getElementById("addModal").classList.add("active");
-        document.getElementById("trackerSheet").style.transform =
-          "translateY(150%)"; // Hide bottom sheet
-        updateNavState("");
-        goToStep1();
-      }
+      window.toggleHomeEdit = function () {
+        if (AppState.homeMarker.dragging.enabled()) {
+          AppState.homeMarker.dragging.disable();
+          AppState.homeBase = [
+            AppState.homeMarker.getLatLng().lat,
+            AppState.homeMarker.getLatLng().lng,
+          ];
+          // Silently trigger the database save in the background
+          if (window.saveDriverSettings) window.saveDriverSettings();
 
-      function openSettingsModal() {
-        document.getElementById("settingsModal").classList.add("active");
-        document.getElementById("trackerSheet").style.transform =
-          "translateY(150%)";
-        updateNavState("navProfile");
-      }
-
-      function closeAllModals() {
-        document.getElementById("addModal").classList.remove("active");
-        document.getElementById("settingsModal").classList.remove("active");
-
-        document.getElementById("trackerSheet").style.transform =
-          "translateY(150%)";
-        const findHeroModal = document.getElementById("findHeroModal");
-        if (findHeroModal) findHeroModal.classList.remove("active");
-
-        updateNavState("navHome");
-      }
-
-      function updateNavState(activeId) {
-        document
-          .querySelectorAll(".nav-btn")
-          .forEach((btn) => btn.classList.remove("active"));
-        if (activeId) document.getElementById(activeId).classList.add("active");
-      }
-
-      // Step Navigation
-      function goToStep1() {
-        document.getElementById("step2Panel").classList.remove("active");
-        document.getElementById("step1Panel").classList.add("active");
-      }
-
-      function goToStep2() {
-        document.getElementById("step1Panel").classList.remove("active");
-        document.getElementById("step2Panel").classList.add("active");
-      }
-
-      // Map Interactions
-
-      function simulateStoreSearch(preselectedPlace = null) {
-        let val = document.getElementById(
-          `storeSearchInput_${activeStopContext}`
-        ).value;
-        if (!val && !preselectedPlace) {
-          alert("Please enter a store name.");
-          return;
-        }
-        closeAllModals();
-
-        searchMarkers.forEach((m) => map.removeLayer(m));
-        searchMarkers = [];
-
-        const center = driverMarker.getLatLng();
-        const storeIcon = L.divIcon({
-          className: "custom-store-pin",
-          iconSize: [28, 28],
-          iconAnchor: [14, 28],
-          popupAnchor: [0, -28],
-        });
-
-        if (preselectedPlace && preselectedPlace.geometry) {
-          const lat = preselectedPlace.geometry.location.lat();
-          const lng = preselectedPlace.geometry.location.lng();
-          val = preselectedPlace.name;
-
-          const marker = L.marker([lat, lng], { icon: storeIcon }).addTo(map);
-          marker
+          renderHomeBase();
+        } else {
+          AppState.homeMarker.dragging.enable();
+          AppState.homeMarker
             .bindPopup(
-              `
-            <div style="text-align:center;">
-              <strong>${val}</strong><br>
-              <span style="font-size:0.8rem;color:var(--text-muted);">${
-                preselectedPlace.formatted_address || ""
-              }</span><br>
-              <button onclick="confirmStoreSelection('${val.replace(
-                /'/g,
-                "\\'"
-              )}', ${lat}, ${lng})" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Confirm Pin</button>
-            </div>
-          `
+              '<div style="text-align:center;"><strong>Drag to New Base</strong><br><button onclick="toggleHomeEdit()" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Save Location</button></div>'
             )
             .openPopup();
-
-          searchMarkers.push(marker);
-          map.setView([lat, lng], 14);
-          return;
         }
+      };
 
-        const request = {
-          location: new google.maps.LatLng(center.lat, center.lng),
-          radius: "40000",
-          query: val,
-        };
-
-        placesService.textSearch(request, (results, status) => {
-          if (
-            status === google.maps.places.PlacesServiceStatus.OK &&
-            results.length > 0
-          ) {
-            const bounds = L.latLngBounds();
-
-            results.forEach((place) => {
-              const lat = place.geometry.location.lat();
-              const lng = place.geometry.location.lng();
-
-              const marker = L.marker([lat, lng], { icon: storeIcon }).addTo(
-                map
-              );
-              marker.bindPopup(`
-                <div style="text-align:center;">
-                  <strong>${place.name}</strong><br>
-                  <span style="font-size:0.8rem;color:var(--text-muted);">${
-                    place.formatted_address || place.vicinity
-                  }</span><br>
-                  <button onclick="confirmStoreSelection('${place.name.replace(
-                    /'/g,
-                    "\\'"
-                  )}', ${lat}, ${lng})" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Confirm Pin</button>
-                </div>
-              `);
-
-              searchMarkers.push(marker);
-              bounds.extend([lat, lng]);
-            });
-
-            bounds.extend(center);
-            map.fitBounds(bounds, { padding: [50, 50] });
-          } else {
-            alert(
-              "No stores found near the Hero's base. Try a different search."
-            );
-            openAddModal();
-          }
-        });
+      // Modal & Sheet Controls
+      function openModal(id) {
+        document
+          .querySelectorAll(".modal")
+          .forEach((m) => m.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+      }
+      function closeAllModals() {
+        document
+          .querySelectorAll(".modal")
+          .forEach((m) => m.classList.remove("active"));
+      }
+      function toggleBottomSheet() {
+        document
+          .getElementById("activeQueueSheet")
+          .classList.toggle("expanded");
       }
 
-      function confirmStoreSelection(name, lat, lng) {
-        map.closePopup();
-        searchMarkers.forEach((m) => map.removeLayer(m));
-        searchMarkers = [];
+      // Image Upload Preview
 
-        const displayEl = document.getElementById(
-          `storeNameDisplay_${activeStopContext}`
-        );
-        displayEl.innerText = name;
-        displayEl.dataset.lat = lat;
-        displayEl.dataset.lng = lng;
-
-        document.getElementById(
-          `selectedStoreDisplay_${activeStopContext}`
-        ).style.display = "block";
-        openAddModal();
-      }
-
-      // Utils
-
-      function openInfoTooltip() {
-        document.getElementById("infoTooltipPrompt").style.display = "flex";
-      }
-
-      function closeInfoTooltip() {
-        document.getElementById("infoTooltipPrompt").style.display = "none";
-      }
-
-      function toggleStop(index) {
-        const block = document.getElementById(`stopBlock_${index}`);
-        if (block) {
-          block.classList.remove("collapsed");
-        }
-        for (let i = 1; i <= window.currentStopCount; i++) {
-          if (i !== index) {
-            const otherBlock = document.getElementById(`stopBlock_${i}`);
-            if (otherBlock) otherBlock.classList.add("collapsed");
-          }
-        }
-      }
-
-      function removeStopBlock(index) {
-        const block = document.getElementById(`stopBlock_${index}`);
-        if (block) {
-          block.remove();
-
-          if (window.appState && window.appState.compressedImages) {
-            delete window.appState.compressedImages[index];
-          }
-
-          updateTotalCost();
-
-          for (let i = index - 1; i >= 1; i--) {
-            if (document.getElementById(`stopBlock_${i}`)) {
-              toggleStop(i);
-              break;
-            }
-          }
-
-          document.getElementById("addStopBtn").style.display = "block";
-        }
-      }
-
-      function updateTotalCost() {
-        let activeStops = 0;
-        for (let i = 1; i <= window.currentStopCount; i++) {
-          if (document.getElementById(`stopBlock_${i}`)) {
-            activeStops++;
-          }
-        }
-        const total = activeStops * 12.99;
-        document.getElementById("totalPriceDisplay").innerText =
-          "$" + total.toFixed(2);
-      }
-
-      function handleImageCompress(event, index) {
+      // Image Upload & Compression
+      window.previewProfileImage = function (event) {
         const file = event.target.files[0];
         if (!file) return;
+
         const reader = new FileReader();
         reader.onload = function (e) {
           const img = new Image();
           img.onload = function () {
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
-            const scale = 800 / img.width;
-            canvas.width = 800;
+
+            // Shrink to 300px wide to prevent database overload
+            const scale = 300 / img.width;
+            canvas.width = 300;
             canvas.height = img.height * scale;
+
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            if (!window.appState.compressedImages)
-              window.appState.compressedImages = {};
-            window.appState.compressedImages[index] = canvas.toDataURL(
-              "image/jpeg",
-              0.6
-            );
+            // Convert to compressed JPEG and update UI
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+            document.getElementById("profileImagePreview").src =
+              compressedBase64;
           };
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
-      }
-
-      window.listenToMyActiveOrder = function (orderId) {
-        const title = document.getElementById("sheetTitle");
-        const subtitle = document.getElementById("sheetSubtitle");
-
-        window.onSnapshot(
-          window.doc(window.db, "orders", orderId),
-          (docSnap) => {
-            if (docSnap.exists()) {
-              const data = docSnap.data();
-              if (data.status === "pending") {
-                title.innerText = "Order Pending";
-                subtitle.innerText = "Waiting for Hero approval...";
-              } else if (data.status === "in_transit") {
-                title.innerText = "Hero is on the way!";
-                subtitle.innerText =
-                  "Your driver has secured your curbside pickup.";
-              } else if (data.status === "completed") {
-                title.innerText = "Delivery Complete";
-                subtitle.innerText = "Thanks for using Pick Up Hero!";
-              }
-            }
-          }
-        );
       };
 
-      let animationFrameId;
-
-      function animateMarker(marker, startPos, endPos, duration) {
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
-        const startTime = performance.now();
-
-        function step(currentTime) {
-          const elapsed = currentTime - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-
-          const easeProgress = 1 - Math.pow(1 - progress, 3);
-
-          const currentLat =
-            startPos.lat + (endPos.lat - startPos.lat) * easeProgress;
-          const currentLng =
-            startPos.lng + (endPos.lng - startPos.lng) * easeProgress;
-
-          marker.setLatLng([currentLat, currentLng]);
-
-          if (progress < 1) {
-            animationFrameId = requestAnimationFrame(step);
-          }
-        }
-        animationFrameId = requestAnimationFrame(step);
-      }
-
-      window.loadActiveDriver = async function () {
-        try {
-          const docSnap = await window.getDoc(
-            window.doc(window.db, "driver_settings", "hero_driver_main")
-          );
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data.profilePic)
-              document.querySelector(".driver-avatar").src = data.profilePic;
-            if (data.displayName)
-              document.getElementById(
-                "sheetSubtitle"
-              ).innerText = `${data.displayName} is running tomorrow morning.`;
-
-            // Securely place the stationary orange base pin
-            if (
-              data.baseLat &&
-              data.baseLng &&
-              typeof driverMarker !== "undefined"
-            ) {
-              driverMarker.setLatLng([data.baseLat, data.baseLng]);
-              driverMarker.setOpacity(1);
-            }
-          }
-
-          // Route telemetry to the black arrow pin
-          window.onSnapshot(
-            window.doc(window.db, "driver_locations", "hero_driver_main"),
-            (locationSnap) => {
-              if (
-                locationSnap.exists() &&
-                typeof window.liveDriverMarker !== "undefined"
-              ) {
-                const locData = locationSnap.data();
-                const targetPos = { lat: locData.lat, lng: locData.lng };
-
-                if (!locData.isOnline) {
-                  window.liveDriverMarker.setOpacity(0);
-                  return;
-                }
-
-                if (window.liveDriverMarker.options.opacity === 0) {
-                  // Snap to first read and reveal
-                  window.liveDriverMarker.setLatLng([locData.lat, locData.lng]);
-                  window.liveDriverMarker.setOpacity(1);
-                } else {
-                  // Animate subsequent telemetry pings
-                  const currentPos = window.liveDriverMarker.getLatLng();
-                  animateMarker(
-                    window.liveDriverMarker,
-                    currentPos,
-                    targetPos,
-                    2500
-                  );
-                }
-              }
-            }
-          );
-        } catch (e) {
-          console.error("Error loading driver data:", e);
-        }
-      };
-
-      function openFindHeroModal() {
-        closeAllModals();
-        document.getElementById("findHeroModal").classList.add("active");
-        updateNavState("");
-      }
-
-      function promptLocationAccess() {
-        document.getElementById("locationSoftPrompt").style.display = "flex";
-      }
-
-      function handleLocationDeny() {
-        document.getElementById("locationSoftPrompt").style.display = "none";
-      }
-
-      function handleLocationAllow() {
-        document.getElementById("locationSoftPrompt").style.display = "none";
-
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              userLat = position.coords.latitude;
-              userLng = position.coords.longitude;
-              document.getElementById("findHeroAddressInput").value =
-                "Current Location Acquired";
-            },
-            (error) => {
-              alert("Location access denied or unavailable.");
-            }
-          );
-        } else {
-          alert("Geolocation is not supported by your browser.");
-        }
-      }
-
-      function executeHeroSearch() {
-        const btn = document.getElementById("executeSearchBtn");
-        const address = document.getElementById("findHeroAddressInput").value;
-
-        if (!address) {
-          alert("Please enter an address or use your location.");
-          return;
-        }
-
-        btn.innerHTML = '<div class="search-spinner"></div> Searching...';
-
-        if (!userLat || !userLng) {
-          alert(
-            "Please select a specific location from the dropdown or use your device GPS."
-          );
-          btn.innerHTML = "Find Hero";
-          return;
-        }
-
-        setTimeout(() => {
-          btn.innerHTML = "Find Hero";
-          closeAllModals();
-
-          // Show the user at their exact location
-          userMarker.setLatLng([userLat, userLng]);
-          userMarker.setOpacity(1);
-
-          // Zoom the map to perfectly frame the customer and the driver's stationary base
-          const bounds = L.latLngBounds(
-            [userLat, userLng],
-            driverMarker.getLatLng()
-          );
-          map.fitBounds(bounds, { padding: [70, 70] });
-        }, 1500);
-      }
-
-      // --- SESSION & MULTI-STOP LOGIC ---
-
-      window.checkActiveSession = function () {
+      function listenForPendingOrders() {
         const q = window.query(
           window.collection(window.db, "orders"),
-          window.where("userId", "==", window.appState.userId)
+          window.where("status", "==", "pending")
         );
 
         window.onSnapshot(q, (snapshot) => {
-          let hasActive = false;
-          let activeId = null;
+          const newOrders = [];
 
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
 
-            window.appState.activeOrder = data;
+            if (data.stops && Array.isArray(data.stops)) {
+              data.stops.forEach((stop, index) => {
+                newOrders.push({
+                  id: docSnap.id + "_pickup_" + index,
+                  dbId: docSnap.id,
+                  title: `Pickup: ${stop.storeName || "Store"}`,
+                  lat: stop.lat,
+                  lng: stop.lng,
+                  type: "pickup",
+                });
+              });
+            }
 
-            if (data.status === "pending" || data.status === "in_transit") {
-              hasActive = true;
-              activeId = docSnap.id;
+            if (data.deliveryAddress) {
+              newOrders.push({
+                id: docSnap.id + "_del",
+                dbId: docSnap.id,
+                title: `Delivery: ${data.deliveryAddress}`,
+                lat: data.deliveryLat || 39.42,
+                lng: data.deliveryLng || -94.6,
+                type: "delivery",
+              });
             }
           });
 
-          if (hasActive) window.appState.currentOrderId = activeId;
-
-          const fab = document.getElementById("mainFab");
-
-          const defaultActions = document.getElementById("defaultSheetActions");
-          const timeline = document.getElementById("activeStopsTimeline");
-
-          if (hasActive) {
-            fab.classList.add("locked");
-            document.getElementById("activeDeliveryPrompt").style.display =
-              "flex";
-            if (defaultActions) defaultActions.style.display = "none";
-            if (timeline) timeline.style.display = "flex";
-            window.listenToMyActiveOrder(activeId);
-          } else {
-            fab.classList.remove("locked");
-            if (defaultActions) defaultActions.style.display = "flex";
-            if (timeline) {
-              timeline.style.display = "none";
-              timeline.innerHTML = "";
-            }
+          if (
+            newOrders.length > AppState.triageQueue.length &&
+            AppState.workflowPhase === "idle"
+          ) {
+            document
+              .getElementById("alertSound")
+              .play()
+              .catch(() => console.log("Audio blocked."));
           }
+
+          AppState.triageQueue = newOrders;
+          AppState.pendingOrders = snapshot.docs.length;
+
+          const badge = document.getElementById("notificationBadge");
+          badge.innerText = AppState.pendingOrders;
+          badge.style.display = AppState.pendingOrders > 0 ? "flex" : "none";
         });
+      }
+
+      window.saveShiftState = async function () {
+        try {
+          await window.setDoc(
+            window.doc(window.db, "driver_state", DRIVER_DOC_ID),
+            {
+              workflowPhase: AppState.workflowPhase,
+              activeQueue: AppState.activeQueue,
+              triageQueue: AppState.triageQueue,
+            },
+            { merge: true }
+          );
+        } catch (e) {
+          console.error("State save failed:", e);
+        }
       };
 
-      // --- BOTTOM SHEET DRAG LOGIC ---
-      const sheet = document.getElementById("trackerSheet");
-      let startY,
-        currentY,
-        isDragging = false;
+      window.initializeShiftState = async function () {
+        try {
+          const stateSnap = await window.getDoc(
+            window.doc(window.db, "driver_state", DRIVER_DOC_ID)
+          );
+          let isActiveShift = false;
 
-      sheet.addEventListener("touchstart", (e) => {
-        startY = e.touches[0].clientY;
-        isDragging = true;
-        sheet.style.transition = "none"; // Remove transition for smooth dragging
-      });
+          if (stateSnap.exists()) {
+            const data = stateSnap.data();
+            if (data.workflowPhase && data.workflowPhase !== "idle") {
+              isActiveShift = true;
+              AppState.workflowPhase = data.workflowPhase;
+              AppState.activeQueue = data.activeQueue || [];
+              AppState.triageQueue = data.triageQueue || [];
+            }
+          }
 
-      sheet.addEventListener("touchmove", (e) => {
-        if (!isDragging) return;
-        currentY = e.touches[0].clientY;
-        const deltaY = currentY - startY;
-
-        // Prevent dragging the sheet up off the screen
-        if (deltaY > 0) {
-          sheet.style.transform = `translateY(${deltaY}px)`;
+          if (isActiveShift) {
+            AppState.isOnline = true;
+            const btn = document.getElementById("dutyToggleBtn");
+            if (btn) {
+              btn.innerText = "On Duty";
+              btn.classList.add("active");
+            }
+            await window.setDoc(
+              window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+              { isOnline: true, timestamp: new Date() },
+              { merge: true }
+            );
+            updateDashboardUI(); // Render the restored active route
+          } else {
+            AppState.isOnline = false;
+            await window.setDoc(
+              window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+              { isOnline: false, timestamp: new Date() },
+              { merge: true }
+            );
+          }
+        } catch (e) {
+          console.error("Initialization failed:", e);
         }
-      });
+      };
 
-      sheet.addEventListener("touchend", (e) => {
-        isDragging = false;
-        sheet.style.transition = "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
-        const deltaY = currentY - startY;
+      window.toggleDutyStatus = async function () {
+        AppState.isOnline = !AppState.isOnline;
+        const btn = document.getElementById("dutyToggleBtn");
 
-        // If swiped down more than 100px, push to a peek state. Otherwise snap back to full.
-        if (deltaY > 100) {
-          sheet.style.transform = "translateY(75%)";
+        if (AppState.isOnline) {
+          btn.innerText = "On Duty";
+          btn.classList.add("active");
         } else {
-          sheet.style.transform = "translateY(0)";
+          btn.innerText = "Off Duty";
+          btn.classList.remove("active");
         }
-      });
 
-      // --- ROUTING & TRACK HERO LOGIC ---
+        try {
+          await window.setDoc(
+            window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+            { isOnline: AppState.isOnline, timestamp: new Date() },
+            { merge: true }
+          );
+        } catch (e) {
+          console.error("Duty status update failed:", e);
+        }
+      };
+
+      function startTelemetry() {
+        setInterval(() => {
+          if (!AppState.isOnline) return;
+
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                if (AppState.liveDriverMarker) {
+                  AppState.liveDriverMarker.setLatLng([lat, lng]);
+                }
+
+                try {
+                  await window.setDoc(
+                    window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+                    { lat: lat, lng: lng, timestamp: new Date() },
+                    { merge: true }
+                  );
+                } catch (e) {
+                  console.error("Telemetry failed:", e);
+                }
+              },
+              (error) => console.error("GPS Error:", error),
+              { enableHighAccuracy: true }
+            );
+          }
+        }, 30000);
+      }
+
+      // Visual Pruning System Engine
+      window.startTriageMode = function () {
+        if (AppState.pendingOrders === 0) return;
+        document.getElementById("notificationBadge").style.display = "none";
+        closeAllModals();
+        AppState.workflowPhase = "triage";
+        updateDashboardUI();
+      };
+
+      function getDistance(p1, p2) {
+        const dy = p1[0] - p2[0];
+        const dx = p1[1] - p2[1];
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      function drawTriageRoute() {
+        AppState.layerGroup.clearLayers();
+
+        // Nearest-Neighbor Sorting Logic
+        let current = AppState.homeBase;
+        let unsorted = [...AppState.triageQueue];
+        let sorted = [];
+
+        while (unsorted.length > 0) {
+          unsorted.sort(
+            (a, b) =>
+              getDistance(current, [a.lat, a.lng]) -
+              getDistance(current, [b.lat, b.lng])
+          );
+          let next = unsorted.shift();
+          sorted.push(next);
+          current = [next.lat, next.lng];
+        }
+        AppState.triageQueue = sorted; // Save sorted sequence
+
+        // Draw Street-Snapped Polyline via Google Directions
+        if (sorted.length > 0) {
+          const directionsService = new google.maps.DirectionsService();
+          const origin = new google.maps.LatLng(
+            AppState.homeBase[0],
+            AppState.homeBase[1]
+          );
+          const destination = new google.maps.LatLng(
+            sorted[sorted.length - 1].lat,
+            sorted[sorted.length - 1].lng
+          );
+
+          const waypoints = sorted.slice(0, -1).map((stop) => ({
+            location: new google.maps.LatLng(stop.lat, stop.lng),
+            stopover: true,
+          }));
+
+          directionsService.route(
+            {
+              origin: origin,
+              destination: destination,
+              waypoints: waypoints,
+              travelMode: google.maps.TravelMode.DRIVING,
+            },
+            (result, status) => {
+              if (status === google.maps.DirectionsStatus.OK) {
+                const encodedPath = result.routes[0].overview_polyline;
+                const decodedCoords = decodePolyline(encodedPath);
+                L.polyline(decodedCoords, {
+                  color: "var(--accent)",
+                  weight: 5,
+                  opacity: 0.9,
+                  lineJoin: "round",
+                }).addTo(AppState.layerGroup);
+              }
+            }
+          );
+        }
+
+        // Draw Interactive Pruning Pins with Customer-Style Teardrop
+        sorted.forEach((order) => {
+          const icon = L.divIcon({
+            className: "custom-store-pin",
+            html: "",
+            iconSize: [28, 28],
+            iconAnchor: [14, 28],
+            popupAnchor: [0, -28],
+          });
+          const marker = L.marker([order.lat, order.lng], { icon }).addTo(
+            AppState.layerGroup
+          );
+          marker.bindPopup(`
+          <div style="text-align:center;">
+            <strong>${order.title}</strong><br>
+            <button onclick="rejectTriageOrder('${order.id}')" class="btn btn-emergency" style="padding: 6px 12px; margin-top: 10px; font-size: 0.8rem; border-radius: 6px;">Reject & Redraw</button>
+          </div>
+        `);
+        });
+
+        if (sorted.length > 0) {
+          let latlngs = [
+            AppState.homeBase,
+            ...sorted.map((o) => [o.lat, o.lng]),
+          ];
+          AppState.mapInstance.fitBounds(latlngs, { padding: [50, 50] });
+        }
+      }
+
+      window.rejectTriageOrder = function (id) {
+        AppState.triageQueue = AppState.triageQueue.filter((o) => o.id !== id);
+        drawTriageRoute(); // Instantly recalculates nearest neighbor and redraws map
+
+        // Update UI text
+        const gSub = document.getElementById("glanceSubtitle");
+        gSub.innerText = `${AppState.triageQueue.length} Stops Remaining.`;
+
+        window.saveShiftState();
+      };
+
+      // --- ROUTING & DISTANCE MATRIX UTILS ---
       let activeRouteLayer = null;
 
       function decodePolyline(encoded) {
@@ -1834,20 +1455,18 @@
         return points;
       }
 
-      function drawGoogleRoute(heroLocation, stopsArray, deliveryLocation) {
-        if (activeRouteLayer) map.removeLayer(activeRouteLayer);
-
+      function drawActualRoute(origin, waypoints, destination) {
+        if (activeRouteLayer)
+          AppState.mapInstance.removeLayer(activeRouteLayer);
         const directionsService = new google.maps.DirectionsService();
 
-        const waypoints = stopsArray.map((addressString) => ({
-          location: addressString,
-          stopover: true,
-        }));
-
         const request = {
-          origin: heroLocation,
-          destination: deliveryLocation,
-          waypoints: waypoints,
+          origin: new google.maps.LatLng(origin[0], origin[1]),
+          destination: new google.maps.LatLng(destination[0], destination[1]),
+          waypoints: waypoints.map((wp) => ({
+            location: new google.maps.LatLng(wp[0], wp[1]),
+            stopover: true,
+          })),
           travelMode: google.maps.TravelMode.DRIVING,
         };
 
@@ -1855,220 +1474,355 @@
           if (status === google.maps.DirectionsStatus.OK) {
             const encodedPath = result.routes[0].overview_polyline;
             const decodedCoords = decodePolyline(encodedPath);
-
             activeRouteLayer = L.polyline(decodedCoords, {
               color: "var(--accent)",
               weight: 5,
               opacity: 0.9,
               lineJoin: "round",
-            }).addTo(map);
-
-            map.fitBounds(activeRouteLayer.getBounds(), { padding: [60, 60] });
-
-            const storeIcon = L.divIcon({
-              className: "custom-store-pin",
-              iconSize: [28, 28],
-              iconAnchor: [14, 28],
+            }).addTo(AppState.layerGroup);
+            AppState.mapInstance.fitBounds(activeRouteLayer.getBounds(), {
+              padding: [60, 60],
             });
-
-            const legs = result.routes[0].legs;
-
-            for (let i = 0; i < legs.length - 1; i++) {
-              const wp = legs[i].end_location;
-              L.marker([wp.lat(), wp.lng()], { icon: storeIcon }).addTo(map);
-            }
-
-            const finalDest = legs[legs.length - 1].end_location;
-            L.marker([finalDest.lat(), finalDest.lng()], {
-              icon: storeIcon,
-            }).addTo(map);
           } else {
-            console.error("Directions request failed due to " + status);
+            console.error("Directions request failed:", status);
           }
         });
       }
 
-      window.cancelActiveOrder = async function () {
-        const orderId = window.appState.currentOrderId;
-        if (!orderId) return;
+      function groupPickups(queue) {
+        let groups = {};
+        queue
+          .filter((q) => q.type === "pickup")
+          .forEach((p) => {
+            let key = `${p.lat}_${p.lng}`;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(p);
+          });
+        return Object.values(groups);
+      }
 
-        if (
-          confirm(
-            "Are you sure you want to cancel this delivery? This cannot be undone."
-          )
-        ) {
-          try {
-            await window.setDoc(
-              window.doc(window.db, "orders", orderId),
-              { status: "cancelled" },
-              { merge: true }
+      async function sortDeliveriesByTime(originLat, originLng, deliveries) {
+        return new Promise((resolve) => {
+          if (deliveries.length === 0) return resolve([]);
+          const service = new google.maps.DistanceMatrixService();
+          const destinations = deliveries.map(
+            (d) => new google.maps.LatLng(d.lat, d.lng)
+          );
+          const origin = new google.maps.LatLng(originLat, originLng);
+
+          service.getDistanceMatrix(
+            {
+              origins: [origin],
+              destinations: destinations,
+              travelMode: "DRIVING",
+            },
+            (response, status) => {
+              if (status === "OK") {
+                const results = response.rows[0].elements;
+                let mapped = deliveries.map((d, i) => ({
+                  ...d,
+                  durationVal:
+                    results[i].status === "OK"
+                      ? results[i].duration.value
+                      : 999999,
+                }));
+                mapped.sort((a, b) => a.durationVal - b.durationVal);
+                resolve(mapped);
+              } else {
+                resolve(deliveries); // Fallback to unsorted if API fails
+              }
+            }
+          );
+        });
+      }
+
+      // --- STATE MACHINE ---
+      async function updateDashboardUI() {
+        const gTitle = document.getElementById("glanceTitle");
+        const gSub = document.getElementById("glanceSubtitle");
+        const wfBtn = document.getElementById("workflowBtn");
+        const timeline = document.getElementById("timelineList");
+
+        if (AppState.workflowPhase === "triage") {
+          gTitle.innerText = "Proposed Route Canvas";
+          gSub.innerText = `${AppState.triageQueue.length} Stops. Tap map pins to reject outliers.`;
+          wfBtn.innerText = "Confirm Route";
+          wfBtn.className = "btn btn-primary";
+          wfBtn.style.display = "block";
+
+          wfBtn.onclick = async function () {
+            AppState.activeQueue = AppState.triageQueue.map((t) => ({
+              ...t,
+              status: "pending",
+            }));
+            AppState.workflowPhase = "ready_pickup";
+            AppState.pendingOrders = 0;
+            updateDashboardUI();
+          };
+
+          drawTriageRoute();
+          timeline.innerHTML = "";
+          AppState.triageQueue.forEach((o, i) => {
+            timeline.innerHTML += `<li class="timeline-item"><div class="node-card"><strong>Stop ${
+              i + 1
+            }: ${
+              o.title
+            }</strong><p style="font-size:0.8rem; color:var(--text-muted);">Distance sorted automatically.</p></div></li>`;
+          });
+        } else if (AppState.workflowPhase === "ready_pickup") {
+          AppState.layerGroup.clearLayers();
+          gTitle.innerText = "Route Locked";
+
+          const groupedPickups = groupPickups(AppState.activeQueue);
+          gSub.innerText = `${groupedPickups.length} Grouped Pickup Locations`;
+          wfBtn.innerText = "Start Pickups";
+          wfBtn.className = "btn btn-primary";
+          wfBtn.onclick = () => {
+            AppState.workflowPhase = "pickup";
+            updateDashboardUI();
+          };
+
+          if (groupedPickups.length > 0) {
+            drawActualRoute(
+              AppState.homeBase,
+              groupedPickups.slice(0, -1).map((g) => [g[0].lat, g[0].lng]),
+              [
+                groupedPickups[groupedPickups.length - 1][0].lat,
+                groupedPickups[groupedPickups.length - 1][0].lng,
+              ]
             );
 
-            // Reload the page to securely flush the application state, map layers, and UI locks
-            window.location.reload();
-          } catch (err) {
-            console.error("Cancellation failed:", err);
-            alert("Failed to cancel the order. Please check your connection.");
+            groupedPickups.forEach((group) => {
+              const clusterIcon = L.divIcon({
+                className: "custom-store-pin",
+                html: "",
+                iconSize: [28, 28],
+                iconAnchor: [14, 28],
+                popupAnchor: [0, -28],
+              });
+              L.marker([group[0].lat, group[0].lng], {
+                icon: clusterIcon,
+              }).addTo(AppState.layerGroup);
+            });
           }
+          drawPickupTimeline();
+        } else if (AppState.workflowPhase === "pickup") {
+          gTitle.innerText = "Active Pickups";
+          gSub.innerText = "Secure items and mark complete.";
+          wfBtn.style.display = "none"; // Action is inside the cards now
+          drawPickupTimeline();
+        } else if (AppState.workflowPhase === "ready_delivery") {
+          AppState.layerGroup.clearLayers();
+          gTitle.innerText = "Pickups Complete";
+          gSub.innerText = "Calculating fastest delivery route...";
+          wfBtn.style.display = "none";
+          timeline.innerHTML =
+            "<p style='color: var(--text-muted);'>Sorting via Google Distance Matrix...</p>";
+
+          const currentLoc = AppState.homeBase; // In production, replace with live driver GPS
+          let deliveries = AppState.activeQueue.filter(
+            (q) => q.type === "delivery"
+          );
+
+          const sortedDeliveries = await sortDeliveriesByTime(
+            currentLoc[0],
+            currentLoc[1],
+            deliveries
+          );
+
+          AppState.activeQueue = [
+            ...AppState.activeQueue.filter((q) => q.type === "pickup"),
+            ...sortedDeliveries,
+          ];
+
+          gSub.innerText = `${sortedDeliveries.length} Deliveries Sorted.`;
+          wfBtn.innerText = "Begin Deliveries";
+          wfBtn.className = "btn btn-primary";
+          wfBtn.style.display = "block";
+          wfBtn.onclick = () => {
+            AppState.workflowPhase = "delivery";
+            updateDashboardUI();
+          };
+
+          if (sortedDeliveries.length > 0) {
+            drawActualRoute(
+              currentLoc,
+              sortedDeliveries.slice(0, -1).map((d) => [d.lat, d.lng]),
+              [
+                sortedDeliveries[sortedDeliveries.length - 1].lat,
+                sortedDeliveries[sortedDeliveries.length - 1].lng,
+              ]
+            );
+
+            sortedDeliveries.forEach((d) => {
+              const delIcon = L.divIcon({
+                className: "custom-store-pin",
+                html: "",
+                iconSize: [28, 28],
+                iconAnchor: [14, 28],
+                popupAnchor: [0, -28],
+              });
+              L.marker([d.lat, d.lng], { icon: delIcon }).addTo(
+                AppState.layerGroup
+              );
+            });
+          }
+          drawDeliveryTimeline();
+        } else if (AppState.workflowPhase === "delivery") {
+          const nextDelivery = AppState.activeQueue.find(
+            (q) => q.type === "delivery" && q.status !== "completed"
+          );
+
+          if (!nextDelivery) {
+            AppState.workflowPhase = "complete";
+            return updateDashboardUI();
+          }
+
+          gTitle.innerText = `En Route: ${nextDelivery.title}`;
+          gSub.innerText = "Navigating to drop-off.";
+          wfBtn.innerText = "Delivered Next Stop";
+          wfBtn.className = "btn btn-success";
+          wfBtn.style.display = "block";
+
+          wfBtn.onclick = async () => {
+            const cleanId = (nextDelivery.dbId || nextDelivery.id).replace(
+              "_del",
+              ""
+            );
+            try {
+              await window.updateDoc(window.doc(window.db, "orders", cleanId), {
+                status: "completed",
+              });
+            } catch (e) {
+              console.error(e);
+            }
+            nextDelivery.status = "completed";
+            updateDashboardUI();
+          };
+
+          drawDeliveryTimeline();
+        } else if (AppState.workflowPhase === "complete") {
+          AppState.layerGroup.clearLayers();
+          if (activeRouteLayer)
+            AppState.mapInstance.removeLayer(activeRouteLayer);
+          gTitle.innerText = "Route Complete!";
+          gSub.innerText = "Verify payments & finalize run.";
+
+          wfBtn.innerText = "Deliveries Completed";
+          wfBtn.className = "btn btn-primary";
+          wfBtn.style.display = "block";
+          wfBtn.onclick = () => {
+            AppState.workflowPhase = "idle";
+            AppState.activeQueue = [];
+            AppState.triageQueue = [];
+            updateDashboardUI();
+            AppState.mapInstance.setView(AppState.homeBase, 12);
+          };
+
+          timeline.innerHTML =
+            '<li class="timeline-item"><div class="node-card"><strong>All Drops Complete</strong><p style="font-size:0.8rem; color:var(--text-muted);">Payouts secured via Stripe.</p></div></li>';
+        } else if (AppState.workflowPhase === "idle") {
+          gTitle.innerText = "Idle / No Active Route";
+          gSub.innerText = "Awaiting scheduled runs.";
+          wfBtn.style.display = "none";
+          timeline.innerHTML =
+            '<p style="color: var(--text-muted);">Queue is empty.</p>';
         }
+
+        window.saveShiftState();
+      }
+
+      // --- CUSTOM TIMELINES & ACTIONS ---
+
+      window.markPickupComplete = async function (dbId) {
+        const item = AppState.activeQueue.find(
+          (i) => (i.dbId || i.id) === dbId && i.type === "pickup"
+        );
+        if (!item) return;
+
+        // Broadcast to customer that item is picked up and driver is en route
+        const cleanId = dbId.toString().replace("_del", "");
+        try {
+          await window.updateDoc(window.doc(window.db, "orders", cleanId), {
+            status: "in_transit",
+          });
+        } catch (e) {
+          console.error("Firebase update failed", e);
+        }
+
+        item.status = "completed";
+
+        // Transition to delivery if all pickups are complete
+        const pendingPickups = AppState.activeQueue.filter(
+          (i) => i.type === "pickup" && i.status !== "completed"
+        );
+        if (pendingPickups.length === 0) {
+          AppState.workflowPhase = "ready_delivery";
+          updateDashboardUI();
+        } else {
+          drawPickupTimeline();
+        }
+
+        window.saveShiftState();
       };
 
-      function dismissActiveDeliveryPrompt() {
-        document.getElementById("activeDeliveryPrompt").style.display = "none";
-        document.getElementById("trackerSheet").style.transform =
-          "translateY(0)";
+      function drawPickupTimeline() {
+        const timeline = document.getElementById("timelineList");
+        timeline.innerHTML = "";
 
-        const order = window.appState.activeOrder;
-        if (!order) return;
+        const pickups = AppState.activeQueue.filter((q) => q.type === "pickup");
 
-        const heroLoc = {
-          lat: driverMarker.getLatLng().lat,
-          lng: driverMarker.getLatLng().lng,
-        };
+        pickups.forEach((node) => {
+          const isDone = node.status === "completed";
+          const btnHTML = isDone
+            ? `<button class="btn btn-secondary" style="margin-top:10px; padding:8px; font-size:0.85rem;" disabled>Picked Up ✓</button>`
+            : `<button class="btn btn-primary" style="margin-top:10px; padding:8px; font-size:0.85rem;" onclick="markPickupComplete('${
+                node.dbId || node.id
+              }')">Items Picked Up</button>`;
 
-        const actualStops = order.stops.map((stop) => {
-          return { lat: stop.lat, lng: stop.lng };
+          timeline.innerHTML += `
+            <li class="timeline-item ${isDone ? "completed" : "active"}">
+              <div class="node-card">
+                <div class="node-header">
+                  <strong>${node.title}</strong>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
+                ${AppState.workflowPhase === "pickup" ? btnHTML : ""}
+              </div>
+            </li>
+          `;
         });
-        const actualDelivery = order.deliveryAddress;
-
-        driverMarker.setOpacity(1);
-
-        drawGoogleRoute(heroLoc, actualStops, actualDelivery);
-
-        const timeline = document.getElementById("activeStopsTimeline");
-        let timelineHTML = `
-          <div class="timeline-item">
-            <div class="timeline-title">Hero En Route</div>
-            <div class="timeline-subtitle">Starting delivery run</div>
-          </div>
-        `;
-
-        order.stops.forEach((stop, index) => {
-          timelineHTML += `
-            <div class="timeline-item">
-              <div class="timeline-title">Pickup Stop ${index + 1}</div>
-              <div class="timeline-subtitle">${stop.storeName}</div>
-            </div>
-           `;
-        });
-
-        timelineHTML += `
-          <div class="timeline-item">
-            <div class="timeline-title">Final Delivery</div>
-            <div class="timeline-subtitle">${order.deliveryAddress}</div>
-          </div>
-          <button class="btn btn-emergency" style="margin-top: 25px; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;" onclick="cancelActiveOrder()">Cancel Delivery</button>
-        `;
-        timeline.innerHTML = timelineHTML;
       }
 
-      function bindStoreAutocomplete(index) {
-        const input = document.getElementById(`storeSearchInput_${index}`);
-        if (input) {
-          const ac = new google.maps.places.Autocomplete(input);
-          ac.addListener("place_changed", () => {
-            const place = ac.getPlace();
-            if (place.geometry) {
-              activeStopContext = index;
-              simulateStoreSearch(place);
-            }
-          });
-        }
-      }
+      function drawDeliveryTimeline() {
+        const timeline = document.getElementById("timelineList");
+        timeline.innerHTML = "";
 
-      function triggerStoreSearch(index) {
-        activeStopContext = index;
-        simulateStoreSearch();
-      }
+        const deliveries = AppState.activeQueue.filter(
+          (q) => q.type === "delivery"
+        );
+        let activeFound = false;
 
-      function addNewStopBlock() {
-        let activeStops = 0;
-        for (let i = 1; i <= window.currentStopCount; i++) {
-          if (document.getElementById(`stopBlock_${i}`)) activeStops++;
-        }
-
-        if (activeStops >= 3) return;
-
-        for (let i = 1; i <= window.currentStopCount; i++) {
-          const block = document.getElementById(`stopBlock_${i}`);
-          if (block) {
-            const storeName = document.getElementById(
-              `storeNameDisplay_${i}`
-            ).innerText;
-            document.getElementById(
-              `summaryText_${i}`
-            ).innerText = `📍 Stop ${i} - ${
-              storeName !== "Pending..." ? storeName : "Details needed"
-            }`;
-            block.classList.add("collapsed");
+        deliveries.forEach((node) => {
+          let statusClass = "";
+          if (node.status === "completed") {
+            statusClass = "completed";
+          } else if (!activeFound) {
+            statusClass = "active";
+            activeFound = true;
           }
-        }
 
-        window.currentStopCount++;
-        const newIndex = window.currentStopCount;
-
-        const container = document.getElementById("stopsContainer");
-        const newBlock = document.createElement("div");
-        newBlock.className = "stop-block";
-        newBlock.id = `stopBlock_${newIndex}`;
-        newBlock.style =
-          "padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 15px;";
-
-        newBlock.innerHTML = `
-          <div class="stop-summary" onclick="toggleStop(${newIndex})">
-            <strong id="summaryText_${newIndex}"> Stop ${newIndex}</strong>
-            <span style="color: var(--accent); font-size: 0.8rem;">Edit</span>
-          </div>
-          
-          <div class="stop-details" id="stopDetails_${newIndex}">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-              <h4 style="color: var(--accent)">Pickup Stop ${newIndex}</h4>
-              <button class="btn btn-emergency" style="width: auto; padding: 6px 12px; font-size: 0.8rem;" onclick="removeStopBlock(${newIndex})">Remove</button>
-            </div>
-
-            <div class="form-group">
-              <label>Search Store Location</label>
-              <input type="text" id="storeSearchInput_${newIndex}" placeholder="Walmart, Target, etc..." />
-              <button class="btn btn-secondary" style="margin-top: 8px" onclick="triggerStoreSearch(${newIndex})">Search Map</button>
-            </div>
-
-            <div id="selectedStoreDisplay_${newIndex}" style="display: none; padding: 15px; background: var(--surface-elevated); border-radius: 12px; border-left: 4px solid var(--accent); margin-top: 10px; margin-bottom: 15px;">
-              <strong id="storeNameDisplay_${newIndex}">Pending...</strong>
-              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Location Confirmed</p>
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-              <div class="form-group" style="flex: 2;">
-                <label>Store Order Number *</label>
-                <input type="text" id="pickupNumberInput_${newIndex}" placeholder="e.g., #98765432" />
+          timeline.innerHTML += `
+            <li class="timeline-item ${statusClass}">
+              <div class="node-card">
+                <div class="node-header">
+                  <strong>${node.title}</strong>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Rural Route Drop-off</p>
               </div>
-              <div class="form-group" style="flex: 1;">
-                <label>PIN <span class="tooltip-icon" onclick="openInfoTooltip()">?</span></label>
-                <input type="text" id="pickupPinInput_${newIndex}" placeholder="1234" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Order Screenshot (Optional)</label>
-              <input type="file" id="screenshotInput_${newIndex}" accept="image/*" onchange="handleImageCompress(event, ${newIndex})" style="padding: 10px" />
-            </div>
-
-            <div class="form-group">
-              <label>Curbside Instructions (Optional)</label>
-              <textarea id="curbsideInstructionsInput_${newIndex}" rows="2" placeholder="Spot 4, blue Honda..."></textarea>
-            </div>
-          </div>
-        `;
-
-        container.appendChild(newBlock);
-        bindStoreAutocomplete(newIndex);
-
-        updateTotalCost();
-
-        activeStops++;
-        if (activeStops >= 3) {
-          document.getElementById("addStopBtn").style.display = "none";
-        }
+            </li>
+          `;
+        });
       }
     </script>
   </body>
