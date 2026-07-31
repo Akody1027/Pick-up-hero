@@ -467,6 +467,19 @@
         border-radius: 50%;
       }
 
+      
+      
+      
+      .custom-orange-pin {
+        background-color: var(--accent);
+        border: 3px solid var(--surface);
+        border-radius: 50%;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+      }
+      
+      
+      
+      
       /* --- DUTY STATUS UI --- */
       .duty-toggle-container {
         position: absolute;
@@ -1087,11 +1100,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         if (AppState.homeMarker)
           AppState.mapInstance.removeLayer(AppState.homeMarker);
+        
         const icon = L.divIcon({
-          className: "cluster-pin",
-          html: "H",
-          iconSize: [30, 30],
+          className: "custom-orange-pin",
+          html: "",
+          iconSize: [24, 24],
         });
+
+        
+        
         AppState.homeMarker = L.marker(AppState.homeBase, {
           icon: icon,
           draggable: false,
