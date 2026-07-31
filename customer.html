@@ -1112,12 +1112,21 @@
           return;
         }
 
+        if (!window.appState.deliveryLat || !window.appState.deliveryLng) {
+          alert(
+            "Please select a valid delivery address from the Google dropdown."
+          );
+          return;
+        }
+
         const totalCost = activeStopsFound * 12.99;
 
         try {
           const orderData = {
             userId: window.appState.userId,
-            deliveryAddress: address,
+            deliveryAddress: address,            
+            deliveryLat: window.appState.deliveryLat || null,
+            deliveryLng: window.appState.deliveryLng || null,      
             instructions: instructions,
             stops: stops,
             totalCost: totalCost,
@@ -1181,7 +1190,18 @@
           const addressInput = document.getElementById("deliveryAddressInput");
 
           // Bind Google Places Autocomplete to the final delivery address
-          new google.maps.places.Autocomplete(addressInput);
+          const deliveryAutocomplete = new google.maps.places.Autocomplete(
+            addressInput
+          );
+          deliveryAutocomplete.addListener("place_changed", () => {
+            const place = deliveryAutocomplete.getPlace();
+            if (place.geometry) {
+              window.appState.deliveryLat = place.geometry.location.lat();
+              window.appState.deliveryLng = place.geometry.location.lng();
+              document.getElementById("deliveryAddressInput").value =
+                place.formatted_address || place.name;
+            }
+          });
 
           // Bind smart search to the dynamic first pickup stop
           bindStoreAutocomplete(1);
