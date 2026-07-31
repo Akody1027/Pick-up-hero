@@ -1,7 +1,3 @@
-  
-
-
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -26,7 +22,7 @@
         --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
-        --border: #333333; 
+        --border: #333333;
         --success: #22c55e;
         --danger: #ef4444;
         --shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
@@ -448,6 +444,32 @@
         border: 1px solid var(--border);
       }
 
+      /* --- DUTY STATUS UI --- */
+      .duty-toggle-container {
+        position: absolute;
+        top: env(safe-area-inset-top, 20px);
+        left: 20px;
+        z-index: 1000;
+      }
+
+      .duty-btn {
+        background-color: #808080;
+        color: #ffffff;
+        border: 2px solid #ffffff;
+        padding: 10px 18px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+      }
+
+      .duty-btn.active {
+        background-color: var(--success);
+        border-color: var(--success);
+      }
+
       /* --- GOOGLE AUTOCOMPLETE OVERRIDES --- */
       .pac-container {
         z-index: 3000 !important;
@@ -482,6 +504,13 @@
 
     <!-- MAP LAYER -->
     <div id="map"></div>
+
+    <!-- DUTY STATUS LAYER -->
+    <div class="duty-toggle-container">
+      <button id="dutyToggleBtn" class="duty-btn" onclick="toggleDutyStatus()">
+        Off Duty
+      </button>
+    </div>
 
     <!-- TOP COMMAND CENTER -->
     <div class="top-controls">
@@ -875,7 +904,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             if (data.profilePic)
               document.getElementById("profileImagePreview").src =
                 data.profilePic;
-            
+
             // Apply saved map coordinates
             if (data.baseLat && data.baseLng) {
               AppState.homeBase = [data.baseLat, data.baseLng];
@@ -885,10 +914,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 renderHomeBase();
               }
             }
-            
-            
-            
-     
 
             const killSwitch = document.getElementById("killSwitchToggle");
             if (data.globalKillSwitch) killSwitch.classList.add("on");
@@ -970,22 +995,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         ).addTo(AppState.mapInstance);
 
         AppState.layerGroup = L.layerGroup().addTo(AppState.mapInstance);
-        
-        
-        
-                const liveIcon = L.divIcon({
+
+        const liveIcon = L.divIcon({
           className: "cluster-pin live-pin-override",
           html: "➤",
           iconSize: [26, 26],
           iconAnchor: [13, 13],
         });
-        
+
         AppState.liveDriverMarker = L.marker(AppState.homeBase, {
           icon: liveIcon,
-          zIndexOffset: 1000
+          zIndexOffset: 1000,
         }).addTo(AppState.mapInstance);
 
-        const style = document.createElement('style');
+        const style = document.createElement("style");
         style.innerHTML = `
           .live-pin-override {
             background: #000000 !important;
@@ -1001,9 +1024,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         startTelemetry();
       }
 
-         
-      
-      
       function renderHomeBase() {
         if (AppState.homeMarker)
           AppState.mapInstance.removeLayer(AppState.homeMarker);
@@ -1030,7 +1050,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           ];
           // Silently trigger the database save in the background
           if (window.saveDriverSettings) window.saveDriverSettings();
-          
+
           renderHomeBase();
         } else {
           AppState.homeMarker.dragging.enable();
@@ -1090,13 +1110,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         };
         reader.readAsDataURL(file);
       };
-      
-      
-      
-      
-      
-      
-            function listenForPendingOrders() {
+
+      function listenForPendingOrders() {
         const q = window.query(
           window.collection(window.db, "orders"),
           window.where("status", "==", "pending")
@@ -1107,7 +1122,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            
+
             if (data.stops && Array.isArray(data.stops)) {
               data.stops.forEach((stop, index) => {
                 newOrders.push({
@@ -1126,15 +1141,21 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 id: docSnap.id + "_del",
                 dbId: docSnap.id,
                 title: `Delivery: ${data.deliveryAddress}`,
-                lat: data.deliveryLat || 39.42, 
-                lng: data.deliveryLng || -94.6, 
+                lat: data.deliveryLat || 39.42,
+                lng: data.deliveryLng || -94.6,
                 type: "delivery",
               });
             }
           });
 
-          if (newOrders.length > AppState.triageQueue.length && AppState.workflowPhase === "idle") {
-            document.getElementById("alertSound").play().catch(() => console.log("Audio blocked."));
+          if (
+            newOrders.length > AppState.triageQueue.length &&
+            AppState.workflowPhase === "idle"
+          ) {
+            document
+              .getElementById("alertSound")
+              .play()
+              .catch(() => console.log("Audio blocked."));
           }
 
           AppState.triageQueue = newOrders;
@@ -1146,42 +1167,59 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         });
       }
 
+      window.toggleDutyStatus = async function () {
+        AppState.isOnline = !AppState.isOnline;
+        const btn = document.getElementById("dutyToggleBtn");
+
+        if (AppState.isOnline) {
+          btn.innerText = "On Duty";
+          btn.classList.add("active");
+        } else {
+          btn.innerText = "Off Duty";
+          btn.classList.remove("active");
+        }
+
+        try {
+          await window.setDoc(
+            window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+            { isOnline: AppState.isOnline, timestamp: new Date() },
+            { merge: true }
+          );
+        } catch (e) {
+          console.error("Duty status update failed:", e);
+        }
+      };
+
       function startTelemetry() {
         setInterval(() => {
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-              const lat = position.coords.latitude;
-              const lng = position.coords.longitude;
-              
-              if (AppState.liveDriverMarker) {
-                AppState.liveDriverMarker.setLatLng([lat, lng]);
-              }
+          if (!AppState.isOnline) return;
 
-              try {
-                await window.setDoc(
-                  window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
-                  { lat: lat, lng: lng, timestamp: new Date() },
-                  { merge: true }
-                );
-              } catch (e) { console.error("Telemetry failed:", e); }
-            }, (error) => console.error("GPS Error:", error), { enableHighAccuracy: true });
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                if (AppState.liveDriverMarker) {
+                  AppState.liveDriverMarker.setLatLng([lat, lng]);
+                }
+
+                try {
+                  await window.setDoc(
+                    window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+                    { lat: lat, lng: lng, timestamp: new Date() },
+                    { merge: true }
+                  );
+                } catch (e) {
+                  console.error("Telemetry failed:", e);
+                }
+              },
+              (error) => console.error("GPS Error:", error),
+              { enableHighAccuracy: true }
+            );
           }
         }, 30000);
       }
-
-      
-      
-      
-    
-      
-      
-      
-      
-      
-      
-      
-      
-      
 
       // Visual Pruning System Engine
       window.startTriageMode = function () {
@@ -1200,12 +1238,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       function drawTriageRoute() {
         AppState.layerGroup.clearLayers();
-        
-        
-        
-        
-        
-        
 
         // Nearest-Neighbor Sorting Logic
         let current = AppState.homeBase;
@@ -1264,18 +1296,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         gSub.innerText = `${AppState.triageQueue.length} Stops Remaining.`;
       };
 
-      
-      
-            // --- ROUTING & DISTANCE MATRIX UTILS ---
+      // --- ROUTING & DISTANCE MATRIX UTILS ---
       let activeRouteLayer = null;
 
       function decodePolyline(encoded) {
         let points = [];
-        let index = 0, len = encoded.length; 
-        let lat = 0, lng = 0;
+        let index = 0,
+          len = encoded.length;
+        let lat = 0,
+          lng = 0;
 
         while (index < len) {
-          let b, shift = 0, result = 0; 
+          let b,
+            shift = 0,
+            result = 0;
           do {
             b = encoded.charAt(index++).charCodeAt(0) - 63;
             result |= (b & 0x1f) << shift;
@@ -1284,7 +1318,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           let dlat = result & 1 ? ~(result >> 1) : result >> 1;
           lat += dlat;
 
-          shift = 0; result = 0;
+          shift = 0;
+          result = 0;
           do {
             b = encoded.charAt(index++).charCodeAt(0) - 63;
             result |= (b & 0x1f) << shift;
@@ -1299,13 +1334,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       }
 
       function drawActualRoute(origin, waypoints, destination) {
-        if (activeRouteLayer) AppState.mapInstance.removeLayer(activeRouteLayer);
+        if (activeRouteLayer)
+          AppState.mapInstance.removeLayer(activeRouteLayer);
         const directionsService = new google.maps.DirectionsService();
-        
+
         const request = {
           origin: new google.maps.LatLng(origin[0], origin[1]),
           destination: new google.maps.LatLng(destination[0], destination[1]),
-          waypoints: waypoints.map(wp => ({ location: new google.maps.LatLng(wp[0], wp[1]), stopover: true })),
+          waypoints: waypoints.map((wp) => ({
+            location: new google.maps.LatLng(wp[0], wp[1]),
+            stopover: true,
+          })),
           travelMode: google.maps.TravelMode.DRIVING,
         };
 
@@ -1314,9 +1353,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             const encodedPath = result.routes[0].overview_polyline;
             const decodedCoords = decodePolyline(encodedPath);
             activeRouteLayer = L.polyline(decodedCoords, {
-              color: "var(--accent)", weight: 5, opacity: 0.9, lineJoin: "round"
+              color: "var(--accent)",
+              weight: 5,
+              opacity: 0.9,
+              lineJoin: "round",
             }).addTo(AppState.layerGroup);
-            AppState.mapInstance.fitBounds(activeRouteLayer.getBounds(), { padding: [60, 60] });
+            AppState.mapInstance.fitBounds(activeRouteLayer.getBounds(), {
+              padding: [60, 60],
+            });
           } else {
             console.error("Directions request failed:", status);
           }
@@ -1325,11 +1369,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       function groupPickups(queue) {
         let groups = {};
-        queue.filter(q => q.type === 'pickup').forEach(p => {
-          let key = `${p.lat}_${p.lng}`;
-          if (!groups[key]) groups[key] = [];
-          groups[key].push(p);
-        });
+        queue
+          .filter((q) => q.type === "pickup")
+          .forEach((p) => {
+            let key = `${p.lat}_${p.lng}`;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(p);
+          });
         return Object.values(groups);
       }
 
@@ -1337,26 +1383,34 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         return new Promise((resolve) => {
           if (deliveries.length === 0) return resolve([]);
           const service = new google.maps.DistanceMatrixService();
-          const destinations = deliveries.map(d => new google.maps.LatLng(d.lat, d.lng));
+          const destinations = deliveries.map(
+            (d) => new google.maps.LatLng(d.lat, d.lng)
+          );
           const origin = new google.maps.LatLng(originLat, originLng);
-          
-          service.getDistanceMatrix({
-            origins: [origin],
-            destinations: destinations,
-            travelMode: 'DRIVING'
-          }, (response, status) => {
-            if (status === 'OK') {
-              const results = response.rows[0].elements;
-              let mapped = deliveries.map((d, i) => ({
-                ...d,
-                durationVal: results[i].status === 'OK' ? results[i].duration.value : 999999
-              }));
-              mapped.sort((a, b) => a.durationVal - b.durationVal);
-              resolve(mapped);
-            } else {
-              resolve(deliveries); // Fallback to unsorted if API fails
+
+          service.getDistanceMatrix(
+            {
+              origins: [origin],
+              destinations: destinations,
+              travelMode: "DRIVING",
+            },
+            (response, status) => {
+              if (status === "OK") {
+                const results = response.rows[0].elements;
+                let mapped = deliveries.map((d, i) => ({
+                  ...d,
+                  durationVal:
+                    results[i].status === "OK"
+                      ? results[i].duration.value
+                      : 999999,
+                }));
+                mapped.sort((a, b) => a.durationVal - b.durationVal);
+                resolve(mapped);
+              } else {
+                resolve(deliveries); // Fallback to unsorted if API fails
+              }
             }
-          });
+          );
         });
       }
 
@@ -1375,7 +1429,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           wfBtn.style.display = "block";
 
           wfBtn.onclick = async function () {
-            AppState.activeQueue = AppState.triageQueue.map((t) => ({ ...t, status: "pending" }));
+            AppState.activeQueue = AppState.triageQueue.map((t) => ({
+              ...t,
+              status: "pending",
+            }));
             AppState.workflowPhase = "ready_pickup";
             AppState.pendingOrders = 0;
             updateDashboardUI();
@@ -1384,24 +1441,33 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           drawTriageRoute();
           timeline.innerHTML = "";
           AppState.triageQueue.forEach((o, i) => {
-            timeline.innerHTML += `<li class="timeline-item"><div class="node-card"><strong>Stop ${i + 1}: ${o.title}</strong><p style="font-size:0.8rem; color:var(--text-muted);">Distance sorted automatically.</p></div></li>`;
+            timeline.innerHTML += `<li class="timeline-item"><div class="node-card"><strong>Stop ${
+              i + 1
+            }: ${
+              o.title
+            }</strong><p style="font-size:0.8rem; color:var(--text-muted);">Distance sorted automatically.</p></div></li>`;
           });
-
         } else if (AppState.workflowPhase === "ready_pickup") {
           AppState.layerGroup.clearLayers();
           gTitle.innerText = "Route Locked";
-          
+
           const groupedPickups = groupPickups(AppState.activeQueue);
           gSub.innerText = `${groupedPickups.length} Grouped Pickup Locations`;
           wfBtn.innerText = "Start Pickups";
           wfBtn.className = "btn btn-primary";
-          wfBtn.onclick = () => { AppState.workflowPhase = "pickup"; updateDashboardUI(); };
-          
+          wfBtn.onclick = () => {
+            AppState.workflowPhase = "pickup";
+            updateDashboardUI();
+          };
+
           if (groupedPickups.length > 0) {
             drawActualRoute(
-              AppState.homeBase, 
-              groupedPickups.slice(0, -1).map(g => [g[0].lat, g[0].lng]), 
-              [groupedPickups[groupedPickups.length-1][0].lat, groupedPickups[groupedPickups.length-1][0].lng]
+              AppState.homeBase,
+              groupedPickups.slice(0, -1).map((g) => [g[0].lat, g[0].lng]),
+              [
+                groupedPickups[groupedPickups.length - 1][0].lat,
+                groupedPickups[groupedPickups.length - 1][0].lng,
+              ]
             );
 
             groupedPickups.forEach((group, index) => {
@@ -1410,85 +1476,112 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 html: group.length > 1 ? group.length.toString() : "P",
                 iconSize: [36, 36],
               });
-              L.marker([group[0].lat, group[0].lng], { icon: clusterIcon }).addTo(AppState.layerGroup);
+              L.marker([group[0].lat, group[0].lng], {
+                icon: clusterIcon,
+              }).addTo(AppState.layerGroup);
             });
           }
           drawPickupTimeline();
-
         } else if (AppState.workflowPhase === "pickup") {
           gTitle.innerText = "Active Pickups";
           gSub.innerText = "Secure items and mark complete.";
           wfBtn.style.display = "none"; // Action is inside the cards now
           drawPickupTimeline();
-
         } else if (AppState.workflowPhase === "ready_delivery") {
           AppState.layerGroup.clearLayers();
           gTitle.innerText = "Pickups Complete";
           gSub.innerText = "Calculating fastest delivery route...";
           wfBtn.style.display = "none";
-          timeline.innerHTML = "<p style='color: var(--text-muted);'>Sorting via Google Distance Matrix...</p>";
+          timeline.innerHTML =
+            "<p style='color: var(--text-muted);'>Sorting via Google Distance Matrix...</p>";
 
           const currentLoc = AppState.homeBase; // In production, replace with live driver GPS
-          let deliveries = AppState.activeQueue.filter(q => q.type === 'delivery');
-          
-          const sortedDeliveries = await sortDeliveriesByTime(currentLoc[0], currentLoc[1], deliveries);
-          
+          let deliveries = AppState.activeQueue.filter(
+            (q) => q.type === "delivery"
+          );
+
+          const sortedDeliveries = await sortDeliveriesByTime(
+            currentLoc[0],
+            currentLoc[1],
+            deliveries
+          );
+
           AppState.activeQueue = [
-            ...AppState.activeQueue.filter(q => q.type === 'pickup'),
-            ...sortedDeliveries
+            ...AppState.activeQueue.filter((q) => q.type === "pickup"),
+            ...sortedDeliveries,
           ];
-          
+
           gSub.innerText = `${sortedDeliveries.length} Deliveries Sorted.`;
           wfBtn.innerText = "Begin Deliveries";
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
-          wfBtn.onclick = () => { AppState.workflowPhase = "delivery"; updateDashboardUI(); };
-          
+          wfBtn.onclick = () => {
+            AppState.workflowPhase = "delivery";
+            updateDashboardUI();
+          };
+
           if (sortedDeliveries.length > 0) {
             drawActualRoute(
               currentLoc,
-              sortedDeliveries.slice(0, -1).map(d => [d.lat, d.lng]),
-              [sortedDeliveries[sortedDeliveries.length-1].lat, sortedDeliveries[sortedDeliveries.length-1].lng]
+              sortedDeliveries.slice(0, -1).map((d) => [d.lat, d.lng]),
+              [
+                sortedDeliveries[sortedDeliveries.length - 1].lat,
+                sortedDeliveries[sortedDeliveries.length - 1].lng,
+              ]
             );
 
             sortedDeliveries.forEach((d, i) => {
-              const delIcon = L.divIcon({ className: "cluster-pin", html: (i+1).toString(), iconSize: [30, 30] });
-              L.marker([d.lat, d.lng], { icon: delIcon }).addTo(AppState.layerGroup);
+              const delIcon = L.divIcon({
+                className: "cluster-pin",
+                html: (i + 1).toString(),
+                iconSize: [30, 30],
+              });
+              L.marker([d.lat, d.lng], { icon: delIcon }).addTo(
+                AppState.layerGroup
+              );
             });
           }
           drawDeliveryTimeline();
-
         } else if (AppState.workflowPhase === "delivery") {
-          const nextDelivery = AppState.activeQueue.find(q => q.type === 'delivery' && q.status !== 'completed');
-          
+          const nextDelivery = AppState.activeQueue.find(
+            (q) => q.type === "delivery" && q.status !== "completed"
+          );
+
           if (!nextDelivery) {
             AppState.workflowPhase = "complete";
             return updateDashboardUI();
           }
-          
+
           gTitle.innerText = `En Route: ${nextDelivery.title}`;
           gSub.innerText = "Navigating to drop-off.";
           wfBtn.innerText = "Delivered Next Stop";
           wfBtn.className = "btn btn-success";
           wfBtn.style.display = "block";
-          
+
           wfBtn.onclick = async () => {
-            const cleanId = (nextDelivery.dbId || nextDelivery.id).replace('_del', '');
+            const cleanId = (nextDelivery.dbId || nextDelivery.id).replace(
+              "_del",
+              ""
+            );
             try {
-              await window.updateDoc(window.doc(window.db, "orders", cleanId), { status: "completed" });
-            } catch (e) { console.error(e); }
+              await window.updateDoc(window.doc(window.db, "orders", cleanId), {
+                status: "completed",
+              });
+            } catch (e) {
+              console.error(e);
+            }
             nextDelivery.status = "completed";
             updateDashboardUI();
           };
-          
-          drawDeliveryTimeline();
 
+          drawDeliveryTimeline();
         } else if (AppState.workflowPhase === "complete") {
           AppState.layerGroup.clearLayers();
-          if (activeRouteLayer) AppState.mapInstance.removeLayer(activeRouteLayer);
+          if (activeRouteLayer)
+            AppState.mapInstance.removeLayer(activeRouteLayer);
           gTitle.innerText = "Route Complete!";
           gSub.innerText = "Verify payments & finalize run.";
-          
+
           wfBtn.innerText = "Deliveries Completed";
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
@@ -1499,33 +1592,42 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             updateDashboardUI();
             AppState.mapInstance.setView(AppState.homeBase, 12);
           };
-          
-          timeline.innerHTML = '<li class="timeline-item"><div class="node-card"><strong>All Drops Complete</strong><p style="font-size:0.8rem; color:var(--text-muted);">Payouts secured via Stripe.</p></div></li>';
-        
+
+          timeline.innerHTML =
+            '<li class="timeline-item"><div class="node-card"><strong>All Drops Complete</strong><p style="font-size:0.8rem; color:var(--text-muted);">Payouts secured via Stripe.</p></div></li>';
         } else if (AppState.workflowPhase === "idle") {
           gTitle.innerText = "Idle / No Active Route";
           gSub.innerText = "Awaiting scheduled runs.";
           wfBtn.style.display = "none";
-          timeline.innerHTML = '<p style="color: var(--text-muted);">Queue is empty.</p>';
+          timeline.innerHTML =
+            '<p style="color: var(--text-muted);">Queue is empty.</p>';
         }
       }
 
       // --- CUSTOM TIMELINES & ACTIONS ---
 
-      window.markPickupComplete = async function(dbId) {
-        const item = AppState.activeQueue.find(i => (i.dbId || i.id) === dbId && i.type === 'pickup');
+      window.markPickupComplete = async function (dbId) {
+        const item = AppState.activeQueue.find(
+          (i) => (i.dbId || i.id) === dbId && i.type === "pickup"
+        );
         if (!item) return;
 
         // Broadcast to customer that item is picked up and driver is en route
-        const cleanId = (dbId).toString().replace('_del', '');
+        const cleanId = dbId.toString().replace("_del", "");
         try {
-          await window.updateDoc(window.doc(window.db, "orders", cleanId), { status: "in_transit" });
-        } catch(e) { console.error("Firebase update failed", e); }
-        
+          await window.updateDoc(window.doc(window.db, "orders", cleanId), {
+            status: "in_transit",
+          });
+        } catch (e) {
+          console.error("Firebase update failed", e);
+        }
+
         item.status = "completed";
-        
+
         // Transition to delivery if all pickups are complete
-        const pendingPickups = AppState.activeQueue.filter(i => i.type === 'pickup' && i.status !== 'completed');
+        const pendingPickups = AppState.activeQueue.filter(
+          (i) => i.type === "pickup" && i.status !== "completed"
+        );
         if (pendingPickups.length === 0) {
           AppState.workflowPhase = "ready_delivery";
           updateDashboardUI();
@@ -1537,23 +1639,25 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       function drawPickupTimeline() {
         const timeline = document.getElementById("timelineList");
         timeline.innerHTML = "";
-        
-        const pickups = AppState.activeQueue.filter(q => q.type === 'pickup');
-        
+
+        const pickups = AppState.activeQueue.filter((q) => q.type === "pickup");
+
         pickups.forEach((node) => {
-          const isDone = node.status === 'completed';
-          const btnHTML = isDone 
+          const isDone = node.status === "completed";
+          const btnHTML = isDone
             ? `<button class="btn btn-secondary" style="margin-top:10px; padding:8px; font-size:0.85rem;" disabled>Picked Up ✓</button>`
-            : `<button class="btn btn-primary" style="margin-top:10px; padding:8px; font-size:0.85rem;" onclick="markPickupComplete('${node.dbId || node.id}')">Items Picked Up</button>`;
+            : `<button class="btn btn-primary" style="margin-top:10px; padding:8px; font-size:0.85rem;" onclick="markPickupComplete('${
+                node.dbId || node.id
+              }')">Items Picked Up</button>`;
 
           timeline.innerHTML += `
-            <li class="timeline-item ${isDone ? 'completed' : 'active'}">
+            <li class="timeline-item ${isDone ? "completed" : "active"}">
               <div class="node-card">
                 <div class="node-header">
                   <strong>${node.title}</strong>
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
-                ${AppState.workflowPhase === "pickup" ? btnHTML : ''}
+                ${AppState.workflowPhase === "pickup" ? btnHTML : ""}
               </div>
             </li>
           `;
@@ -1563,8 +1667,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       function drawDeliveryTimeline() {
         const timeline = document.getElementById("timelineList");
         timeline.innerHTML = "";
-        
-        const deliveries = AppState.activeQueue.filter(q => q.type === 'delivery');
+
+        const deliveries = AppState.activeQueue.filter(
+          (q) => q.type === "delivery"
+        );
         let activeFound = false;
 
         deliveries.forEach((node) => {
@@ -1588,23 +1694,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           `;
         });
       }
-
-      
-      
-      
-      
-      
-      
-      
-  
-      
     </script>
   </body>
 </html>
-
-
-
-
-
-
-
