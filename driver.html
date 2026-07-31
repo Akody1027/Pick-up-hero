@@ -976,7 +976,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         setTimeout(() => {
           listenForPendingOrders();
           loadDriverSettings();
-          window.hydrateDutyStatus();
+          window.initializeShiftState();
         }, 1000);
       });
 
@@ -1168,24 +1168,62 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         });
       }
 
-      window.hydrateDutyStatus = async function () {
+      window.saveShiftState = async function () {
         try {
-          const docSnap = await window.getDoc(
-            window.doc(window.db, "driver_locations", DRIVER_DOC_ID)
+          await window.setDoc(
+            window.doc(window.db, "driver_state", DRIVER_DOC_ID),
+            {
+              workflowPhase: AppState.workflowPhase,
+              activeQueue: AppState.activeQueue,
+              triageQueue: AppState.triageQueue,
+            },
+            { merge: true }
           );
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data.isOnline) {
-              AppState.isOnline = true;
-              const btn = document.getElementById("dutyToggleBtn");
-              if (btn) {
-                btn.innerText = "On Duty";
-                btn.classList.add("active");
-              }
+        } catch (e) {
+          console.error("State save failed:", e);
+        }
+      };
+
+      window.initializeShiftState = async function () {
+        try {
+          const stateSnap = await window.getDoc(
+            window.doc(window.db, "driver_state", DRIVER_DOC_ID)
+          );
+          let isActiveShift = false;
+
+          if (stateSnap.exists()) {
+            const data = stateSnap.data();
+            if (data.workflowPhase && data.workflowPhase !== "idle") {
+              isActiveShift = true;
+              AppState.workflowPhase = data.workflowPhase;
+              AppState.activeQueue = data.activeQueue || [];
+              AppState.triageQueue = data.triageQueue || [];
             }
           }
+
+          if (isActiveShift) {
+            AppState.isOnline = true;
+            const btn = document.getElementById("dutyToggleBtn");
+            if (btn) {
+              btn.innerText = "On Duty";
+              btn.classList.add("active");
+            }
+            await window.setDoc(
+              window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+              { isOnline: true, timestamp: new Date() },
+              { merge: true }
+            );
+            updateDashboardUI(); // Render the restored active route
+          } else {
+            AppState.isOnline = false;
+            await window.setDoc(
+              window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+              { isOnline: false, timestamp: new Date() },
+              { merge: true }
+            );
+          }
         } catch (e) {
-          console.error("Error hydrating duty status on load:", e);
+          console.error("Initialization failed:", e);
         }
       };
 
@@ -1316,6 +1354,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         // Update UI text
         const gSub = document.getElementById("glanceSubtitle");
         gSub.innerText = `${AppState.triageQueue.length} Stops Remaining.`;
+
+        window.saveShiftState();
       };
 
       // --- ROUTING & DISTANCE MATRIX UTILS ---
@@ -1624,6 +1664,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           timeline.innerHTML =
             '<p style="color: var(--text-muted);">Queue is empty.</p>';
         }
+
+        window.saveShiftState();
       }
 
       // --- CUSTOM TIMELINES & ACTIONS ---
@@ -1656,6 +1698,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         } else {
           drawPickupTimeline();
         }
+
+        window.saveShiftState();
       };
 
       function drawPickupTimeline() {
