@@ -1234,11 +1234,10 @@
           return;
         }
 
-
-        const perStopRate = window.appState.bookingType === "emergency"
-          ? parseFloat(window.appState.currentPremiumRate || 50.0)
-          : 12.99;
-        
+        const perStopRate =
+          window.appState.bookingType === "emergency"
+            ? parseFloat(window.appState.currentPremiumRate || 50.0)
+            : 12.99;
 
         const totalCost = activeStopsFound * perStopRate;
 
@@ -1431,17 +1430,19 @@
           "translateY(150%)"; // Hide bottom sheet
         updateNavState("");
         goToStep1();
-        
-        const perStopRate = type === "emergency" 
-          ? parseFloat(window.appState.currentPremiumRate || 50.0) 
-          : 12.99;
-          
+
+        const perStopRate =
+          type === "emergency"
+            ? parseFloat(window.appState.currentPremiumRate || 50.0)
+            : 12.99;
+
         const addStopBtn = document.getElementById("addStopBtn");
         if (addStopBtn) {
-          addStopBtn.innerText = `+ Add Another Stop ($${perStopRate.toFixed(2)})`;
+          addStopBtn.innerText = `+ Add Another Stop ($${perStopRate.toFixed(
+            2
+          )})`;
         }
-        
-        
+
         updateTotalCost();
       }
 
@@ -1501,7 +1502,25 @@
         searchMarkers.forEach((m) => map.removeLayer(m));
         searchMarkers = [];
 
-        const center = driverMarker.getLatLng();
+        // Pull the actual coordinates of the currently selected Hero, fallback to the user's GPS, or default to the center map
+        let centerLat = 39.8283;
+        let centerLng = -98.5795;
+
+        if (
+          window.appState &&
+          window.appState.selectedDriverId &&
+          window.baseMarkers[window.appState.selectedDriverId]
+        ) {
+          const selectedBase =
+            window.baseMarkers[window.appState.selectedDriverId].getLatLng();
+          centerLat = selectedBase.lat;
+          centerLng = selectedBase.lng;
+        } else if (userLat && userLng) {
+          centerLat = userLat;
+          centerLng = userLng;
+        }
+
+        const center = new L.LatLng(centerLat, centerLng);
         const storeIcon = L.divIcon({
           className: "custom-store-pin",
           iconSize: [28, 28],
@@ -1658,11 +1677,10 @@
 
         // Check if this is an SOS order or a scheduled order
 
-        const perStopRate = window.appState.bookingType === "emergency"
-          ? parseFloat(window.appState.currentPremiumRate || 50.0)
-          : 12.99;
-        
-        
+        const perStopRate =
+          window.appState.bookingType === "emergency"
+            ? parseFloat(window.appState.currentPremiumRate || 50.0)
+            : 12.99;
 
         const total = activeStops * perStopRate;
         document.getElementById("totalPriceDisplay").innerText =
