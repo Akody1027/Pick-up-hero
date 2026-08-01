@@ -861,10 +861,16 @@
         >
           Save Profile
         </button>
-        <button class="btn btn-secondary" style="margin-bottom: 10px">
+        <button
+          class="btn btn-secondary"
+          style="margin-bottom: 10px"
+          onclick="window.location.href='mailto:roadwatchero@gmail.com?subject=Customer Support Request'"
+        >
           Contact Support
         </button>
-        <button class="btn btn-emergency">Delete Account</button>
+        <button class="btn btn-emergency" onclick="confirmDeleteAccount()">
+          Delete Account
+        </button>
       </div>
     </div>
 
@@ -1100,7 +1106,10 @@
     <!-- FIREBASE SDK -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-      import { getAuth } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+      import {
+        getAuth,
+        deleteUser,
+      } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
       import {
         getFirestore,
@@ -1112,6 +1121,8 @@
         doc,
         getDoc,
         setDoc,
+        getDocs,
+        deleteDoc,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -1139,7 +1150,9 @@
       window.doc = doc;
       window.getDoc = getDoc;
       window.setDoc = setDoc;
-
+      window.getDocs = getDocs;
+      window.deleteDoc = deleteDoc;
+      window.deleteUser = deleteUser;
       // Standard Firebase implementation matches previous backend logic
 
       window.appState = {
@@ -1275,6 +1288,55 @@
           alert("Failed to submit order. Please check your connection.");
         }
       };
+
+      window.confirmDeleteAccount = async function () {
+        if (!window.appState.user) {
+          alert("No active user session found.");
+          return;
+        }
+
+        const confirmMsg =
+          "Are you absolutely sure you want to delete your account? All your delivery history will be permanently erased. This cannot be undone.";
+        if (!confirm(confirmMsg)) return;
+
+        try {
+          // 1. Fetch all existing orders for this specific customer
+          const q = window.query(
+            window.collection(window.db, "orders"),
+            window.where("userId", "==", window.appState.userId)
+          );
+
+          // 2. Loop through and delete every order document
+          const querySnapshot = await window.getDocs(q);
+          querySnapshot.forEach(async (documentSnapshot) => {
+            await window.deleteDoc(
+              window.doc(window.db, "orders", documentSnapshot.id)
+            );
+          });
+
+          // 3. Delete the customer's profile document from the 'users' collection
+          await window.deleteDoc(
+            window.doc(window.db, "users", window.appState.userId)
+          );
+
+          // 4. Securely scrub the Auth user from Firebase Authentication
+          await window.deleteUser(window.appState.user);
+
+          alert("Account and all route data successfully deleted.");
+          window.location.href = "index.html"; // Kick them back to the landing page
+        } catch (error) {
+          console.error("Error deleting account:", error);
+
+          // Firebase strictly requires a "recent sign-in" to allow account deletion for security reasons
+          if (error.code === "auth/requires-recent-login") {
+            alert(
+              "For security purposes, Firebase requires you to log out and log back in before deleting your account."
+            );
+          } else {
+            alert("Failed to delete account: " + error.message);
+          }
+        }
+      };
     </script>
 
     <!-- UI & MAP SCRIPT -->
@@ -1327,7 +1389,6 @@
           // Bind smart search to the dynamic first pickup stop
           bindStoreAutocomplete(1);
 
-          
           const findHeroInput = document.getElementById("findHeroAddressInput");
 
           if (findHeroInput) {
@@ -1342,24 +1403,25 @@
               }
             });
           }
-          
+
           // --- NEW: Bind Autocomplete to the Recovery Module Address ---
           const recoAddressInput = document.getElementById("recoAddress");
           if (recoAddressInput) {
-            const recoAutocomplete = new google.maps.places.Autocomplete(recoAddressInput);
+            const recoAutocomplete = new google.maps.places.Autocomplete(
+              recoAddressInput
+            );
             recoAutocomplete.addListener("place_changed", () => {
               const place = recoAutocomplete.getPlace();
               if (place.geometry) {
-                document.getElementById("recoAddress").value = place.formatted_address || place.name;
+                document.getElementById("recoAddress").value =
+                  place.formatted_address || place.name;
               }
             });
           }
-
         } else {
           console.error("Google Maps API failed to load.");
         }
       }
-
 
       function initMap() {
         map = L.map("map", { zoomControl: false }).setView(
@@ -2326,7 +2388,7 @@
         for (let i = 1; i <= window.currentStopCount; i++) {
           const block = document.getElementById(`stopBlock_${i}`);
           if (block) {
-            const storeName = document.getElementById( 
+            const storeName = document.getElementById(
               `storeNameDisplay_${i}`
             ).innerText;
             document.getElementById(
