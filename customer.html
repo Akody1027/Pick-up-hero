@@ -1234,10 +1234,11 @@
           return;
         }
 
-        const perStopRate =
-          window.appState.bookingType === "emergency"
-            ? window.appState.currentPremiumRate || 50.0
-            : 12.99;
+
+        const perStopRate = window.appState.bookingType === "emergency"
+          ? parseFloat(window.appState.currentPremiumRate || 50.0)
+          : 12.99;
+        
 
         const totalCost = activeStopsFound * perStopRate;
 
@@ -1430,6 +1431,17 @@
           "translateY(150%)"; // Hide bottom sheet
         updateNavState("");
         goToStep1();
+        
+        const perStopRate = type === "emergency" 
+          ? parseFloat(window.appState.currentPremiumRate || 50.0) 
+          : 12.99;
+          
+        const addStopBtn = document.getElementById("addStopBtn");
+        if (addStopBtn) {
+          addStopBtn.innerText = `+ Add Another Stop ($${perStopRate.toFixed(2)})`;
+        }
+        
+        
         updateTotalCost();
       }
 
@@ -1645,10 +1657,12 @@
         }
 
         // Check if this is an SOS order or a scheduled order
-        const perStopRate =
-          window.appState.bookingType === "emergency"
-            ? window.appState.currentPremiumRate || 50.0
-            : 12.99;
+
+        const perStopRate = window.appState.bookingType === "emergency"
+          ? parseFloat(window.appState.currentPremiumRate || 50.0)
+          : 12.99;
+        
+        
 
         const total = activeStops * perStopRate;
         document.getElementById("totalPriceDisplay").innerText =
