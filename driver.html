@@ -981,6 +981,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         >
           Save Changes
         </button>
+        
+        
+        <button
+          class="btn btn-emergency"
+          id="signOutBtn"
+          onclick="confirmSignOut()"
+          style="margin-top: 15px;"
+        >
+          Sign Out
+        </button>
+        
+        
+        
+        
       </div>
     </div>
     
@@ -1007,8 +1021,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
     <!-- FIREBASE SDK -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-      import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
-      
+      import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
       import {
         getFirestore,
         collection,
@@ -1040,6 +1053,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.auth = auth;
       window.signInWithEmailAndPassword = signInWithEmailAndPassword;
       window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+      window.signOut = signOut;
       window.collection = collection;
       window.query = query;
       window.where = where;
@@ -1138,6 +1152,46 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
+      
+      window.signOutState = false;
+      
+      window.confirmSignOut = async function() {
+        const btn = document.getElementById("signOutBtn");
+        
+        if (!window.signOutState) {
+          // First tap: trigger warning and start 3-second reset timer
+          window.signOutState = true;
+          btn.innerText = "Are you sure? Click to confirm logout";
+          
+          setTimeout(() => {
+            window.signOutState = false;
+            btn.innerText = "Sign Out";
+          }, 3000);
+          
+        } else {
+          // Second tap: execute logout
+          try {
+            btn.innerText = "Signing out...";
+            await window.signOut(window.auth);
+            
+            // Cleanup UI
+            closeAllModals();
+            window.signOutState = false;
+            btn.innerText = "Sign Out";
+            
+            // Note: The onAuthStateChanged listener will automatically detect the logout
+            // and immediately pop the login overlay back up.
+          } catch (error) {
+            console.error("Sign Out Error:", error);
+            window.showCustomAlert("Sign Out Failed", error.message);
+            window.signOutState = false;
+            btn.innerText = "Sign Out";
+          }
+        }
+      };
+      
+      
+      
       // --- SECURE BOOT SEQUENCE ---
       let hasBooted = false;
 
