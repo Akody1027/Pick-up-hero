@@ -377,8 +377,6 @@
 
       /* --- CUSTOM MAP PINS --- */
       .custom-orange-pin {
-        background-color: var(--accent);
-        border: 3px solid var(--surface);
         border-radius: 50%;
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
       }
@@ -1637,7 +1635,7 @@
 
                   const baseIcon = L.divIcon({
                     className: "custom-orange-pin",
-                    html: `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"><img src="${customBaseImageUrl}" style="width: 45%; height: 45%; object-fit: contain; filter: invert(1);"></div>`,
+                    html: `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"><img src="${customBaseImageUrl}" style="width: 80%; height: 80%; object-fit: contain; "></div>`,
                     iconSize: [42, 42],
                     iconAnchor: [21, 21]
                   });
