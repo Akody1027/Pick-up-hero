@@ -1117,11 +1117,19 @@
           return;
         }
 
+        if (!window.appState.selectedDriverId) {
+          alert(
+            "Please tap on a Hero's map pin to select your driver before booking."
+          );
+          return;
+        }
+
         const totalCost = activeStopsFound * 12.99;
 
         try {
           const orderData = {
             userId: window.appState.userId,
+            assignedDriverId: window.appState.selectedDriverId,
             deliveryAddress: address,
             deliveryLat: window.appState.deliveryLat || null,
             deliveryLng: window.appState.deliveryLng || null,
@@ -1597,131 +1605,177 @@
         }
         animationFrameId = requestAnimationFrame(step);
       }
-      
-      
-      
-      
-      
+
+      window.baseMarkers = {};
+      window.liveMarkers = {};
+
+      window.selectHero = function (driverId, profilePic, displayName, bio) {
+        window.appState.selectedDriverId = driverId;
+
+        // Update Bottom Sheet UI with the selected Hero's data
+        if (profilePic)
+          document.querySelector(".driver-avatar").src = profilePic;
+
+        const isTracking =
+          document.getElementById("activeStopsTimeline").style.display ===
+          "flex";
+        if (!isTracking) {
+          if (displayName)
+            document.getElementById("sheetTitle").innerText = displayName;
+          if (bio) document.getElementById("sheetSubtitle").innerText = bio;
+        }
+
+        // Visually pop the sheet up to confirm selection
+        document.getElementById("trackerSheet").style.transform =
+          "translateY(0)";
+      };
+
       window.loadActiveDriver = async function () {
         try {
-          // 1. Permanently Anchor a Default Business Home Base & Profile Data (Fallback when Off Duty)
-          window.onSnapshot(window.collection(window.db, "driver_settings"), (settingsSnap) => {
-            if (!settingsSnap.empty) {
-              settingsSnap.forEach((doc) => {
-                const settingsData = doc.data();
-                
+          // 1. Load ALL Driver Hubs (Stationary Pins)
+          window.onSnapshot(
+            window.collection(window.db, "driver_settings"),
+            (settingsSnap) => {
+              if (!settingsSnap.empty) {
+                settingsSnap.forEach((docSnap) => {
+                  const driverId = docSnap.id;
+                  const settingsData = docSnap.data();
 
-                
-                
-                if (settingsData.profilePic) {
-                  // Bind profile image to the bottom sheet
-                  document.querySelector(".driver-avatar").src = settingsData.profilePic;
-
-                  // 1. The Live Telemetry Pin (Dynamic Driver Face)
-                  const faceIcon = L.divIcon({
-                    className: "custom-orange-pin",
-                    html: `<img src="${settingsData.profilePic}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`,
-                    iconSize: [20, 20],
-                    iconAnchor: [21, 21]
-                  });
-
-                  if (typeof window.liveDriverMarker !== "undefined") {
-                    window.liveDriverMarker.setIcon(faceIcon);
+                  // Auto-select the very first driver that loads so the UI isn't empty
+                  if (!window.appState.selectedDriverId) {
+                    window.selectHero(
+                      driverId,
+                      settingsData.profilePic,
+                      settingsData.displayName,
+                      settingsData.bio
+                    );
                   }
 
-                  // 2. The Stationary Home Base Pin (Custom Hub Icon)
-                  // REPLACE the URL below with the link to your custom shopping cart or logo
-                  const customBaseImageUrl = "cart1.png";
+                  if (settingsData.baseLat && settingsData.baseLng) {
+                    const customBaseImageUrl =
+                      "https://cdn-icons-png.flaticon.com/512/833/833314.png";
+                    const baseIcon = L.divIcon({
+                      className: "custom-orange-pin",
+                      html: `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"><img src="${customBaseImageUrl}" style="width: 55%; height: 55%; object-fit: contain; filter: invert(1);"></div>`,
+                      iconSize: [42, 42],
+                      iconAnchor: [21, 21],
+                    });
 
-                  const baseIcon = L.divIcon({
-                    className: "custom-orange-pin",
-                    html: `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"><img src="${customBaseImageUrl}" style="width: 80%; height: 80%; object-fit: contain; "></div>`,
-                    iconSize: [42, 42],
-                    iconAnchor: [21, 21]
-                  });
+                    if (!window.baseMarkers[driverId]) {
+                      window.baseMarkers[driverId] = L.marker(
+                        [settingsData.baseLat, settingsData.baseLng],
+                        {
+                          icon: baseIcon,
+                        }
+                      ).addTo(map);
 
-                  if (typeof driverMarker !== "undefined") {
-                    driverMarker.setIcon(baseIcon);
+                      // Add click listener so customers can switch drivers by tapping pins
+                      window.baseMarkers[driverId].on("click", () => {
+                        window.selectHero(
+                          driverId,
+                          settingsData.profilePic,
+                          settingsData.displayName,
+                          settingsData.bio
+                        );
+                      });
+                    } else {
+                      window.baseMarkers[driverId].setLatLng([
+                        settingsData.baseLat,
+                        settingsData.baseLng,
+                      ]);
+                      window.baseMarkers[driverId].setIcon(baseIcon);
+                    }
                   }
-                }
-                
-     
-                
-                
-                // Only update the Name & Bio if the customer is NOT actively tracking a live delivery
-                const isTracking = document.getElementById("activeStopsTimeline").style.display === "flex";
-                if (!isTracking) {
-                  if (settingsData.displayName) document.getElementById("sheetTitle").innerText = settingsData.displayName;
-                  if (settingsData.bio) document.getElementById("sheetSubtitle").innerText = settingsData.bio;
-                }
-
-                // Iterate through all settings and show the first valid base location it finds
-                if (settingsData.baseLat && settingsData.baseLng && typeof driverMarker !== "undefined") {
-                  if (driverMarker.options.opacity === 0) {
-                    driverMarker.setLatLng([settingsData.baseLat, settingsData.baseLng]);
-                    driverMarker.setOpacity(1); 
-                  }
-                }
-              });
+                });
+              }
             }
-          });
+          );
 
-          // 2. Track Live Telemetry Only When Online
+          // 2. Track Live Telemetry for ALL Online Drivers
           const driversQuery = window.query(
             window.collection(window.db, "driver_locations"),
             window.where("isOnline", "==", true)
           );
 
           window.onSnapshot(driversQuery, async (querySnapshot) => {
-            if (querySnapshot.empty) {
-              if (typeof window.liveDriverMarker !== "undefined") window.liveDriverMarker.setOpacity(0);
-              // Intentionally NOT overwriting the bio subtitle here anymore
-              return;
-            }
+            // Temporarily hide all live markers, then unhide only the ones still online
+            Object.values(window.liveMarkers).forEach((marker) =>
+              marker.setOpacity(0)
+            );
 
-            const locationSnap = querySnapshot.docs[0];
-            const activeDriverId = locationSnap.id;
-            const locData = locationSnap.data();
+            if (querySnapshot.empty) return;
 
-            // 3. Anchor precisely to the ACTIVE driver
-            const settingsSnap = await window.getDoc(window.doc(window.db, "driver_settings", activeDriverId));
-            
-            if (settingsSnap.exists()) {
-              const sData = settingsSnap.data();
-              // UI bindings are now handled entirely by the persistent global listener above
-              
-              // Ensure the home base matches the currently online driver
-              if (sData.baseLat && sData.baseLng && typeof driverMarker !== "undefined") {
-                driverMarker.setLatLng([sData.baseLat, sData.baseLng]);
-                driverMarker.setOpacity(1); 
+            querySnapshot.forEach(async (locationSnap) => {
+              const activeDriverId = locationSnap.id;
+              const locData = locationSnap.data();
+
+              if (locData.lat && locData.lng) {
+                const settingsSnap = await window.getDoc(
+                  window.doc(window.db, "driver_settings", activeDriverId)
+                );
+                let faceHtml = "➤";
+                let faceIconClass = "live-pin-override";
+
+                if (settingsSnap.exists()) {
+                  const sData = settingsSnap.data();
+                  if (sData.profilePic) {
+                    faceHtml = `<img src="${sData.profilePic}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+                    faceIconClass = "custom-orange-pin";
+                  }
+                }
+
+                const faceIcon = L.divIcon({
+                  className: faceIconClass,
+                  html: faceHtml,
+                  iconSize:
+                    faceIconClass === "custom-orange-pin" ? [42, 42] : [26, 26],
+                  iconAnchor:
+                    faceIconClass === "custom-orange-pin" ? [21, 21] : [13, 13],
+                });
+
+                const targetPos = { lat: locData.lat, lng: locData.lng };
+
+                if (!window.liveMarkers[activeDriverId]) {
+                  window.liveMarkers[activeDriverId] = L.marker(
+                    [locData.lat, locData.lng],
+                    {
+                      icon: faceIcon,
+                      zIndexOffset: 1000,
+                    }
+                  ).addTo(map);
+
+                  // Allow selecting the driver by clicking their live moving face
+                  window.liveMarkers[activeDriverId].on("click", () => {
+                    if (settingsSnap.exists()) {
+                      const sData = settingsSnap.data();
+                      window.selectHero(
+                        activeDriverId,
+                        sData.profilePic,
+                        sData.displayName,
+                        sData.bio
+                      );
+                    }
+                  });
+                } else {
+                  window.liveMarkers[activeDriverId].setIcon(faceIcon);
+                  window.liveMarkers[activeDriverId].setOpacity(1);
+                  const currentPos =
+                    window.liveMarkers[activeDriverId].getLatLng();
+                  animateMarker(
+                    window.liveMarkers[activeDriverId],
+                    currentPos,
+                    targetPos,
+                    2500
+                  );
+                }
               }
-            }
-
-            // CRITICAL FIX: Prevent Leaflet crash by checking for valid coordinates before rendering
-            if (typeof window.liveDriverMarker !== "undefined" && locData.lat && locData.lng) {
-              const targetPos = { lat: locData.lat, lng: locData.lng };
-              if (window.liveDriverMarker.options.opacity === 0) {
-                window.liveDriverMarker.setLatLng([locData.lat, locData.lng]);
-                window.liveDriverMarker.setOpacity(1);
-              } else {
-                const currentPos = window.liveDriverMarker.getLatLng();
-                animateMarker(window.liveDriverMarker, currentPos, targetPos, 2500);
-              }
-            }
+            });
           });
         } catch (e) {
           console.error("Error loading dynamic driver data:", e);
         }
       };
-      
-      
 
-      
-      
-      
-      
-      
-      
       function openFindHeroModal() {
         closeAllModals();
         document.getElementById("findHeroModal").classList.add("active");
@@ -1783,11 +1837,14 @@
           userMarker.setLatLng([userLat, userLng]);
           userMarker.setOpacity(1);
 
-          // Zoom the map to perfectly frame the customer and the driver's stationary base
-          const bounds = L.latLngBounds(
-            [userLat, userLng],
-            driverMarker.getLatLng()
-          );
+          // Zoom the map to perfectly frame the customer and their selected Hero's hub
+          const targetBase =
+            window.baseMarkers &&
+            window.baseMarkers[window.appState.selectedDriverId]
+              ? window.baseMarkers[window.appState.selectedDriverId].getLatLng()
+              : [userLat, userLng];
+
+          const bounds = L.latLngBounds([userLat, userLng], targetBase);
           map.fitBounds(bounds, { padding: [70, 70] });
         }, 1500);
       }
@@ -1812,6 +1869,7 @@
             if (data.status === "pending" || data.status === "in_transit") {
               hasActive = true;
               activeId = docSnap.id;
+              window.appState.selectedDriverId = data.assignedDriverId;
             }
           });
 
@@ -2000,17 +2058,20 @@
         const order = window.appState.activeOrder;
         if (!order) return;
 
-        const heroLoc = {
-          lat: driverMarker.getLatLng().lat,
-          lng: driverMarker.getLatLng().lng,
-        };
+        const selectedBase =
+          window.baseMarkers &&
+          window.baseMarkers[window.appState.selectedDriverId];
+        const heroLoc = selectedBase
+          ? {
+              lat: selectedBase.getLatLng().lat,
+              lng: selectedBase.getLatLng().lng,
+            }
+          : { lat: 39.8283, lng: -98.5795 };
 
         const actualStops = order.stops.map((stop) => {
           return { lat: stop.lat, lng: stop.lng };
         });
         const actualDelivery = order.deliveryAddress;
-
-        driverMarker.setOpacity(1);
 
         drawGoogleRoute(heroLoc, actualStops, actualDelivery);
 
