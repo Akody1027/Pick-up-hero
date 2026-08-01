@@ -1472,11 +1472,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         reader.readAsDataURL(file);
       };
 
+      
       function listenForPendingOrders() {
         const q = window.query(
           window.collection(window.db, "orders"),
-          window.where("status", "==", "pending")
+          window.where("status", "==", "pending"),
+          window.where("assignedDriverId", "==", DRIVER_DOC_ID)
         );
+
 
         window.onSnapshot(q, (snapshot) => {
           const newOrders = [];
