@@ -467,19 +467,13 @@
         border-radius: 50%;
       }
 
-      
-      
-      
       .custom-orange-pin {
         background-color: var(--accent);
         border: 3px solid var(--surface);
         border-radius: 50%;
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
       }
-      
-      
-      
-      
+
       /* --- DUTY STATUS UI --- */
       .duty-toggle-container {
         position: absolute;
@@ -528,7 +522,7 @@
         color: var(--text);
         font-size: 1rem;
       }
-      
+
       /* --- AUTHENTICATION OVERLAY --- */
       #authOverlay {
         position: fixed;
@@ -579,8 +573,7 @@
         margin-top: 25px;
         font-size: 0.9rem;
       }
-      
-      
+
       /* --- CUSTOM ALERT MODAL --- */
       .soft-prompt-overlay {
         position: fixed;
@@ -619,44 +612,41 @@
         margin-bottom: 20px;
         line-height: 1.4;
       }
-      
-      
-      
-      
-      
     </style>
   </head>
   <body>
-    
-    
     <!-- AUTHENTICATION OVERLAY -->
     <div id="authOverlay">
       <div class="auth-card">
         <h2 id="authTitle">Driver Login</h2>
         <p id="authSubtitle">Welcome back, Hero.</p>
-        
+
         <div class="form-group">
           <label>Email Address</label>
           <input type="email" id="authEmail" placeholder="hero@example.com" />
         </div>
-        <div class="form-group" style="margin-bottom: 30px;">
+        <div class="form-group" style="margin-bottom: 30px">
           <label>Password</label>
           <input type="password" id="authPassword" placeholder="••••••••" />
         </div>
 
-        <button class="btn btn-primary" id="authSubmitBtn" onclick="handleAuthAction()">Sign In</button>
-        
-        <span class="auth-toggle-link" onclick="toggleAuthMode()" id="authToggleText">Need an account? Sign Up</span>
+        <button
+          class="btn btn-primary"
+          id="authSubmitBtn"
+          onclick="handleAuthAction()"
+        >
+          Sign In
+        </button>
+
+        <span
+          class="auth-toggle-link"
+          onclick="toggleAuthMode()"
+          id="authToggleText"
+          >Need an account? Sign Up</span
+        >
       </div>
     </div>
-    
-    
-    
-    
-    
-    
-    
-    
+
     <!-- Audio Alert Engine -->
     <audio
       id="alertSound"
@@ -981,37 +971,28 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         >
           Save Changes
         </button>
-        
-        
+
         <button
           class="btn btn-emergency"
           id="signOutBtn"
           onclick="confirmSignOut()"
-          style="margin-top: 15px;"
+          style="margin-top: 15px"
         >
           Sign Out
         </button>
-        
-        
-        
-        
       </div>
     </div>
-    
-    
-    
-    
+
     <!-- CUSTOM ALERT PROMPT -->
     <div class="soft-prompt-overlay" id="customAlertModal">
       <div class="soft-prompt-box">
         <h3 id="customAlertTitle">Alert</h3>
         <p id="customAlertText">Message goes here.</p>
-        <button class="btn btn-primary" onclick="closeCustomAlert()">Understood</button>
+        <button class="btn btn-primary" onclick="closeCustomAlert()">
+          Understood
+        </button>
       </div>
     </div>
-    
-    
-    
 
     <!-- LEAFLET MAP JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1021,7 +1002,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
     <!-- FIREBASE SDK -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-      import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+      import {
+        getAuth,
+        signInWithEmailAndPassword,
+        createUserWithEmailAndPassword,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
       import {
         getFirestore,
         collection,
@@ -1085,32 +1071,26 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       AppState.isInitialLoad = true;
       let DRIVER_DOC_ID = null;
-      
-      
-      window.showCustomAlert = function(title, text) {
+
+      window.showCustomAlert = function (title, text) {
         document.getElementById("customAlertTitle").innerText = title;
         document.getElementById("customAlertText").innerText = text;
         document.getElementById("customAlertModal").style.display = "flex";
       };
 
-      window.closeCustomAlert = function() {
+      window.closeCustomAlert = function () {
         document.getElementById("customAlertModal").style.display = "none";
       };
-      
-      
-      
+
       // --- AUTHENTICATION LOGIC ---
       window.authMode = "signin";
 
-      window.toggleAuthMode = function() {
+      window.toggleAuthMode = function () {
         const title = document.getElementById("authTitle");
         const subtitle = document.getElementById("authSubtitle");
         const btn = document.getElementById("authSubmitBtn");
         const toggleText = document.getElementById("authToggleText");
 
-        
-        
-        
         if (window.authMode === "signin") {
           window.authMode = "signup";
           title.innerText = "Apply as Hero";
@@ -1126,67 +1106,90 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
-      window.handleAuthAction = async function() {
+      window.handleAuthAction = async function () {
         const email = document.getElementById("authEmail").value.trim();
         const password = document.getElementById("authPassword").value.trim();
         const btn = document.getElementById("authSubmitBtn");
 
         if (!email || !password) {
-          window.showCustomAlert("Input Required", "Please enter both your email and a secure password.");
+          window.showCustomAlert(
+            "Input Required",
+            "Please enter both your email and a secure password."
+          );
           return;
         }
 
         const originalText = btn.innerText;
         btn.innerText = "Processing...";
         btn.disabled = true;
+
         try {
           if (window.authMode === "signin") {
-            await window.signInWithEmailAndPassword(window.auth, email, password);
+            await window.signInWithEmailAndPassword(
+              window.auth,
+              email,
+              password
+            );
           } else {
-            await window.createUserWithEmailAndPassword(window.auth, email, password);
+            await window.createUserWithEmailAndPassword(
+              window.auth,
+              email,
+              password
+            );
           }
-          
-          // Reset the button state and clear the password for the next time the overlay appears
+
+          // Reset button and clear password field on success
           btn.innerText = originalText;
           btn.disabled = false;
           document.getElementById("authPassword").value = "";
-
         } catch (error) {
-          
           console.error("Auth Error:", error);
-          window.showCustomAlert("Authentication Failed", error.message.replace("Firebase:", "").trim());
           btn.innerText = originalText;
           btn.disabled = false;
+
+          // Format common Firebase Auth errors into clear messages
+          let msg = error.message.replace("Firebase:", "").trim();
+          if (
+            error.code === "auth/invalid-credential" ||
+            error.code === "auth/wrong-password"
+          ) {
+            msg = "Invalid email or password. Please try again.";
+          } else if (error.code === "auth/email-already-in-use") {
+            msg =
+              "An account with this email already exists. Try signing in instead.";
+          } else if (error.code === "auth/weak-password") {
+            msg = "Password should be at least 6 characters long.";
+          }
+
+          window.showCustomAlert("Authentication Failed", msg);
         }
       };
 
-      
       window.signOutState = false;
-      
-      window.confirmSignOut = async function() {
+
+      window.confirmSignOut = async function () {
         const btn = document.getElementById("signOutBtn");
-        
+
         if (!window.signOutState) {
           // First tap: trigger warning and start 3-second reset timer
           window.signOutState = true;
           btn.innerText = "Are you sure? Click to confirm logout";
-          
+
           setTimeout(() => {
             window.signOutState = false;
             btn.innerText = "Sign Out";
           }, 3000);
-          
         } else {
           // Second tap: execute logout
           try {
             btn.innerText = "Signing out...";
             await window.signOut(window.auth);
-            
+
             // Cleanup UI
             closeAllModals();
             window.signOutState = false;
             btn.innerText = "Sign Out";
-            
+
             // Note: The onAuthStateChanged listener will automatically detect the logout
             // and immediately pop the login overlay back up.
           } catch (error) {
@@ -1197,23 +1200,22 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
         }
       };
-      
-      
-      
+
       // --- SECURE BOOT SEQUENCE ---
       let hasBooted = false;
 
       window.bootApplication = function () {
         window.auth.onAuthStateChanged((user) => {
           if (user) {
-            // Valid session detected. Drop the gate and initialize.
+            // Valid session detected. Drop the overlay and boot map.
             document.getElementById("authOverlay").style.display = "none";
             DRIVER_DOC_ID = user.uid;
 
-            // Prevent double-initialization if the auth state triggers multiple times
             if (!hasBooted) {
               hasBooted = true;
-              initMap();
+              if (!AppState.mapInstance) {
+                initMap();
+              }
               setTimeout(() => {
                 listenForPendingOrders();
                 loadDriverSettings();
@@ -1221,18 +1223,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               }, 1000);
             }
           } else {
-            // No session. Raise the gate.
+            // No authenticated user. Strictly lock the gate overlay!
             document.getElementById("authOverlay").style.display = "flex";
-            hasBooted = false; 
+            hasBooted = false;
           }
         });
       };
-      
-      
-      
-
-      
-      
 
       window.loadDriverSettings = async function () {
         try {
@@ -1384,15 +1380,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         if (AppState.homeMarker)
           AppState.mapInstance.removeLayer(AppState.homeMarker);
-        
+
         const icon = L.divIcon({
           className: "custom-orange-pin",
           html: "",
           iconSize: [24, 24],
         });
 
-        
-        
         AppState.homeMarker = L.marker(AppState.homeBase, {
           icon: icon,
           draggable: false,
@@ -1472,14 +1466,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         reader.readAsDataURL(file);
       };
 
-      
       function listenForPendingOrders() {
         const q = window.query(
           window.collection(window.db, "orders"),
           window.where("status", "==", "pending"),
           window.where("assignedDriverId", "==", DRIVER_DOC_ID)
         );
-
 
         window.onSnapshot(q, (snapshot) => {
           const newOrders = [];
@@ -1518,16 +1510,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
           });
 
-          
-          
           if (
             !AppState.isInitialLoad &&
             newOrders.length > AppState.triageQueue.length &&
             AppState.workflowPhase === "idle"
           ) {
-            document.getElementById("alertSound").play().catch(() => console.log("Audio blocked."));
+            document
+              .getElementById("alertSound")
+              .play()
+              .catch(() => console.log("Audio blocked."));
           }
-          
+
           const previousTriageLength = AppState.triageQueue.length;
           AppState.isInitialLoad = false;
 
@@ -1535,16 +1528,21 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           AppState.pendingOrders = snapshot.docs.length;
 
           // Force the map to recalculate if a customer cancels while the driver is planning the route
-          if (AppState.workflowPhase === "triage" && previousTriageLength > newOrders.length) {
-            window.showCustomAlert("Route Updated", "A pending order was cancelled. Recalculating proposed route...");
-            
+          if (
+            AppState.workflowPhase === "triage" &&
+            previousTriageLength > newOrders.length
+          ) {
+            window.showCustomAlert(
+              "Route Updated",
+              "A pending order was cancelled. Recalculating proposed route..."
+            );
+
             updateDashboardUI();
           }
 
           const badge = document.getElementById("notificationBadge");
           badge.innerText = AppState.pendingOrders;
           badge.style.display = AppState.pendingOrders > 0 ? "flex" : "none";
- 
         });
       }
 
@@ -1581,7 +1579,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
           }
 
-          
           if (isActiveShift) {
             AppState.isOnline = true;
             const btn = document.getElementById("dutyToggleBtn");
@@ -1594,16 +1591,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               { isOnline: true, timestamp: new Date() },
               { merge: true }
             );
-            
+
             if (AppState.activeQueue && AppState.activeQueue.length > 0) {
               if (window.monitorActiveRoute) window.monitorActiveRoute();
             }
 
             updateDashboardUI(); // Render the restored active route
           } else {
-
-            
-            
             AppState.isOnline = false;
             await window.setDoc(
               window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
@@ -1913,70 +1907,65 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         });
       }
 
-      
-      
-      
-      
-      
-      
-      
-      
       window.activeOrderUnsubscribers = [];
 
       window.monitorActiveRoute = function () {
         // Clean up old database listeners to prevent duplicates
         if (window.activeOrderUnsubscribers) {
-          window.activeOrderUnsubscribers.forEach(unsub => unsub());
+          window.activeOrderUnsubscribers.forEach((unsub) => unsub());
         }
         window.activeOrderUnsubscribers = [];
 
         // Extract the unique database IDs for the orders currently in the driver's vehicle
-        const uniqueOrderIds = [...new Set(AppState.activeQueue.map(item => item.dbId))];
+        const uniqueOrderIds = [
+          ...new Set(AppState.activeQueue.map((item) => item.dbId)),
+        ];
 
-        uniqueOrderIds.forEach(orderId => {
+        uniqueOrderIds.forEach((orderId) => {
           if (!orderId) return;
-          const unsub = window.onSnapshot(window.doc(window.db, "orders", orderId), (docSnap) => {
-            if (docSnap.exists()) {
-              const data = docSnap.data();
-              if (data.status === "cancelled") {
+          const unsub = window.onSnapshot(
+            window.doc(window.db, "orders", orderId),
+            (docSnap) => {
+              if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.status === "cancelled") {
+                  window.showCustomAlert(
+                    "Delivery Aborted",
+                    "🚨 A customer cancelled their order! Actively rerouting your remaining stops now."
+                  );
 
-                window.showCustomAlert("Delivery Aborted", "🚨 A customer cancelled their order! Actively rerouting your remaining stops now.");
-                
-                // Violently purge this exact order from the driver's active route array
-                AppState.activeQueue = AppState.activeQueue.filter(item => item.dbId !== orderId);
-                
-                // Fallback Logic: Shift the workflow dynamically based on what remains
-                if (AppState.activeQueue.length === 0) {
-                  AppState.workflowPhase = "idle";
-                } else if (AppState.workflowPhase === "pickup" || AppState.workflowPhase === "ready_pickup") {
-                  const pendingPickups = AppState.activeQueue.filter(i => i.type === "pickup" && i.status !== "completed");
-                  // If the only pickup left was cancelled, instantly skip to deliveries
-                  if (pendingPickups.length === 0) {
-                    AppState.workflowPhase = "ready_delivery";
+                  // Violently purge this exact order from the driver's active route array
+                  AppState.activeQueue = AppState.activeQueue.filter(
+                    (item) => item.dbId !== orderId
+                  );
+
+                  // Fallback Logic: Shift the workflow dynamically based on what remains
+                  if (AppState.activeQueue.length === 0) {
+                    AppState.workflowPhase = "idle";
+                  } else if (
+                    AppState.workflowPhase === "pickup" ||
+                    AppState.workflowPhase === "ready_pickup"
+                  ) {
+                    const pendingPickups = AppState.activeQueue.filter(
+                      (i) => i.type === "pickup" && i.status !== "completed"
+                    );
+                    // If the only pickup left was cancelled, instantly skip to deliveries
+                    if (pendingPickups.length === 0) {
+                      AppState.workflowPhase = "ready_delivery";
+                    }
                   }
+
+                  updateDashboardUI(); // Force the map and bottom sheet to seamlessly redraw
                 }
-                
-                updateDashboardUI(); // Force the map and bottom sheet to seamlessly redraw
               }
             }
-          });
+          );
           window.activeOrderUnsubscribers.push(unsub);
         });
       };
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
+
       // --- STATE MACHINE ---
       async function updateDashboardUI() {
-        
         const gTitle = document.getElementById("glanceTitle");
         const gSub = document.getElementById("glanceSubtitle");
         const wfBtn = document.getElementById("workflowBtn");
@@ -1989,26 +1978,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
 
-          
-          
- wfBtn.onclick = async function () {
+          wfBtn.onclick = async function () {
             AppState.activeQueue = AppState.triageQueue.map((t) => ({
               ...t,
               status: "pending",
             }));
             AppState.workflowPhase = "ready_pickup";
             AppState.pendingOrders = 0;
-            
+
             if (window.monitorActiveRoute) window.monitorActiveRoute();
-            
+
             updateDashboardUI();
           };
-          
-          
-          
-          
-          
-          
 
           drawTriageRoute();
           timeline.innerHTML = "";
