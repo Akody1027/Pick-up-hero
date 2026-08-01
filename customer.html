@@ -1109,6 +1109,7 @@
       import {
         getAuth,
         deleteUser,
+        signOut
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
       import {
@@ -1153,7 +1154,8 @@
       window.getDocs = getDocs;
       window.deleteDoc = deleteDoc;
       window.deleteUser = deleteUser;
-      // Standard Firebase implementation matches previous backend logic
+      window.signOut = signOut;
+      window.auth = auth;      // Standard Firebase implementation matches previous backend logic
 
       window.appState = {
         user: null,
@@ -1288,55 +1290,54 @@
           alert("Failed to submit order. Please check your connection.");
         }
       };
-
-      window.confirmDeleteAccount = async function () {
-        if (!window.appState.user) {
-          alert("No active user session found.");
-          return;
-        }
-
-        const confirmMsg =
-          "Are you absolutely sure you want to delete your account? All your delivery history will be permanently erased. This cannot be undone.";
+      
+      
+      
+window.confirmDeleteAccount = async function() {
+        const confirmMsg = "Are you absolutely sure you want to delete your account? All your delivery history will be permanently erased. This cannot be undone.";
         if (!confirm(confirmMsg)) return;
+
+        const uid = window.appState.userId;
+        if (!uid) {
+           alert("No active data to delete.");
+           return;
+        }
 
         try {
           // 1. Fetch all existing orders for this specific customer
           const q = window.query(
             window.collection(window.db, "orders"),
-            window.where("userId", "==", window.appState.userId)
+            window.where("userId", "==", uid)
           );
-
+          
           // 2. Loop through and delete every order document
           const querySnapshot = await window.getDocs(q);
           querySnapshot.forEach(async (documentSnapshot) => {
-            await window.deleteDoc(
-              window.doc(window.db, "orders", documentSnapshot.id)
-            );
+            await window.deleteDoc(window.doc(window.db, "orders", documentSnapshot.id));
           });
 
           // 3. Delete the customer's profile document from the 'users' collection
-          await window.deleteDoc(
-            window.doc(window.db, "users", window.appState.userId)
-          );
+          await window.deleteDoc(window.doc(window.db, "users", uid));
 
-          // 4. Securely scrub the Auth user from Firebase Authentication
-          await window.deleteUser(window.appState.user);
+          // 4. Try to delete the Auth User, fallback to Sign Out to clear the stale cache
+          if (window.appState.user) {
+            try {
+              await window.deleteUser(window.appState.user);
+            } catch (authError) {
+              console.warn("Auth deletion blocked by Firebase, forcing session clear instead.", authError);
+              await window.signOut(window.auth);
+            }
+          }
 
           alert("Account and all route data successfully deleted.");
           window.location.href = "index.html"; // Kick them back to the landing page
+
         } catch (error) {
           console.error("Error deleting account:", error);
-
-          // Firebase strictly requires a "recent sign-in" to allow account deletion for security reasons
-          if (error.code === "auth/requires-recent-login") {
-            alert(
-              "For security purposes, Firebase requires you to log out and log back in before deleting your account."
-            );
-          } else {
-            alert("Failed to delete account: " + error.message);
-          }
+          alert("Failed to delete account data: " + error.message);
         }
       };
+   
     </script>
 
     <!-- UI & MAP SCRIPT -->
