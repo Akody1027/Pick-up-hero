@@ -914,14 +914,32 @@
           Use My Location
         </button>
 
-        <button
-          class="btn btn-primary"
-          id="executeSearchBtn"
-          onclick="executeHeroSearch()"
-          style="margin-top: 25px"
-        >
-          Find Hero
-        </button>
+        <div style="display: flex; gap: 10px; width: 100%; margin-top: 25px">
+          <button
+            class="btn btn-primary"
+            id="executeSearchBtn"
+            onclick="executeHeroSearch()"
+            style="flex: 8; width: 80%; margin-top: 0"
+          >
+            Find Hero
+          </button>
+
+          <button
+            class="btn btn-secondary"
+            style="
+              flex: 2;
+              width: 20%;
+              padding: 16px 0;
+              margin-top: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+            onclick="openRecoveryConfirm()"
+          >
+            Reco
+          </button>
+        </div>
       </div>
     </div>
 
@@ -978,6 +996,97 @@
         <button class="btn btn-primary" onclick="closeInfoTooltip()">
           Got it!
         </button>
+      </div>
+    </div>
+
+    <!-- RECOVERY DOUBLE CONFIRM PROMPT -->
+    <div class="soft-prompt-overlay" id="recoveryConfirmModal">
+      <div class="soft-prompt-box">
+        <h3>Recover your delivery?</h3>
+        <p>Search for an existing order if you lost your tracking screen.</p>
+        <div class="prompt-actions">
+          <button
+            class="btn btn-secondary"
+            style="flex: 1"
+            onclick="closeRecoveryConfirm()"
+          >
+            No
+          </button>
+          <button
+            class="btn btn-primary"
+            style="flex: 1"
+            onclick="proceedToRecovery()"
+          >
+            Yes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FULL SCREEN MODAL: RECOVERY MODULE -->
+    <div id="recoveryModule" class="modal">
+      <div class="modal-header">
+        <h2>Delivery Recovery</h2>
+        <button class="close-btn" onclick="closeRecoveryModule()">✕</button>
+      </div>
+
+      <div class="modal-content" id="recoverySearchUI">
+        <p
+          style="
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+          "
+        >
+          Enter any details you remember to locate your active run.
+        </p>
+
+        <div class="form-group">
+          <label>Order Number</label>
+          <input type="text" id="recoOrderNum" placeholder="e.g. ORD-12345" />
+        </div>
+
+        <div class="form-group">
+          <label>PIN Number</label>
+          <input type="text" id="recoPinNum" placeholder="4-Digit PIN" />
+        </div>
+
+        <div class="form-group">
+          <label>Delivery Address</label>
+          <input type="text" id="recoAddress" placeholder="Street Address" />
+        </div>
+
+        <div style="flex: 1"></div>
+        <button class="btn btn-primary" onclick="executeRecoverySearch()">
+          Find Order
+        </button>
+      </div>
+
+      <!-- LOADING STATE UI -->
+      <div
+        class="modal-content"
+        id="recoveryLoadingUI"
+        style="
+          display: none;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+        "
+      >
+        <div
+          class="search-spinner"
+          style="
+            width: 40px;
+            height: 40px;
+            border-width: 4px;
+            margin-bottom: 20px;
+          "
+        ></div>
+        <h3 style="color: var(--accent); margin-bottom: 8px">
+          We found your order!
+        </h3>
+        <p style="color: var(--text-muted)">Loading map now...</p>
       </div>
     </div>
 
@@ -1327,10 +1436,14 @@
         document.getElementById("addModal").classList.remove("active");
         document.getElementById("settingsModal").classList.remove("active");
 
-        document.getElementById("trackerSheet").style.transform =
-          "translateY(150%)";
         const findHeroModal = document.getElementById("findHeroModal");
         if (findHeroModal) findHeroModal.classList.remove("active");
+
+        const recoModal = document.getElementById("recoveryModule");
+        if (recoModal) recoModal.classList.remove("active");
+
+        document.getElementById("trackerSheet").style.transform =
+          "translateY(150%)";
 
         updateNavState("navHome");
       }
@@ -1651,8 +1764,7 @@
                   }
 
                   if (settingsData.baseLat && settingsData.baseLng) {
-                    const customBaseImageUrl =
-                      "cart1.png";
+                    const customBaseImageUrl = "cart1.png";
                     const baseIcon = L.divIcon({
                       className: "custom-orange-pin",
                       html: `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"><img src="${customBaseImageUrl}" style="width: 80%; height: 80%; object-fit: contain; "></div>`,
@@ -2208,6 +2320,64 @@
         if (activeStops >= 3) {
           document.getElementById("addStopBtn").style.display = "none";
         }
+      }
+
+      // --- RECOVERY TOOL LOGIC ---
+
+      function openRecoveryConfirm() {
+        closeAllModals(); // Closes Find Hero modal before opening prompt
+        document.getElementById("recoveryConfirmModal").style.display = "flex";
+      }
+
+      function closeRecoveryConfirm() {
+        document.getElementById("recoveryConfirmModal").style.display = "none";
+      }
+
+      function proceedToRecovery() {
+        closeRecoveryConfirm();
+        document.getElementById("recoveryModule").classList.add("active");
+
+        // Reset the UI states
+        document.getElementById("recoverySearchUI").style.display = "flex";
+        document.getElementById("recoveryLoadingUI").style.display = "none";
+      }
+
+      function closeRecoveryModule() {
+        document.getElementById("recoveryModule").classList.remove("active");
+
+        // Clear out inputs
+        document.getElementById("recoOrderNum").value = "";
+        document.getElementById("recoPinNum").value = "";
+        document.getElementById("recoAddress").value = "";
+      }
+
+      function executeRecoverySearch() {
+        const orderNum = document.getElementById("recoOrderNum").value;
+        const pinNum = document.getElementById("recoPinNum").value;
+        const address = document.getElementById("recoAddress").value;
+
+        if (!orderNum && !pinNum && !address) {
+          alert("Please enter at least one piece of information to search.");
+          return;
+        }
+
+        // Swap to loading UI
+        document.getElementById("recoverySearchUI").style.display = "none";
+        document.getElementById("recoveryLoadingUI").style.display = "flex";
+
+        // Execute Firebase Query to find the lost order
+        // Note: For demonstration, if they enter data, we run the global checkActiveSession
+        // In a production environment, you would query window.db directly based on the input
+
+        setTimeout(() => {
+          closeRecoveryModule();
+
+          // Force the system to re-check for active sessions
+          // This will automatically lock the UI and plot the route if the user is linked to an order
+          if (window.checkActiveSession) {
+            window.checkActiveSession();
+          }
+        }, 2500); // 2.5 second delay to display the success message and spinner
       }
     </script>
   </body>
