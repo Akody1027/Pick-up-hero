@@ -1969,7 +1969,7 @@ window.confirmDeleteAccount = async function() {
                 const settingsSnap = await window.getDoc(
                   window.doc(window.db, "driver_settings", activeDriverId)
                 );
-                let faceHtml = "➤";
+                let faceHtml = "";
                 let faceIconClass = "live-pin-override";
 
                 if (settingsSnap.exists()) {
