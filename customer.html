@@ -250,7 +250,7 @@
         width: 100vw;
         height: 100%;
         height: 100dvh;
-        opacity:90%;
+        opacity: 90%;
         background: var(--bg);
         z-index: 2000;
         transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -580,7 +580,9 @@
         >
           Book Slot ($12.99)
         </button>
+
         <button
+          id="sosButtonUI"
           class="btn btn-primary"
           style="padding: 12px; font-size: 0.9rem; flex: 1"
           onclick="openAddModal('emergency')"
@@ -1232,7 +1234,12 @@
           return;
         }
 
-        const totalCost = activeStopsFound * 12.99;
+        const perStopRate =
+          window.appState.bookingType === "emergency"
+            ? window.appState.currentPremiumRate || 50.0
+            : 12.99;
+
+        const totalCost = activeStopsFound * perStopRate;
 
         try {
           const orderData = {
@@ -1423,6 +1430,7 @@
           "translateY(150%)"; // Hide bottom sheet
         updateNavState("");
         goToStep1();
+        updateTotalCost();
       }
 
       function openSettingsModal() {
@@ -1635,7 +1643,14 @@
             activeStops++;
           }
         }
-        const total = activeStops * 12.99;
+
+        // Check if this is an SOS order or a scheduled order
+        const perStopRate =
+          window.appState.bookingType === "emergency"
+            ? window.appState.currentPremiumRate || 50.0
+            : 12.99;
+
+        const total = activeStops * perStopRate;
         document.getElementById("totalPriceDisplay").innerText =
           "$" + total.toFixed(2);
       }
@@ -1721,8 +1736,17 @@
       window.baseMarkers = {};
       window.liveMarkers = {};
 
-      window.selectHero = function (driverId, profilePic, displayName, bio) {
+      window.selectHero = function (
+        driverId,
+        profilePic,
+        displayName,
+        bio,
+        premiumRate
+      ) {
         window.appState.selectedDriverId = driverId;
+
+        // Store the dynamic premium rate, default to 50 if the driver hasn't set one yet
+        window.appState.currentPremiumRate = premiumRate || 50.0;
 
         // Update Bottom Sheet UI with the selected Hero's data
         if (profilePic)
@@ -1735,6 +1759,14 @@
           if (displayName)
             document.getElementById("sheetTitle").innerText = displayName;
           if (bio) document.getElementById("sheetSubtitle").innerText = bio;
+
+          // Dynamically update the SOS button text for this specific driver
+          const sosBtn = document.getElementById("sosButtonUI");
+          if (sosBtn) {
+            sosBtn.innerText = `SOS ($${window.appState.currentPremiumRate.toFixed(
+              2
+            )})`;
+          }
         }
 
         // Visually pop the sheet up to confirm selection
@@ -1754,12 +1786,14 @@
                   const settingsData = docSnap.data();
 
                   // Auto-select the very first driver that loads so the UI isn't empty
+
                   if (!window.appState.selectedDriverId) {
                     window.selectHero(
                       driverId,
                       settingsData.profilePic,
                       settingsData.displayName,
-                      settingsData.bio
+                      settingsData.bio,
+                      settingsData.premiumRate
                     );
                   }
 
@@ -1786,7 +1820,8 @@
                           driverId,
                           settingsData.profilePic,
                           settingsData.displayName,
-                          settingsData.bio
+                          settingsData.bio,
+                          settingsData.premiumRate
                         );
                       });
                     } else {
@@ -1863,7 +1898,8 @@
                         activeDriverId,
                         sData.profilePic,
                         sData.displayName,
-                        sData.bio
+                        sData.bio,
+                        sData.premiumRate
                       );
                     }
                   });
