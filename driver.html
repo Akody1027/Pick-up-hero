@@ -1693,23 +1693,48 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       function drawTriageRoute() {
         AppState.layerGroup.clearLayers();
 
-        // Nearest-Neighbor Sorting Logic
+        
+        
+        
+        // Nearest-Neighbor Sorting Logic (Pickups First, Deliveries Last)
         let current = AppState.homeBase;
-        let unsorted = [...AppState.triageQueue];
+        
+        // Split the queue so we process pickups before deliveries
+        let unsortedPickups = AppState.triageQueue.filter(o => o.type === "pickup");
+        let unsortedDeliveries = AppState.triageQueue.filter(o => o.type === "delivery");
         let sorted = [];
 
-        while (unsorted.length > 0) {
-          unsorted.sort(
+        // 1. Sort and route all Pickups first
+        while (unsortedPickups.length > 0) {
+          unsortedPickups.sort(
             (a, b) =>
               getDistance(current, [a.lat, a.lng]) -
               getDistance(current, [b.lat, b.lng])
           );
-          let next = unsorted.shift();
+          let next = unsortedPickups.shift();
           sorted.push(next);
           current = [next.lat, next.lng];
         }
-        AppState.triageQueue = sorted; // Save sorted sequence
 
+        // 2. Sort and route all Deliveries last
+        while (unsortedDeliveries.length > 0) {
+          unsortedDeliveries.sort(
+            (a, b) =>
+              getDistance(current, [a.lat, a.lng]) -
+              getDistance(current, [b.lat, b.lng])
+          );
+          let next = unsortedDeliveries.shift();
+          sorted.push(next);
+          current = [next.lat, next.lng];
+        }
+        
+        AppState.triageQueue = sorted; // Save sorted sequence
+        
+        
+
+        
+        
+        
         // Draw Street-Snapped Polyline via Google Directions
         if (sorted.length > 0) {
           const directionsService = new google.maps.DirectionsService();
