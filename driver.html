@@ -1108,6 +1108,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         const btn = document.getElementById("authSubmitBtn");
         const toggleText = document.getElementById("authToggleText");
 
+        
+        
+        
         if (window.authMode === "signin") {
           window.authMode = "signup";
           title.innerText = "Apply as Hero";
@@ -1136,15 +1139,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         const originalText = btn.innerText;
         btn.innerText = "Processing...";
         btn.disabled = true;
-
         try {
           if (window.authMode === "signin") {
             await window.signInWithEmailAndPassword(window.auth, email, password);
           } else {
             await window.createUserWithEmailAndPassword(window.auth, email, password);
           }
-          // Note: The onAuthStateChanged listener below will automatically catch success and drop the modal.
+          
+          // Reset the button state and clear the password for the next time the overlay appears
+          btn.innerText = originalText;
+          btn.disabled = false;
+          document.getElementById("authPassword").value = "";
+
         } catch (error) {
+          
           console.error("Auth Error:", error);
           window.showCustomAlert("Authentication Failed", error.message.replace("Firebase:", "").trim());
           btn.innerText = originalText;
