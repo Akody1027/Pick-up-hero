@@ -1327,6 +1327,7 @@
           // Bind smart search to the dynamic first pickup stop
           bindStoreAutocomplete(1);
 
+          
           const findHeroInput = document.getElementById("findHeroAddressInput");
 
           if (findHeroInput) {
@@ -1341,10 +1342,24 @@
               }
             });
           }
+          
+          // --- NEW: Bind Autocomplete to the Recovery Module Address ---
+          const recoAddressInput = document.getElementById("recoAddress");
+          if (recoAddressInput) {
+            const recoAutocomplete = new google.maps.places.Autocomplete(recoAddressInput);
+            recoAutocomplete.addListener("place_changed", () => {
+              const place = recoAutocomplete.getPlace();
+              if (place.geometry) {
+                document.getElementById("recoAddress").value = place.formatted_address || place.name;
+              }
+            });
+          }
+
         } else {
           console.error("Google Maps API failed to load.");
         }
       }
+
 
       function initMap() {
         map = L.map("map", { zoomControl: false }).setView(
@@ -2311,7 +2326,7 @@
         for (let i = 1; i <= window.currentStopCount; i++) {
           const block = document.getElementById(`stopBlock_${i}`);
           if (block) {
-            const storeName = document.getElementById(
+            const storeName = document.getElementById( 
               `storeNameDisplay_${i}`
             ).innerText;
             document.getElementById(
