@@ -543,6 +543,12 @@
     </style>
   </head>
   <body>
+    <audio
+      id="customerAlertSound"
+      src="Roadwatchero.mp3"
+      preload="auto"
+    ></audio>
+
     <!-- MAP BASE -->
     <div id="map"></div>
 
@@ -1794,78 +1800,96 @@
         reader.readAsDataURL(file);
       }
 
-      
-      
       window.listenToMyActiveOrder = function (orderId) {
-  const title = document.getElementById("sheetTitle");
-  const subtitle = document.getElementById("sheetSubtitle");
-  const avatar = document.querySelector(".driver-avatar");
+        const title = document.getElementById("sheetTitle");
+        const subtitle = document.getElementById("sheetSubtitle");
+        const avatar = document.querySelector(".driver-avatar");
+        const alertSound = document.getElementById("customerAlertSound");
 
-  // onSnapshot automatically listens for real-time changes without refreshing
-  window.onSnapshot(
-    window.doc(window.db, "orders", orderId),
-    async (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+        // onSnapshot automatically listens for real-time changes without refreshing
+        window.onSnapshot(
+          window.doc(window.db, "orders", orderId),
+          async (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
 
-        // 1. FIX: Fetch dynamic driver image during a live delivery
-        if (data.assignedDriverId) {
-          try {
-            const driverDoc = await window.getDoc(window.doc(window.db, "driver_settings", data.assignedDriverId));
-            if (driverDoc.exists() && driverDoc.data().profilePic) {
-              avatar.src = driverDoc.data().profilePic;
-            } else {
-              // Safe fallback if driver document exists but lacks an image
-              avatar.src = "https://ui-avatars.com/api/?name=Hero&background=ee611c&color=fff";
+              // AUDIO TRIGGER: Check if the status has changed from the last known state
+              if (
+                window.appState.lastKnownStatus &&
+                window.appState.lastKnownStatus !== data.status
+              ) {
+                if (alertSound) {
+                  alertSound
+                    .play()
+                    .catch((e) =>
+                      console.log("Audio blocked by browser policy:", e)
+                    );
+                }
+              }
+              // Save the new status so we can compare it next time
+              window.appState.lastKnownStatus = data.status;
+
+              // 1. FIX: Fetch dynamic driver image during a live delivery
+              if (data.assignedDriverId) {
+                try {
+                  const driverDoc = await window.getDoc(
+                    window.doc(
+                      window.db,
+                      "driver_settings",
+                      data.assignedDriverId
+                    )
+                  );
+                  if (driverDoc.exists() && driverDoc.data().profilePic) {
+                    avatar.src = driverDoc.data().profilePic;
+                  } else {
+                    // Safe fallback if driver document exists but lacks an image
+                    avatar.src =
+                      "https://ui-avatars.com/api/?name=Hero&background=ee611c&color=fff";
+                  }
+                } catch (error) {
+                  console.error("Failed to load driver avatar:", error);
+                }
+              }
+
+              // 2. REAL-TIME: Update UI based on dynamic route statuses
+              if (data.status === "pending") {
+                title.innerText = "Order Pending";
+                subtitle.innerText = "Waiting for Hero approval...";
+              } else if (
+                data.status === "approved" ||
+                data.status === "accepted"
+              ) {
+                // Triggered when driver accepts/approves the route
+                title.innerText = "Order Approved!";
+                subtitle.innerText =
+                  "Your Hero has approved your order and is heading out.";
+              } else if (data.status === "picked_up") {
+                // Triggered when driver secures the items
+                title.innerText = "Order Picked Up";
+                subtitle.innerText =
+                  "Your items are secured. Hero is on the way!";
+              } else if (data.status === "in_transit") {
+                title.innerText = "Hero is in transit!";
+                subtitle.innerText =
+                  "Your driver is en route to your delivery location.";
+              } else if (data.status === "completed") {
+                title.innerText = "Delivery Complete";
+                subtitle.innerText = "Thanks for using Pick Up Hero!";
+
+                // Hide the active tracking timeline and cancel button
+                const timeline = document.getElementById("activeStopsTimeline");
+                if (timeline) timeline.style.display = "none";
+
+                // Wait 2 seconds so the customer can read the completion message,
+                // then reload the app to cleanly reset the map and UI state.
+                setTimeout(() => {
+                  window.location.reload();
+                }, 2000);
+              }
             }
-          } catch (error) {
-            console.error("Failed to load driver avatar:", error);
           }
-        }
-
-        // 2. REAL-TIME: Update UI based on dynamic route statuses
-        if (data.status === "pending") {
-          title.innerText = "Order Pending";
-          subtitle.innerText = "Waiting for Hero approval...";
-          
-        } else if (data.status === "approved" || data.status === "accepted") {
-          // Triggered when driver accepts/approves the route
-          title.innerText = "Order Approved!";
-          subtitle.innerText = "Your Hero has approved your order and is heading out.";
-          
-        } else if (data.status === "picked_up") {
-          // Triggered when driver secures the items
-          title.innerText = "Order Picked Up";
-          subtitle.innerText = "Your items are secured. Hero is on the way!";
-          
-        } else if (data.status === "in_transit") {
-          title.innerText = "Hero is in transit!";
-          subtitle.innerText = "Your driver is en route to your delivery location.";
-          
-        } else if (data.status === "completed") {
-          title.innerText = "Delivery Complete";
-          subtitle.innerText = "Thanks for using Pick Up Hero!";
-          
-          // Hide the active tracking timeline and cancel button
-          const timeline = document.getElementById("activeStopsTimeline");
-          if (timeline) timeline.style.display = "none";
-          
-          // Wait 2 seconds so the customer can read the completion message, 
-          // then reload the app to cleanly reset the map and UI state.
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000);
-        }
-      }
-    }
-  );
-};
-      
-
-      
-      
-      
-      
+        );
+      };
 
       let animationFrameId;
 
@@ -2169,20 +2193,21 @@
           let hasActive = false;
           let activeId = null;
 
-          
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
 
             // Only track it as the active order if it's not completed or cancelled
-            if (["pending", "approved", "picked_up", "in_transit"].includes(data.status)) {
+            if (
+              ["pending", "approved", "picked_up", "in_transit"].includes(
+                data.status
+              )
+            ) {
               window.appState.activeOrder = data;
               hasActive = true;
               activeId = docSnap.id;
               window.appState.selectedDriverId = data.assignedDriverId;
             }
           });
-          
-
 
           if (hasActive) window.appState.currentOrderId = activeId;
 
@@ -2191,41 +2216,37 @@
           const defaultActions = document.getElementById("defaultSheetActions");
           const timeline = document.getElementById("activeStopsTimeline");
 
-          
-          
           if (hasActive) {
             fab.classList.add("locked");
-            
+
             // 1. FIX: Only show the intercept prompt if we aren't already actively tracking it
             if (!window.isTrackingActiveOrder) {
-              document.getElementById("activeDeliveryPrompt").style.display = "flex";
+              document.getElementById("activeDeliveryPrompt").style.display =
+                "flex";
               window.isTrackingActiveOrder = true;
             }
-            
+
             if (defaultActions) defaultActions.style.display = "none";
             if (timeline) timeline.style.display = "flex";
-            
+
             // 2. FIX: Prevent multiple Firebase listeners from stacking up on the same order
             if (window.currentlyListeningTo !== activeId) {
               window.listenToMyActiveOrder(activeId);
               window.currentlyListeningTo = activeId;
             }
-            
           } else {
             fab.classList.remove("locked");
-            
+
             // Reset the flags when the order is complete or cancelled
             window.isTrackingActiveOrder = false;
             window.currentlyListeningTo = null;
-            
+
             if (defaultActions) defaultActions.style.display = "flex";
             if (timeline) {
               timeline.style.display = "none";
               timeline.innerHTML = "";
             }
           }
-
-          
         });
       };
 
