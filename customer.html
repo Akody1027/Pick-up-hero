@@ -1704,7 +1704,8 @@
             alert(
               "No stores found near the Hero's base. Try a different search."
             );
-            openAddModal();
+            
+            openAddModal(window.appState.bookingType);
           }
         });
       }
@@ -1714,7 +1715,7 @@
         searchMarkers.forEach((m) => map.removeLayer(m));
         searchMarkers = [];
 
-        const displayEl = document.getElementById(
+        const displayEl = document.getElementById( 
           `storeNameDisplay_${activeStopContext}`
         );
         displayEl.innerText = name;
@@ -1724,9 +1725,15 @@
         document.getElementById(
           `selectedStoreDisplay_${activeStopContext}`
         ).style.display = "block";
-        openAddModal();
+        
+        openAddModal(window.appState.bookingType);
       }
 
+      
+      
+      
+      
+      
       // Utils
 
       function openInfoTooltip() {
