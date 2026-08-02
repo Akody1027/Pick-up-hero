@@ -724,11 +724,105 @@
     </div>
 
     <!-- Audio Alert Engine -->
+    <audio id="alertSound" src="Roadwatchero.mp3" preload="auto"></audio>
+
     <audio
-      id="alertSound"
-      src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+      id="sosAlarmSound"
+      src="Roadwatchero.mp3"
+      loop
       preload="auto"
     ></audio>
+
+    <!-- SOS FULL SCREEN ALERT MODAL -->
+    <div
+      id="sosAlertModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(239, 68, 68, 0.95);
+        z-index: 9999;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(10px);
+      "
+    >
+      <div
+        style="
+          background: var(--surface);
+          width: 90%;
+          max-width: 400px;
+          padding: 30px;
+          border-radius: 20px;
+          text-align: center;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+          border: 2px solid #fff;
+        "
+      >
+        <div
+          style="
+            width: 80px;
+            height: 80px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.2);
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 40px; height: 40px; fill: #fff"
+          >
+            <path
+              d="M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2"
+            />
+          </svg>
+        </div>
+        <h2
+          style="
+            color: var(--danger);
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+          "
+        >
+          Priority SOS Run
+        </h2>
+        <p
+          style="
+            color: var(--text);
+            font-size: 1rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+          "
+        >
+          A customer just paid $50 to skip the line. They have confirmed this
+          order is <strong>ready for pickup right now</strong>.
+        </p>
+        <button
+          class="btn btn-primary"
+          onclick="acknowledgeSOS()"
+          style="
+            background: var(--danger);
+            color: white;
+            font-size: 1.1rem;
+            padding: 18px;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5);
+          "
+        >
+          Acknowledge & Route
+        </button>
+      </div>
+    </div>
 
     <!-- MAP LAYER -->
     <div id="map"></div>
@@ -1586,6 +1680,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   bookingType: data.bookingType || "scheduled",
 
                   pickupNumber: stop.pickupNumber || "",
+                  sosTimeline: data.sosTimeline || "scheduled",
+
                   pin: stop.pin || "",
                   curbsideInstructions: stop.curbsideInstructions || "",
                   barcodeImageUrl: stop.barcodeImageUrl || "",
@@ -1605,6 +1701,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   tipAmount: data.tipAmount || 0,
                   totalCost: data.totalCost || 0,
                   bookingType: data.bookingType || "scheduled",
+                  sosTimeline: data.sosTimeline || "scheduled",
+
                 });
               } else {
                 console.warn(
@@ -1619,6 +1717,38 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             newOrders.length > AppState.triageQueue.length &&
             AppState.workflowPhase === "idle"
           ) {
+
+
+
+
+
+
+            window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
+          let hasNewSOS = false;
+
+          newOrders.forEach(order => {
+             if (order.sosTimeline === 'asap_today' && !window.pendingSOSOrderIds.has(order.dbId)) {
+                 hasNewSOS = true;
+                 window.pendingSOSOrderIds.add(order.dbId);
+             }
+          });
+
+          if (hasNewSOS && !AppState.isInitialLoad) {
+             document.getElementById('sosAlertModal').style.display = 'flex';
+             const sosAudio = document.getElementById('sosAlarmSound');
+             if (sosAudio) {
+                 sosAudio.play().catch(e => console.log("SOS Audio blocked:", e));
+             }
+          } else if (
+            !AppState.isInitialLoad &&
+            newOrders.length > AppState.triageQueue.length &&
+            AppState.workflowPhase === "idle"
+          ) {
+
+
+
+
+
             document
               .getElementById("alertSound")
               .play()
@@ -1781,6 +1911,24 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       // Visual Pruning System Engine
       window.startTriageMode = function () {
+
+
+        window.acknowledgeSOS = function() {
+        document.getElementById('sosAlertModal').style.display = 'none';
+        const sosAudio = document.getElementById('sosAlarmSound');
+        if (sosAudio) {
+            sosAudio.pause();
+            sosAudio.currentTime = 0;
+        }
+
+        // Force the app into triage mode so the driver can immediately route it
+        window.startTriageMode();
+      };
+
+
+
+
+
         if (AppState.pendingOrders === 0) return;
         document.getElementById("notificationBadge").style.display = "none";
         closeAllModals();
@@ -2302,20 +2450,28 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           timeline.innerHTML =
             "<p style='color: var(--text-muted);'>Sorting via Google Distance Matrix...</p>";
 
-          
-          
-          
-
           // Lock origin to the final pickup location (or fallback to HomeBase)
-          const pickups = AppState.activeQueue.filter((q) => q.type === "pickup");
-          const currentLoc = pickups.length > 0 
-            ? [pickups[pickups.length - 1].lat, pickups[pickups.length - 1].lng] 
-            : AppState.homeBase;
-            
-          let deliveries = AppState.activeQueue.filter((q) => q.type === "delivery");
+          const pickups = AppState.activeQueue.filter(
+            (q) => q.type === "pickup"
+          );
+          const currentLoc =
+            pickups.length > 0
+              ? [
+                  pickups[pickups.length - 1].lat,
+                  pickups[pickups.length - 1].lng,
+                ]
+              : AppState.homeBase;
 
-          const sosDeliveries = deliveries.filter((d) => d.bookingType === "emergency");
-          const standardDeliveries = deliveries.filter((d) => d.bookingType !== "emergency");
+          let deliveries = AppState.activeQueue.filter(
+            (q) => q.type === "delivery"
+          );
+
+          const sosDeliveries = deliveries.filter(
+            (d) => d.bookingType === "emergency"
+          );
+          const standardDeliveries = deliveries.filter(
+            (d) => d.bookingType !== "emergency"
+          );
 
           // Sort SOS Deliveries First
           const sortedSOS = await sortDeliveriesByTime(
@@ -2325,9 +2481,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           );
 
           // Update Origin to the last SOS Drop-off
-          const nextOrigin = sortedSOS.length > 0 
-            ? [sortedSOS[sortedSOS.length - 1].lat, sortedSOS[sortedSOS.length - 1].lng]
-            : currentLoc;
+          const nextOrigin =
+            sortedSOS.length > 0
+              ? [
+                  sortedSOS[sortedSOS.length - 1].lat,
+                  sortedSOS[sortedSOS.length - 1].lng,
+                ]
+              : currentLoc;
 
           // Cascade Standard Deliveries from there
           const sortedStandard = await sortDeliveriesByTime(
@@ -2337,9 +2497,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           );
 
           const sortedDeliveries = [...sortedSOS, ...sortedStandard];
-          
-          
-          
 
           AppState.activeQueue = [
             ...AppState.activeQueue.filter((q) => q.type === "pickup"),
@@ -2383,9 +2540,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               ]
             );
 
-            
             sortedDeliveries.forEach((d) => {
-              const pinClass = d.bookingType === "emergency" ? "custom-sos-pin" : "custom-store-pin";
+              const pinClass =
+                d.bookingType === "emergency"
+                  ? "custom-sos-pin"
+                  : "custom-store-pin";
               const delIcon = L.divIcon({
                 className: pinClass,
                 html: "",
@@ -2452,8 +2611,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           timeline.innerHTML =
             '<li class="timeline-item"><div class="node-card"><strong>All Drops Complete</strong><p style="font-size:0.8rem; color:var(--text-muted);">Payouts secured via Stripe.</p></div></li>';
-       
-        
         } else if (AppState.workflowPhase === "idle") {
           // Wipe the stranded pins and route lines off the map
           AppState.layerGroup.clearLayers();
@@ -2467,11 +2624,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           timeline.innerHTML =
             '<p style="color: var(--text-muted);">Queue is empty.</p>';
         }
-        
- 
-        
-        
-        
 
         if (window.drawFinancialSummary) window.drawFinancialSummary();
 
@@ -2559,10 +2711,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   <strong>${node.title}</strong>
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
-                
+
                 <!-- Only show the detailed info if the pickup isn't completed yet -->
                 ${!isDone ? extraInfo : ""}
-                
+
                 ${AppState.workflowPhase === "pickup" ? btnHTML : ""}
               </div>
             </li>
