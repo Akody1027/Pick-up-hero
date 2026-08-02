@@ -2709,17 +2709,17 @@ window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
             <div style="background: var(--surface); padding: 12px; border-radius: 8px; margin-top: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem;">
               ${
                 node.pickupNumber
-                  ? `<div><strong style="color:var(--accent);">Order #:</strong> ${node.pickupNumber}</div>`
+                  ? `<div><strong style="color:var(--accent);">Pickup Order #:</strong> ${node.pickupNumber}</div>`
                   : ""
               }
               ${
                 node.pin
-                  ? `<div><strong style="color:var(--accent);">PIN:</strong> ${node.pin}</div>`
+                  ? `<div><strong style="color:var(--accent);">Pickup PIN:</strong> ${node.pin}</div>`
                   : ""
               }
               ${
                 node.curbsideInstructions
-                  ? `<div><strong style="color:var(--accent);">Notes:</strong> ${node.curbsideInstructions}</div>`
+                  ? `<div><strong style="color:var(--accent);">Pickup Notes:</strong> ${node.curbsideInstructions}</div>`
                   : ""
               }
               ${
