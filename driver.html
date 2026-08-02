@@ -867,6 +867,22 @@
       </div>
 
       <div class="sheet-content">
+        <h2
+          id="deliveryTimelineHeader"
+          style="
+            display: none;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-weight: 800;
+            font-size: 1.4rem;
+            text-transform: uppercase;
+            border-left: 4px solid var(--accent);
+            padding-left: 10px;
+          "
+        >
+          Delivery for Tomorrow
+        </h2>
+
         <div id="financialSummaryContainer" style="display: none">
           <h4
             style="
@@ -1728,10 +1744,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             document.getElementById("sosAlertModal").style.display = "flex";
             const sosAudio = document.getElementById("sosAlarmSound");
             if (sosAudio) {
+              sosAudio.loop = true; // Strictly enforce continuous loop in JS
               sosAudio
                 .play()
                 .catch((e) => console.log("SOS Audio blocked:", e));
             }
+          }
+
+
           } else if (
             !AppState.isInitialLoad &&
             newOrders.length > AppState.triageQueue.length &&
@@ -1897,26 +1917,42 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }, 30000);
       }
 
+
+
+
       window.acknowledgeSOS = function () {
         document.getElementById("sosAlertModal").style.display = "none";
-        const sosAudio = document.getElementById("sosAlarmSound");
-        if (sosAudio) {
-          sosAudio.pause();
-          sosAudio.currentTime = 0;
-        }
-
         // Force the app into triage mode so the driver can immediately route it
         window.startTriageMode();
       };
 
       // Visual Pruning System Engine
       window.startTriageMode = function () {
+        // Stop all alarms strictly when the triage/bottom sheet opens (Bell Icon action)
+        const sosAudio = document.getElementById("sosAlarmSound");
+        if (sosAudio) {
+          sosAudio.pause();
+          sosAudio.currentTime = 0;
+        }
+        const stdAudio = document.getElementById("alertSound");
+        if (stdAudio) {
+          stdAudio.pause();
+          stdAudio.currentTime = 0;
+        }
+
         if (AppState.pendingOrders === 0) return;
         document.getElementById("notificationBadge").style.display = "none";
         closeAllModals();
         AppState.workflowPhase = "triage";
         updateDashboardUI();
+
+        // Auto-expand the bottom sheet to show the route details
+        document.getElementById("activeQueueSheet").classList.add("expanded");
       };
+
+
+
+
 
       function getDistance(p1, p2) {
         const dy = p1[0] - p2[0];
@@ -2241,9 +2277,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         });
       };
 
+
+
       window.drawFinancialSummary = function () {
         const container = document.getElementById("financialSummaryContainer");
         const grid = document.getElementById("financialGrid");
+        const timelineHeader = document.getElementById("deliveryTimelineHeader");
 
         const activeData =
           AppState.workflowPhase === "triage" ||
@@ -2253,9 +2292,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         if (!activeData || activeData.length === 0) {
           container.style.display = "none";
+          if (timelineHeader) timelineHeader.style.display = "none";
           grid.innerHTML = "";
           return;
         }
+
+        // Determine if any active order is scheduled for today
+        const isToday = activeData.some(item => item.sosTimeline === 'today' || item.sosTimeline === 'asap_today');
+        if (timelineHeader) {
+          timelineHeader.style.display = "block";
+          timelineHeader.innerText = isToday ? "DELIVERY FOR TODAY" : "DELIVERY FOR TOMORROW";
+        }
+
+
+
 
         const customerMap = {};
         activeData.forEach((item) => {
