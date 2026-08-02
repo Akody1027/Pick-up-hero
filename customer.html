@@ -1390,29 +1390,32 @@
         }, 1000);
       });
 
-      
-      
-      
-      
       // --- BACKGROUND SYNC ENGINE ---
       document.addEventListener("visibilitychange", async () => {
         if (
-          document.visibilityState === "visible" && 
-          window.appState && 
+          document.visibilityState === "visible" &&
+          window.appState &&
           window.appState.currentOrderId
         ) {
           try {
             const docSnap = await window.getDoc(
               window.doc(window.db, "orders", window.appState.currentOrderId)
             );
-            
+
             if (docSnap.exists()) {
               const data = docSnap.data();
-              // If the database status doesn't match the UI's last known status, 
-              // it means the driver updated it while the customer's phone was asleep.
+
+              // 1. Terminal States: Always force a hard reload to clear the map if the run ended
+              if (data.status === "completed" || data.status === "cancelled") {
+                window.location.reload();
+                return;
+              }
+
+              // 2. Mid-Run States: Reload to draw the new route if we missed a progression while asleep
               if (
-                window.appState.lastKnownStatus && 
-                window.appState.lastKnownStatus !== data.status
+                (window.appState.lastKnownStatus &&
+                  window.appState.lastKnownStatus !== data.status) ||
+                (!window.appState.lastKnownStatus && data.status !== "pending")
               ) {
                 window.location.reload();
               }
@@ -1422,14 +1425,7 @@
           }
         }
       });
-      
-      
-      
-      
-      
-      
-      
-      
+
       function initAutocomplete() {
         if (
           typeof google !== "undefined" &&
@@ -2466,11 +2462,9 @@
             );
 
             // Reload the page to securely flush the application state, map layers, and UI locks
-             setTimeout(() => {
+            setTimeout(() => {
               window.location.reload();
             }, 2000);
-          
-          
           } catch (err) {
             console.error("Cancellation failed:", err);
             alert("Failed to cancel the order. Please check your connection.");
