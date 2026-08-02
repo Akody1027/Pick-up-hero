@@ -2452,13 +2452,26 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           timeline.innerHTML =
             '<li class="timeline-item"><div class="node-card"><strong>All Drops Complete</strong><p style="font-size:0.8rem; color:var(--text-muted);">Payouts secured via Stripe.</p></div></li>';
+       
+        
         } else if (AppState.workflowPhase === "idle") {
+          // Wipe the stranded pins and route lines off the map
+          AppState.layerGroup.clearLayers();
+          if (activeRouteLayer) {
+            AppState.mapInstance.removeLayer(activeRouteLayer);
+          }
+
           gTitle.innerText = "Idle / No Active Route";
           gSub.innerText = "Awaiting scheduled runs.";
           wfBtn.style.display = "none";
           timeline.innerHTML =
             '<p style="color: var(--text-muted);">Queue is empty.</p>';
         }
+        
+ 
+        
+        
+        
 
         if (window.drawFinancialSummary) window.drawFinancialSummary();
 
