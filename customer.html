@@ -1845,6 +1845,16 @@
         } else if (data.status === "completed") {
           title.innerText = "Delivery Complete";
           subtitle.innerText = "Thanks for using Pick Up Hero!";
+          
+          // Hide the active tracking timeline and cancel button
+          const timeline = document.getElementById("activeStopsTimeline");
+          if (timeline) timeline.style.display = "none";
+          
+          // Wait 4 seconds so the customer can read the completion message, 
+          // then reload the app to cleanly reset the map and UI state.
+          setTimeout(() => {
+            window.location.reload();
+          }, 4000);
         }
       }
     }
@@ -2159,17 +2169,20 @@
           let hasActive = false;
           let activeId = null;
 
+          
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
 
-            window.appState.activeOrder = data;
-
-            if (data.status === "pending" || data.status === "in_transit") {
+            // Only track it as the active order if it's not completed or cancelled
+            if (["pending", "approved", "picked_up", "in_transit"].includes(data.status)) {
+              window.appState.activeOrder = data;
               hasActive = true;
               activeId = docSnap.id;
               window.appState.selectedDriverId = data.assignedDriverId;
             }
           });
+          
+
 
           if (hasActive) window.appState.currentOrderId = activeId;
 
