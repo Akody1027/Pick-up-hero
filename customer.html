@@ -588,7 +588,7 @@
           Book Slot ($12.99)
         </button>
 
-<button
+        <button
           id="sosButtonUI"
           class="btn btn-primary"
           style="padding: 12px; font-size: 0.9rem; flex: 1"
@@ -1285,6 +1285,7 @@
         userId: null,
         bookingType: "scheduled",
         compressedImages: {},
+        targetTimeline: "tomorrow",
       };
 
       auth.onAuthStateChanged((user) => {
@@ -2795,8 +2796,7 @@
         }, 2500); // 2.5 second delay to display the success message and spinner
       }
 
-      // --- TIMELINE & SOS LOGIC ---
-      window.appState.targetTimeline = "tomorrow";
+
 
       const originalSOSBtn = document.getElementById("sosButtonUI");
       if (originalSOSBtn) {
@@ -2814,7 +2814,7 @@
           document.getElementById("timelineDisplay").innerText = "Tomorrow";
           openAddModal("emergency");
         }
-      }; 
+      };
 
       window.confirmSOSToday = function () {
         document.getElementById("sosReadyWarning").style.display = "none";
@@ -2822,31 +2822,34 @@
         document.getElementById("timelineDisplay").innerText = "Today";
         openAddModal("emergency");
       };
-      
-      
-      window.evalDriverStateForTimeline = async function() {
+
+      window.evalDriverStateForTimeline = async function () {
         if (!window.appState.selectedDriverId) return;
         try {
-          const stateSnap = await window.getDoc(window.doc(window.db, "driver_state", window.appState.selectedDriverId));
-          
-          let phase = 'idle'; // Default to idle if the driver hasn't created a state document yet
+          const stateSnap = await window.getDoc(
+            window.doc(
+              window.db,
+              "driver_state",
+              window.appState.selectedDriverId
+            )
+          );
+
+          let phase = "idle"; // Default to idle if the driver hasn't created a state document yet
           if (stateSnap.exists() && stateSnap.data().workflowPhase) {
             phase = stateSnap.data().workflowPhase;
           }
 
-          if (phase === 'idle') {
-            window.appState.targetTimeline = 'today';
-            document.getElementById('timelineDisplay').innerText = 'Today';
+          if (phase === "idle") {
+            window.appState.targetTimeline = "today";
+            document.getElementById("timelineDisplay").innerText = "Today";
           } else {
-            window.appState.targetTimeline = 'tomorrow';
-            document.getElementById('timelineDisplay').innerText = 'Tomorrow';
+            window.appState.targetTimeline = "tomorrow";
+            document.getElementById("timelineDisplay").innerText = "Tomorrow";
           }
         } catch (e) {
           console.error("Failed to eval driver state:", e);
         }
       };
-
-
 
       const originalOpenAddModal = openAddModal;
       openAddModal = function (type = "scheduled") {
