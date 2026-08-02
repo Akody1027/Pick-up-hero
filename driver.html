@@ -2009,36 +2009,39 @@ if (data.stops && Array.isArray(data.stops)) {
           wfBtn.style.display = "block";
 
           
+          
           wfBtn.onclick = async function () {
             
-            // 1. FIX: Loop through the triage queue and tell Firebase the orders are approved
-            const uniqueOrderIds = [...new Set(AppState.triageQueue.map((item) => item.dbId))];
-            
-            for (const orderId of uniqueOrderIds) {
-              if (orderId) {
-                try {
-                  await window.updateDoc(window.doc(window.db, "orders", orderId), {
-                    status: "approved"
-                  });
-                } catch (e) {
-                  console.error("Failed to update status to approved:", e);
-                }
-              }
-            }
-
-            // 2. Update the driver's local queue state
+            // 1. FIRST: Protect the data. Copy the route into the active queue locally.
             AppState.activeQueue = AppState.triageQueue.map((t) => ({
               ...t,
               status: "approved",
             }));
             
+            // 2. Advance the system phase so the 'pending' listener ignores the database changes
             AppState.workflowPhase = "ready_pickup";
             AppState.pendingOrders = 0;
 
+            // 3. Lock in the active route monitors
             if (window.monitorActiveRoute) window.monitorActiveRoute();
 
+            // 4. Draw the actual pickup route on the map
             updateDashboardUI();
+
+            // 5. FINALLY: Tell Firebase the orders are approved in the background. 
+            const uniqueOrderIds = [...new Set(AppState.activeQueue.map((item) => item.dbId))];
+            
+            for (const orderId of uniqueOrderIds) {
+              if (orderId) {
+                window.updateDoc(window.doc(window.db, "orders", orderId), {
+                  status: "approved"
+                }).catch(e => console.error("Failed to update status to approved:", e));
+              }
+            }
           };
+          
+          
+
 
 
           drawTriageRoute();
