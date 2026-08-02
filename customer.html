@@ -15,14 +15,14 @@
 
     <style>
       :root {
-        --bg: #121212;
-        --surface: #1e1e1e;
+        --bg: #121212; 
+        --surface: #1e1e1e; 
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
-        --border: #333333;
+        --border: #333333; 
         --success: #22c55e;
         --danger: #ef4444;
         --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -363,7 +363,7 @@
         background: rgba(239, 68, 68, 0.1);
         color: var(--danger);
         border: 1px solid rgba(239, 68, 68, 0.3);
-      }
+      } 
 
       /* --- STEP PANELS --- */
       .step-panel {
@@ -375,9 +375,15 @@
         display: flex;
       }
 
-      /* --- CUSTOM MAP PINS --- */
+/* --- CUSTOM MAP PINS --- */
       .custom-orange-pin {
+        background-color: var(--accent);
+        border: 3px solid var(--surface);
         border-radius: 50%;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .custom-user-dot {
@@ -2370,15 +2376,19 @@
                       settingsData.bio,
                       settingsData.premiumRate
                     );
-                  }
+                  } 
 
+                  
+                  
                   if (settingsData.baseLat && settingsData.baseLng) {
+                    const customBaseImageUrl = "cart1.png";
                     const baseIcon = L.divIcon({
                       className: "custom-orange-pin",
-                      html: `<svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>`,
-                      iconSize: [38, 38],
-                      iconAnchor: [19, 19],
+                      html: `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"><img src="${customBaseImageUrl}" style="width: 80%; height: 80%; object-fit: contain;"></div>`,
+                      iconSize: [30, 30],
+                      iconAnchor: [21, 21], 
                     });
+                  
 
                     if (!window.baseMarkers[driverId]) {
                       window.baseMarkers[driverId] = L.marker(
