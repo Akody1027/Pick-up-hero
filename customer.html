@@ -1828,7 +1828,7 @@
           title.innerText = "Order Pending";
           subtitle.innerText = "Waiting for Hero approval...";
           
-        } else if (data.status === "approved") {
+        } else if (data.status === "approved" || data.status === "accepted") {
           // Triggered when driver accepts/approves the route
           title.innerText = "Order Approved!";
           subtitle.innerText = "Your Hero has approved your order and is heading out.";
@@ -1850,11 +1850,11 @@
           const timeline = document.getElementById("activeStopsTimeline");
           if (timeline) timeline.style.display = "none";
           
-          // Wait 4 seconds so the customer can read the completion message, 
+          // Wait 2 seconds so the customer can read the completion message, 
           // then reload the app to cleanly reset the map and UI state.
           setTimeout(() => {
             window.location.reload();
-          }, 4000);
+          }, 2000);
         }
       }
     }
