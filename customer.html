@@ -794,6 +794,18 @@
             ></textarea>
           </div>
 
+          <div class="form-group" style="margin-top: 15px">
+            <label>Driver Tip (Optional)</label>
+            <input
+              type="number"
+              id="tipInput"
+              placeholder="0.00"
+              min="0"
+              step="1.00"
+              oninput="updateTotalCost()"
+            />
+          </div>
+
           <div class="form-group">
             <label>Payment Method</label>
             <div id="card-element">
@@ -1261,7 +1273,12 @@
             ? parseFloat(window.appState.currentPremiumRate || 50.0)
             : 12.99;
 
-        const totalCost = activeStopsFound * perStopRate;
+        
+        const tipElement = document.getElementById("tipInput");
+        const tipAmount = tipElement && tipElement.value ? parseFloat(tipElement.value) : 0;
+        const totalCost = (activeStopsFound * perStopRate) + tipAmount;
+        
+        
 
         try {
           const orderData = {
@@ -1273,6 +1290,7 @@
             instructions: instructions,
             stops: stops,
             totalCost: totalCost,
+            tipAmount: tipAmount,
             bookingType: window.appState.bookingType,
             status: "pending",
             createdAt: new Date(),
@@ -1769,9 +1787,17 @@
             ? parseFloat(window.appState.currentPremiumRate || 50.0)
             : 12.99;
 
-        const total = activeStops * perStopRate;
+ 
+        
+        const tipElement = document.getElementById("tipInput");
+        const tipAmount = tipElement && tipElement.value ? parseFloat(tipElement.value) : 0;
+        
+        const total = (activeStops * perStopRate) + tipAmount;
         document.getElementById("totalPriceDisplay").innerText =
           "$" + total.toFixed(2);
+        
+ 
+        
       }
 
       function handleImageCompress(event, index) {
