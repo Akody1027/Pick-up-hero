@@ -2191,21 +2191,41 @@
           const defaultActions = document.getElementById("defaultSheetActions");
           const timeline = document.getElementById("activeStopsTimeline");
 
+          
+          
           if (hasActive) {
             fab.classList.add("locked");
-            document.getElementById("activeDeliveryPrompt").style.display =
-              "flex";
+            
+            // 1. FIX: Only show the intercept prompt if we aren't already actively tracking it
+            if (!window.isTrackingActiveOrder) {
+              document.getElementById("activeDeliveryPrompt").style.display = "flex";
+              window.isTrackingActiveOrder = true;
+            }
+            
             if (defaultActions) defaultActions.style.display = "none";
             if (timeline) timeline.style.display = "flex";
-            window.listenToMyActiveOrder(activeId);
+            
+            // 2. FIX: Prevent multiple Firebase listeners from stacking up on the same order
+            if (window.currentlyListeningTo !== activeId) {
+              window.listenToMyActiveOrder(activeId);
+              window.currentlyListeningTo = activeId;
+            }
+            
           } else {
             fab.classList.remove("locked");
+            
+            // Reset the flags when the order is complete or cancelled
+            window.isTrackingActiveOrder = false;
+            window.currentlyListeningTo = null;
+            
             if (defaultActions) defaultActions.style.display = "flex";
             if (timeline) {
               timeline.style.display = "none";
               timeline.innerHTML = "";
             }
           }
+
+          
         });
       };
 
