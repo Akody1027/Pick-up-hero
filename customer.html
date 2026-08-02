@@ -1273,12 +1273,10 @@
             ? parseFloat(window.appState.currentPremiumRate || 50.0)
             : 12.99;
 
-        
         const tipElement = document.getElementById("tipInput");
-        const tipAmount = tipElement && tipElement.value ? parseFloat(tipElement.value) : 0;
-        const totalCost = (activeStopsFound * perStopRate) + tipAmount;
-        
-        
+        const tipAmount =
+          tipElement && tipElement.value ? parseFloat(tipElement.value) : 0;
+        const totalCost = activeStopsFound * perStopRate + tipAmount;
 
         try {
           const orderData = {
@@ -1704,7 +1702,7 @@
             alert(
               "No stores found near the Hero's base. Try a different search."
             );
-            
+
             openAddModal(window.appState.bookingType);
           }
         });
@@ -1715,7 +1713,7 @@
         searchMarkers.forEach((m) => map.removeLayer(m));
         searchMarkers = [];
 
-        const displayEl = document.getElementById( 
+        const displayEl = document.getElementById(
           `storeNameDisplay_${activeStopContext}`
         );
         displayEl.innerText = name;
@@ -1725,15 +1723,10 @@
         document.getElementById(
           `selectedStoreDisplay_${activeStopContext}`
         ).style.display = "block";
-        
+
         openAddModal(window.appState.bookingType);
       }
 
-      
-      
-      
-      
-      
       // Utils
 
       function openInfoTooltip() {
@@ -1794,17 +1787,13 @@
             ? parseFloat(window.appState.currentPremiumRate || 50.0)
             : 12.99;
 
- 
-        
         const tipElement = document.getElementById("tipInput");
-        const tipAmount = tipElement && tipElement.value ? parseFloat(tipElement.value) : 0;
-        
-        const total = (activeStops * perStopRate) + tipAmount;
+        const tipAmount =
+          tipElement && tipElement.value ? parseFloat(tipElement.value) : 0;
+
+        const total = activeStops * perStopRate + tipAmount;
         document.getElementById("totalPriceDisplay").innerText =
           "$" + total.toFixed(2);
-        
- 
-        
       }
 
       function handleImageCompress(event, index) {
@@ -1919,27 +1908,17 @@
                   window.location.reload();
                 }, 2000);
               }
-              
-              } else if (data.status === "cancelled") {
-                title.innerText = "Order Cancelled";
-                subtitle.innerText = "This delivery has been aborted.";
+            } else if (data.status === "cancelled") {
+              title.innerText = "Order Cancelled";
+              subtitle.innerText = "This delivery has been aborted.";
 
-                const timeline = document.getElementById("activeStopsTimeline");
-                if (timeline) timeline.style.display = "none";
+              const timeline = document.getElementById("activeStopsTimeline");
+              if (timeline) timeline.style.display = "none";
 
-                setTimeout(() => {
-                  window.location.reload();
-                }, 2000);
-              
-              
-              
-              
-              
-              
-              
-              
+              setTimeout(() => {
+                window.location.reload();
+              }, 2000);
             }
-            
           }
         );
       };
@@ -2447,13 +2426,7 @@
             );
 
             // Reload the page to securely flush the application state, map layers, and UI locks
-
-          await window.setDoc(
-              window.doc(window.db, "orders", orderId),
-              { status: "cancelled" },
-              { merge: true }
-            );
-
+            window.location.reload();
           } catch (err) {
             console.error("Cancellation failed:", err);
             alert("Failed to cancel the order. Please check your connection.");
