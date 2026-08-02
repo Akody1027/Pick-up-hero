@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -1395,11 +1395,14 @@
             totalCost: totalCost,
             tipAmount: tipAmount,
             bookingType: window.appState.bookingType,
+            sosTimeline: window.appState.targetTimeline || "scheduled",
             status: "pending",
             createdAt: new Date(),
           };
 
           const docRef = await window.addDoc(
+    
+
             window.collection(window.db, "orders"),
             orderData
           );
@@ -2892,21 +2895,7 @@
           "flex";
       };
 
-      const originalSubmitOrderToFirebase = window.submitOrderToFirebase;
-      window.submitOrderToFirebase = async function () {
-        const origAddDoc = window.addDoc;
-        window.addDoc = async function (colRef, data) {
-          data.sosTimeline = window.appState.targetTimeline;
-          window.addDoc = origAddDoc;
-          return await origAddDoc(colRef, data);
-        };
-
-        try {
-          await originalSubmitOrderToFirebase();
-        } finally {
-          window.addDoc = origAddDoc;
-        }
-      };
+ 
     </script>
   </body>
 </html>
