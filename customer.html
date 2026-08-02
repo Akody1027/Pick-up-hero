@@ -1390,6 +1390,46 @@
         }, 1000);
       });
 
+      
+      
+      
+      
+      // --- BACKGROUND SYNC ENGINE ---
+      document.addEventListener("visibilitychange", async () => {
+        if (
+          document.visibilityState === "visible" && 
+          window.appState && 
+          window.appState.currentOrderId
+        ) {
+          try {
+            const docSnap = await window.getDoc(
+              window.doc(window.db, "orders", window.appState.currentOrderId)
+            );
+            
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              // If the database status doesn't match the UI's last known status, 
+              // it means the driver updated it while the customer's phone was asleep.
+              if (
+                window.appState.lastKnownStatus && 
+                window.appState.lastKnownStatus !== data.status
+              ) {
+                window.location.reload();
+              }
+            }
+          } catch (e) {
+            console.error("Background sync failed:", e);
+          }
+        }
+      });
+      
+      
+      
+      
+      
+      
+      
+      
       function initAutocomplete() {
         if (
           typeof google !== "undefined" &&
