@@ -176,6 +176,60 @@
         display: block;
       }
 
+      /* --- FINANCIAL GRID --- */
+      .financial-grid {
+        display: flex;
+        gap: 15px;
+        overflow-x: auto;
+        padding-bottom: 15px;
+        margin-bottom: 25px;
+        scrollbar-width: none;
+      }
+      .financial-grid::-webkit-scrollbar {
+        display: none;
+      }
+      .finance-card {
+        min-width: 170px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 15px;
+        flex-shrink: 0;
+      }
+      .finance-card.master {
+        background: var(--accent);
+        border-color: var(--accent-hover);
+        color: white;
+      }
+      .finance-card h5 {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        color: var(--text-muted);
+      }
+      .finance-card.master h5 {
+        color: rgba(255, 255, 255, 0.9);
+      }
+      .finance-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+      }
+      .finance-total {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
+        font-size: 1.1rem;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+      }
+      .finance-card.master .finance-total {
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
       /* Vertical Timeline */
       .timeline {
         border-left: 2px solid var(--border);
@@ -697,6 +751,23 @@
       </div>
 
       <div class="sheet-content">
+        <div id="financialSummaryContainer" style="display: none">
+          <h4
+            style="
+              margin-bottom: 15px;
+              color: var(--text-muted);
+              text-transform: uppercase;
+              font-size: 0.85rem;
+              letter-spacing: 1px;
+            "
+          >
+            Financial Breakdown
+          </h4>
+          <div class="financial-grid" id="financialGrid">
+            <!-- Dynamic finance cards injected here -->
+          </div>
+        </div>
+
         <h4
           style="
             margin-bottom: 20px;
@@ -1488,7 +1559,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   lat: stop.lat,
                   lng: stop.lng,
                   type: "pickup",
-                  // Grabbing the new pickup details from Firebase
+                  tipAmount: data.tipAmount || 0,
+                  totalCost: data.totalCost || 0,
+                  bookingType: data.bookingType || "scheduled",
+
                   pickupNumber: stop.pickupNumber || "",
                   pin: stop.pin || "",
                   curbsideInstructions: stop.curbsideInstructions || "",
@@ -1506,6 +1580,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   lat: data.deliveryLat,
                   lng: data.deliveryLng,
                   type: "delivery",
+                  tipAmount: data.tipAmount || 0,
+                  totalCost: data.totalCost || 0,
+                  bookingType: data.bookingType || "scheduled",
                 });
               } else {
                 console.warn(
@@ -1990,6 +2067,89 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         });
       };
 
+      window.drawFinancialSummary = function () {
+        const container = document.getElementById("financialSummaryContainer");
+        const grid = document.getElementById("financialGrid");
+
+        const activeData =
+          AppState.workflowPhase === "triage" ||
+          AppState.workflowPhase === "idle"
+            ? AppState.triageQueue
+            : AppState.activeQueue;
+
+        if (!activeData || activeData.length === 0) {
+          container.style.display = "none";
+          grid.innerHTML = "";
+          return;
+        }
+
+        const customerMap = {};
+        activeData.forEach((item) => {
+          if (!customerMap[item.dbId]) {
+            customerMap[item.dbId] = {
+              stops: 0,
+              tipAmount: item.tipAmount || 0,
+              totalCost: item.totalCost || 0,
+              bookingType: item.bookingType || "scheduled",
+            };
+          }
+          if (item.type === "pickup") {
+            customerMap[item.dbId].stops += 1;
+          }
+        });
+
+        let grandBase = 0;
+        let grandTip = 0;
+        let grandTotal = 0;
+        let cardsHTML = "";
+        let customerCount = 1;
+
+        for (const dbId in customerMap) {
+          const data = customerMap[dbId];
+          const baseFee = data.totalCost - data.tipAmount;
+
+          grandBase += baseFee;
+          grandTip += data.tipAmount;
+          grandTotal += data.totalCost;
+
+          cardsHTML += `
+              <div class="finance-card">
+                <h5>Customer ${customerCount} ${
+            data.bookingType === "emergency" ? "🚨" : ""
+          }</h5>
+                <div class="finance-row"><span>Base (${
+                  data.stops
+                } stop)</span> <span>$${baseFee.toFixed(2)}</span></div>
+                <div class="finance-row"><span>Tip</span> <span style="color: var(--success);">+$${data.tipAmount.toFixed(
+                  2
+                )}</span></div>
+                <div class="finance-total"><span>Total</span> <span>$${data.totalCost.toFixed(
+                  2
+                )}</span></div>
+              </div>
+            `;
+          customerCount++;
+        }
+
+        grid.innerHTML =
+          `
+            <div class="finance-card master">
+              <h5>Grand Total</h5>
+              <div class="finance-row"><span>Route Base</span> <span>$${grandBase.toFixed(
+                2
+              )}</span></div>
+              <div class="finance-row"><span>Total Tips</span> <span>+$${grandTip.toFixed(
+                2
+              )}</span></div>
+              <div class="finance-total"><span>Payout</span> <span>$${grandTotal.toFixed(
+                2
+              )}</span></div>
+            </div>
+          ` + cardsHTML;
+
+        container.style.display = "block";
+      };
+
       // --- STATE MACHINE ---
       async function updateDashboardUI() {
         const gTitle = document.getElementById("glanceTitle");
@@ -2225,6 +2385,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           timeline.innerHTML =
             '<p style="color: var(--text-muted);">Queue is empty.</p>';
         }
+
+        if (window.drawFinancialSummary) window.drawFinancialSummary();
 
         window.saveShiftState();
       }
