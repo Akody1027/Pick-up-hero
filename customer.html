@@ -540,12 +540,160 @@
         border-radius: 12px;
         margin-bottom: 15px;
       }
+      
+      
+      
+      
+      /* --- TOP NOTIFICATION CONTROLS --- */
+      .top-controls-customer {
+        position: fixed;
+        top: env(safe-area-inset-top, 20px);
+        right: 20px;
+        z-index: 1000;
+      }
+
+      .bell-btn-customer {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        position: relative;
+      }
+
+      .bell-btn-customer svg {
+        width: 24px;
+        height: 24px;
+        fill: var(--text);
+      }
+
+      .badge-customer {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: var(--accent);
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 800;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--bg);
+        display: none;
+      }
+
+      /* --- 3-SECOND SLIDE-DOWN TOAST BANNER --- */
+      .toast-banner {
+        position: fixed;
+        top: -100px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 420px;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--accent);
+        border-radius: 16px;
+        padding: 16px 20px;
+        box-shadow: var(--shadow);
+        z-index: 3500;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .toast-banner.active {
+        top: env(safe-area-inset-top, 20px);
+      }
+
+      .toast-banner svg {
+        width: 24px;
+        height: 24px;
+        fill: var(--accent);
+        flex-shrink: 0;
+      }
+
+      /* --- TIP SELECTION BUTTONS --- */
+      .tip-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+        margin-bottom: 12px;
+      }
+
+      .tip-btn {
+        flex: 1;
+        padding: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        font-weight: 700;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s ease;
+      }
+
+      .tip-btn.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+      
+      
+      
+      
+      
+      
     </style>
   </head>
   <body>
+    
+    <!-- Audio Alert Engine -->
+    <audio
+      id="customerAlertSound"
+      src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+      preload="auto"
+    ></audio>
+    
+    
+    
+    
     <!-- MAP BASE -->
     <div id="map"></div>
 
+    
+    <!-- 3-SECOND SLIDE-DOWN TOAST NOTIFICATION -->
+    <div id="toastBanner" class="toast-banner">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z" />
+      </svg>
+      <div>
+        <strong style="display: block; font-size: 0.9rem; color: var(--text);" id="toastTitle">Update</strong>
+        <span style="font-size: 0.82rem; color: var(--text-muted);" id="toastMessage">Your delivery alert text...</span>
+      </div>
+    </div>
+
+    <!-- TOP CONTROL BELL -->
+    <div class="top-controls-customer">
+      <button class="bell-btn-customer" onclick="openCustomerNotificationsModal()">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z" />
+        </svg>
+        <div class="badge-customer" id="customerNotificationBadge">0</div>
+      </button>
+    </div>
+    
+    
     <!-- FLOATING BOTTOM SHEET (Active Status / Announcements) -->
 
     <div
@@ -636,6 +784,18 @@
         <!-- STEP 1: PICKUP STOPS -->
         <div id="step1Panel" class="step-panel active">
           <div id="stopsContainer">
+            
+            
+            <!-- STEP 1: PICKUP STOPS -->
+        <div id="step1Panel" class="step-panel active">
+          <div id="driverScheduleBanner" style="padding: 14px; background: var(--surface-elevated); border-radius: 12px; border: 1px solid var(--border); text-align: center;">
+            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; display: block; margin-bottom: 2px;">Hero Schedule</span>
+            <strong id="driverScheduleDisplay" style="color: var(--accent); font-size: 0.95rem;">Loading Driver Availability...</strong>
+          </div>
+          <div id="stopsContainer">
+            
+            
+            
             <!-- Stop 1 Block -->
             <div
               class="stop-block"
@@ -798,19 +958,45 @@
 
           <div style="flex: 1"></div>
 
+         
+          
+          
+          <div class="form-group">
+            <label>Add Tip for Hero</label>
+            <div class="tip-group">
+              <button class="tip-btn active" id="tipBtn_0" onclick="selectTip(0, 'percent')">None</button>
+              <button class="tip-btn" id="tipBtn_10" onclick="selectTip(10, 'percent')">10%</button>
+              <button class="tip-btn" id="tipBtn_15" onclick="selectTip(15, 'percent')">15%</button>
+              <button class="tip-btn" id="tipBtn_20" onclick="selectTip(20, 'percent')">20%</button>
+            </div>
+            <input type="number" id="customTipInput" placeholder="Or enter custom tip amount ($)" step="0.01" oninput="handleCustomTipInput()" />
+          </div>
+
           <div
             style="
-              text-align: center;
+              background: var(--surface-elevated);
+              padding: 15px;
+              border-radius: 12px;
+              border: 1px solid var(--border);
               margin-bottom: 15px;
-              font-size: 1.1rem;
-              font-weight: 600;
             "
           >
-            Total Estimated Fee:
-            <span id="totalPriceDisplay" style="color: var(--success)"
-              >$12.99</span
-            >
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 6px;">
+              <span>Base Delivery Fee:</span>
+              <span id="basePriceDisplay">$12.99</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">
+              <span>Hero Tip:</span>
+              <span id="tipPriceDisplay">$0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 700; border-top: 1px solid var(--border); padding-top: 10px;">
+              <span>Total Estimated Fee:</span>
+              <span id="totalPriceDisplay" style="color: var(--success)">$12.99</span>
+            </div>
           </div>
+          
+          
+          
           <div style="display: flex; gap: 10px">
             <button
               class="btn btn-secondary"
@@ -831,6 +1017,28 @@
       </div>
     </div>
 
+        
+        
+        
+        <!-- FULL SCREEN MODAL: NOTIFICATIONS -->
+    <div id="customerNotificationsModal" class="modal">
+      <div class="modal-header">
+        <h2>Notifications</h2>
+        <button class="close-btn" onclick="closeAllModals()">✕</button>
+      </div>
+
+      <div class="modal-content">
+        <ul id="customerNotificationList" style="list-style: none; display: flex; flex-direction: column; gap: 12px;">
+          <p style="color: var(--text-muted); text-align: center;">No notifications yet.</p>
+        </ul>
+      </div>
+    </div>
+        
+        
+        
+        
+        
+        
     <!-- FULL SCREEN MODAL: SETTINGS -->
     <div id="settingsModal" class="modal">
       <div class="modal-header">
@@ -1249,12 +1457,16 @@
           return;
         }
 
-        const perStopRate =
+
+          
+          const perStopRate =
           window.appState.bookingType === "emergency"
             ? parseFloat(window.appState.currentPremiumRate || 50.0)
             : 12.99;
 
-        const totalCost = activeStopsFound * perStopRate;
+        const baseCost = activeStopsFound * perStopRate;
+        const tipAmount = parseFloat(window.appState.currentTipAmount || 0.0);
+        const totalCost = baseCost + tipAmount;
 
         try {
           const orderData = {
@@ -1265,11 +1477,21 @@
             deliveryLng: window.appState.deliveryLng || null,
             instructions: instructions,
             stops: stops,
+            baseCost: baseCost,
+            tipAmount: tipAmount,
             totalCost: totalCost,
             bookingType: window.appState.bookingType,
             status: "pending",
+            notifications: [],
             createdAt: new Date(),
           };
+          
+          
+          
+          
+          
+          
+          
 
           const docRef = await window.addDoc(
             window.collection(window.db, "orders"),
@@ -1531,9 +1753,14 @@ window.confirmDeleteAccount = async function() {
         updateNavState("navProfile");
       }
 
+     
+      
       function closeAllModals() {
         document.getElementById("addModal").classList.remove("active");
         document.getElementById("settingsModal").classList.remove("active");
+
+        const customerNotifModal = document.getElementById("customerNotificationsModal");
+        if (customerNotifModal) customerNotifModal.classList.remove("active");
 
         const findHeroModal = document.getElementById("findHeroModal");
         if (findHeroModal) findHeroModal.classList.remove("active");
@@ -1546,6 +1773,96 @@ window.confirmDeleteAccount = async function() {
 
         updateNavState("navHome");
       }
+
+      // --- TOAST NOTIFICATION & AUDIO ENGINE ---
+      window.customerNotifications = [];
+
+      window.triggerCustomerToast = function (title, message) {
+        // 1. Play Alert Sound
+        const audio = document.getElementById("customerAlertSound");
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play().catch(() => console.log("Audio alert blocked by browser context policy."));
+        }
+
+        // 2. Animate Toast Banner
+        const toast = document.getElementById("toastBanner");
+        document.getElementById("toastTitle").innerText = title;
+        document.getElementById("toastMessage").innerText = message;
+
+        toast.classList.add("active");
+
+        setTimeout(() => {
+          toast.classList.remove("active");
+        }, 3000);
+
+        // 3. Append to Notification Drawer
+        window.customerNotifications.unshift({ title, message, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+        window.updateNotificationBadge();
+      };
+
+      window.updateNotificationBadge = function () {
+        const badge = document.getElementById("customerNotificationBadge");
+        if (!badge) return;
+        const count = window.customerNotifications.length;
+        badge.innerText = count;
+        badge.style.display = count > 0 ? "flex" : "none";
+      };
+
+      window.openCustomerNotificationsModal = function () {
+        closeAllModals();
+        document.getElementById("customerNotificationsModal").classList.add("active");
+
+        const list = document.getElementById("customerNotificationList");
+        if (window.customerNotifications.length === 0) {
+          list.innerHTML = `<p style="color: var(--text-muted); text-align: center;">No notifications yet.</p>`;
+          return;
+        }
+
+        list.innerHTML = "";
+        window.customerNotifications.forEach((n) => {
+          list.innerHTML += `
+            <li style="background: var(--surface-elevated); padding: 14px; border-radius: 12px; border: 1px solid var(--border);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <strong style="color: var(--accent); font-size: 0.9rem;">${n.title}</strong>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">${n.time}</span>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text);">${n.message}</p>
+            </li>
+          `;
+        });
+      };
+
+      // --- TIPPING CALCULATOR SYSTEM ---
+      window.appState.currentTipAmount = 0.0;
+      window.appState.tipType = "percent";
+      window.appState.tipValue = 0;
+
+      window.selectTip = function (val, type) {
+        window.appState.tipValue = val;
+        window.appState.tipType = type;
+
+        document.querySelectorAll(".tip-btn").forEach((btn) => btn.classList.remove("active"));
+        document.getElementById("customTipInput").value = "";
+
+        if (val === 0) document.getElementById("tipBtn_0").classList.add("active");
+        else if (val === 10) document.getElementById("tipBtn_10").classList.add("active");
+        else if (val === 15) document.getElementById("tipBtn_15").classList.add("active");
+        else if (val === 20) document.getElementById("tipBtn_20").classList.add("active");
+
+        updateTotalCost();
+      };
+
+      window.handleCustomTipInput = function () {
+        const customVal = parseFloat(document.getElementById("customTipInput").value) || 0;
+        document.querySelectorAll(".tip-btn").forEach((btn) => btn.classList.remove("active"));
+        window.appState.tipValue = customVal;
+        window.appState.tipType = "fixed";
+
+        updateTotalCost();
+      };
+      
+      
 
       function updateNavState(activeId) {
         document
@@ -1744,8 +2061,10 @@ window.confirmDeleteAccount = async function() {
           document.getElementById("addStopBtn").style.display = "block";
         }
       }
+      
+      
 
-      function updateTotalCost() {
+ function updateTotalCost() {
         let activeStops = 0;
         for (let i = 1; i <= window.currentStopCount; i++) {
           if (document.getElementById(`stopBlock_${i}`)) {
@@ -1753,17 +2072,35 @@ window.confirmDeleteAccount = async function() {
           }
         }
 
-        // Check if this is an SOS order or a scheduled order
-
         const perStopRate =
           window.appState.bookingType === "emergency"
             ? parseFloat(window.appState.currentPremiumRate || 50.0)
             : 12.99;
 
-        const total = activeStops * perStopRate;
-        document.getElementById("totalPriceDisplay").innerText =
-          "$" + total.toFixed(2);
+        const baseTotal = activeStops * perStopRate;
+        let calculatedTip = 0.0;
+
+        if (window.appState.tipType === "percent") {
+          calculatedTip = (baseTotal * window.appState.tipValue) / 100;
+        } else {
+          calculatedTip = parseFloat(window.appState.tipValue) || 0.0;
+        }
+
+        window.appState.currentTipAmount = calculatedTip;
+        const grandTotal = baseTotal + calculatedTip;
+
+        const baseDisplay = document.getElementById("basePriceDisplay");
+        const tipDisplay = document.getElementById("tipPriceDisplay");
+        const totalDisplay = document.getElementById("totalPriceDisplay");
+
+        if (baseDisplay) baseDisplay.innerText = "$" + baseTotal.toFixed(2);
+        if (tipDisplay) tipDisplay.innerText = "$" + calculatedTip.toFixed(2);
+        if (totalDisplay) totalDisplay.innerText = "$" + grandTotal.toFixed(2);
       }
+      
+      
+      
+      
 
       function handleImageCompress(event, index) {
         const file = event.target.files[0];
@@ -1791,6 +2128,11 @@ window.confirmDeleteAccount = async function() {
         reader.readAsDataURL(file);
       }
 
+      
+      
+      
+  window.previousStopsState = [];
+
       window.listenToMyActiveOrder = function (orderId) {
         const title = document.getElementById("sheetTitle");
         const subtitle = document.getElementById("sheetSubtitle");
@@ -1800,21 +2142,42 @@ window.confirmDeleteAccount = async function() {
           (docSnap) => {
             if (docSnap.exists()) {
               const data = docSnap.data();
+
               if (data.status === "pending") {
                 title.innerText = "Order Pending";
                 subtitle.innerText = "Waiting for Hero approval...";
               } else if (data.status === "in_transit") {
-                title.innerText = "Hero is on the way!";
-                subtitle.innerText =
-                  "Your driver has secured your curbside pickup.";
+                title.innerText = "Hero En Route";
+                subtitle.innerText = "Your driver has started the delivery run!";
               } else if (data.status === "completed") {
                 title.innerText = "Delivery Complete";
                 subtitle.innerText = "Thanks for using Pick Up Hero!";
+              }
+
+              // --- CROSS-CUSTOMER ISOLATED ALERT DETECTOR ---
+              if (data.stops && Array.isArray(data.stops)) {
+                data.stops.forEach((stop, idx) => {
+                  const prevStatus = window.previousStopsState[idx];
+                  if (prevStatus && prevStatus !== "completed" && stop.status === "completed") {
+                    // Trigger sound & 3-second toast specifically for this customer's stop
+                    window.triggerCustomerToast(
+                      "Pickup Completed!",
+                      `Hero has picked up your order from ${stop.storeName || "the store"}.`
+                    );
+                  }
+                });
+
+                // Update cache
+                window.previousStopsState = data.stops.map((s) => s.status);
               }
             }
           }
         );
       };
+      
+      
+      
+      
 
       let animationFrameId;
 
@@ -1846,7 +2209,11 @@ window.confirmDeleteAccount = async function() {
       window.baseMarkers = {};
       window.liveMarkers = {};
 
-      window.selectHero = function (
+      
+      
+      
+      
+      window.selectHero = async function (
         driverId,
         profilePic,
         displayName,
@@ -1879,10 +2246,33 @@ window.confirmDeleteAccount = async function() {
           }
         }
 
+        // --- FETCH DRIVER RUN SCHEDULE ---
+        const scheduleDisplay = document.getElementById("driverScheduleDisplay");
+        if (scheduleDisplay) {
+          try {
+            const docSnap = await window.getDoc(
+              window.doc(window.db, "driver_settings", driverId)
+            );
+            if (docSnap.exists() && docSnap.data().scheduleDate && docSnap.data().scheduleTime) {
+              const d = docSnap.data();
+              scheduleDisplay.innerText = `${d.scheduleDate} @ ${d.scheduleTime}`;
+            } else {
+              scheduleDisplay.innerText = "Next Available Run (Tomorrow Morning)";
+            }
+          } catch (e) {
+            scheduleDisplay.innerText = "Next Available Run (Tomorrow Morning)";
+          }
+        }
+
         // Visually pop the sheet up to confirm selection
         document.getElementById("trackerSheet").style.transform =
           "translateY(0)";
       };
+  
+      
+      
+      
+      
 
       window.loadActiveDriver = async function () {
         try {
