@@ -1702,7 +1702,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   totalCost: data.totalCost || 0,
                   bookingType: data.bookingType || "scheduled",
                   sosTimeline: data.sosTimeline || "scheduled",
-
                 });
               } else {
                 console.warn(
@@ -1712,43 +1711,32 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
           });
 
-          if (
-            !AppState.isInitialLoad &&
-            newOrders.length > AppState.triageQueue.length &&
-            AppState.workflowPhase === "idle"
-          ) {
-
-
-
-
-
-
-            window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
+          window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
           let hasNewSOS = false;
 
-          newOrders.forEach(order => {
-             if (order.sosTimeline === 'asap_today' && !window.pendingSOSOrderIds.has(order.dbId)) {
-                 hasNewSOS = true;
-                 window.pendingSOSOrderIds.add(order.dbId);
-             }
+          newOrders.forEach((order) => {
+            if (
+              order.sosTimeline === "asap_today" &&
+              !window.pendingSOSOrderIds.has(order.dbId)
+            ) {
+              hasNewSOS = true;
+              window.pendingSOSOrderIds.add(order.dbId);
+            }
           });
 
           if (hasNewSOS && !AppState.isInitialLoad) {
-             document.getElementById('sosAlertModal').style.display = 'flex';
-             const sosAudio = document.getElementById('sosAlarmSound');
-             if (sosAudio) {
-                 sosAudio.play().catch(e => console.log("SOS Audio blocked:", e));
-             }
+            document.getElementById("sosAlertModal").style.display = "flex";
+            const sosAudio = document.getElementById("sosAlarmSound");
+            if (sosAudio) {
+              sosAudio
+                .play()
+                .catch((e) => console.log("SOS Audio blocked:", e));
+            }
           } else if (
             !AppState.isInitialLoad &&
             newOrders.length > AppState.triageQueue.length &&
             AppState.workflowPhase === "idle"
           ) {
-
-
-
-
-
             document
               .getElementById("alertSound")
               .play()
@@ -1909,26 +1897,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }, 30000);
       }
 
-      // Visual Pruning System Engine
-      window.startTriageMode = function () {
-
-
-        window.acknowledgeSOS = function() {
-        document.getElementById('sosAlertModal').style.display = 'none';
-        const sosAudio = document.getElementById('sosAlarmSound');
+      window.acknowledgeSOS = function () {
+        document.getElementById("sosAlertModal").style.display = "none";
+        const sosAudio = document.getElementById("sosAlarmSound");
         if (sosAudio) {
-            sosAudio.pause();
-            sosAudio.currentTime = 0;
+          sosAudio.pause();
+          sosAudio.currentTime = 0;
         }
 
         // Force the app into triage mode so the driver can immediately route it
         window.startTriageMode();
       };
 
-
-
-
-
+      // Visual Pruning System Engine
+      window.startTriageMode = function () {
         if (AppState.pendingOrders === 0) return;
         document.getElementById("notificationBadge").style.display = "none";
         closeAllModals();
