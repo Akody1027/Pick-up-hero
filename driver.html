@@ -17,7 +17,7 @@
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
-        --surface-elevated: #2c2c2c;
+        --surface-elevated: #2c2c2c; 
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
@@ -1725,9 +1725,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 );
               }
             }
-          });
-
-          window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
+          }); 
+          
+          
+window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
           let hasNewSOS = false;
 
           newOrders.forEach((order) => {
@@ -1744,24 +1745,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             document.getElementById("sosAlertModal").style.display = "flex";
             const sosAudio = document.getElementById("sosAlarmSound");
             if (sosAudio) {
-              sosAudio.loop = true; // Strictly enforce continuous loop in JS
-              sosAudio
-                .play()
-                .catch((e) => console.log("SOS Audio blocked:", e));
+              sosAudio.loop = true;
+              sosAudio.play().catch((e) => console.log("SOS Audio blocked:", e));
             }
-          }
-
-
           } else if (
             !AppState.isInitialLoad &&
             newOrders.length > AppState.triageQueue.length &&
             AppState.workflowPhase === "idle"
           ) {
-            document
-              .getElementById("alertSound")
-              .play()
-              .catch(() => console.log("Audio blocked."));
+            document.getElementById("alertSound").play().catch(() => console.log("Audio blocked."));
           }
+ 
 
           const previousTriageLength = AppState.triageQueue.length;
           AppState.isInitialLoad = false;
