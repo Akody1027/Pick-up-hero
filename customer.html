@@ -642,6 +642,27 @@
       <div class="modal-content">
         <!-- STEP 1: PICKUP STOPS -->
         <div id="step1Panel" class="step-panel active">
+          <div
+            id="dynamicTimelineHeader"
+            style="
+              background: var(--surface-elevated);
+              padding: 12px;
+              border-radius: 12px;
+              margin-bottom: 15px;
+              border-left: 4px solid var(--accent);
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <strong style="color: var(--text)">Expected Pickup:</strong>
+            <span
+              id="timelineDisplay"
+              style="color: var(--accent); font-weight: 700"
+              >Tomorrow</span
+            >
+          </div>
+
           <div id="stopsContainer">
             <!-- Stop 1 Block -->
             <div
@@ -830,6 +851,36 @@
               >$12.99</span
             >
           </div>
+
+          <!-- STANDARD "TODAY" READINESS GATE -->
+          <div
+            id="standardTodayGate"
+            style="
+              display: none;
+              background: rgba(239, 68, 68, 0.1);
+              border: 1px solid rgba(239, 68, 68, 0.3);
+              border-radius: 12px;
+              padding: 15px;
+              margin-bottom: 15px;
+              text-align: center;
+            "
+          >
+            <p
+              style="color: var(--text); font-size: 0.9rem; margin-bottom: 12px"
+            >
+              <strong>Hold up!</strong> To guarantee same-day delivery, your
+              items must already be marked as 'Ready for Pickup' by the store.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <button class="btn btn-primary" onclick="acceptStandardToday()">
+                Yes, my order is ready
+              </button>
+              <button class="btn btn-secondary" onclick="shiftToTomorrow()">
+                No, pick it up tomorrow
+              </button>
+            </div>
+          </div>
+
           <div style="display: flex; gap: 10px">
             <button
               class="btn btn-secondary"
@@ -1023,6 +1074,59 @@
         <button class="btn btn-primary" onclick="closeInfoTooltip()">
           Got it!
         </button>
+      </div>
+    </div>
+
+    <!-- SOS TIMELINE SELECTOR PROMPT -->
+    <div class="soft-prompt-overlay" id="sosTimelineSelector">
+      <div class="soft-prompt-box">
+        <h3>Skip The Line</h3>
+        <p>
+          Choose your priority timeline. The $50.00 premium applies to both
+          options.
+        </p>
+        <div class="prompt-actions" style="flex-direction: column">
+          <button class="btn btn-primary" onclick="handleSOSTimeline('today')">
+            Get it ASAP Today
+          </button>
+          <button
+            class="btn btn-secondary"
+            onclick="handleSOSTimeline('tomorrow')"
+          >
+            First in Line Tomorrow
+          </button>
+          <button
+            class="btn btn-secondary"
+            style="background: transparent; border: none; margin-top: 10px"
+            onclick="document.getElementById('sosTimelineSelector').style.display='none'"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOS TODAY READINESS WARNING -->
+    <div class="soft-prompt-overlay" id="sosReadyWarning">
+      <div class="soft-prompt-box">
+        <h3 style="color: var(--danger)">Stop!</h3>
+        <p>
+          To guarantee ASAP delivery today, your order
+          <strong>must</strong> already be marked as 'Ready for Pickup' by the
+          store.
+        </p>
+        <div class="prompt-actions" style="flex-direction: column">
+          <button class="btn btn-primary" onclick="confirmSOSToday()">
+            Okay, it's ready!
+          </button>
+          <button
+            class="btn btn-secondary"
+            style="background: transparent; border: none; margin-top: 10px"
+            onclick="document.getElementById('sosReadyWarning').style.display='none'"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
 
@@ -2690,6 +2794,116 @@
           }
         }, 2500); // 2.5 second delay to display the success message and spinner
       }
+
+      // --- TIMELINE & SOS LOGIC ---
+      window.appState.targetTimeline = "tomorrow";
+
+      const originalSOSBtn = document.getElementById("sosButtonUI");
+      if (originalSOSBtn) {
+        originalSOSBtn.onclick = function () {
+          document.getElementById("sosTimelineSelector").style.display = "flex";
+        };
+      }
+
+      window.handleSOSTimeline = function (choice) {
+        document.getElementById("sosTimelineSelector").style.display = "none";
+        if (choice === "today") {
+          document.getElementById("sosReadyWarning").style.display = "flex";
+        } else {
+          window.appState.targetTimeline = "first_tomorrow";
+          document.getElementById("timelineDisplay").innerText = "Tomorrow";
+          openAddModal("emergency");
+        }
+      };
+
+      window.confirmSOSToday = function () {
+        document.getElementById("sosReadyWarning").style.display = "none";
+        window.appState.targetTimeline = "asap_today";
+        document.getElementById("timelineDisplay").innerText = "Today";
+        openAddModal("emergency");
+      };
+
+      window.evalDriverStateForTimeline = async function () {
+        if (!window.appState.selectedDriverId) return;
+        try {
+          const stateSnap = await window.getDoc(
+            window.doc(
+              window.db,
+              "driver_state",
+              window.appState.selectedDriverId
+            )
+          );
+          if (stateSnap.exists()) {
+            const phase = stateSnap.data().workflowPhase;
+            if (phase === "idle") {
+              window.appState.targetTimeline = "today";
+              document.getElementById("timelineDisplay").innerText = "Today";
+            } else {
+              window.appState.targetTimeline = "tomorrow";
+              document.getElementById("timelineDisplay").innerText = "Tomorrow";
+            }
+          }
+        } catch (e) {
+          console.error("Failed to eval driver state:", e);
+        }
+      };
+
+      const originalOpenAddModal = openAddModal;
+      openAddModal = function (type = "scheduled") {
+        originalOpenAddModal(type);
+        if (type === "scheduled") {
+          window.evalDriverStateForTimeline();
+        }
+      };
+
+      const originalGoToStep2 = goToStep2;
+      goToStep2 = function () {
+        originalGoToStep2();
+        const gate = document.getElementById("standardTodayGate");
+        const checkoutBtns =
+          document.getElementById("step2Panel").lastElementChild;
+
+        if (
+          window.appState.bookingType === "scheduled" &&
+          window.appState.targetTimeline === "today"
+        ) {
+          gate.style.display = "block";
+          checkoutBtns.style.display = "none";
+        } else {
+          gate.style.display = "none";
+          checkoutBtns.style.display = "flex";
+        }
+      };
+
+      window.acceptStandardToday = function () {
+        document.getElementById("standardTodayGate").style.display = "none";
+        document.getElementById("step2Panel").lastElementChild.style.display =
+          "flex";
+      };
+
+      window.shiftToTomorrow = function () {
+        window.appState.targetTimeline = "tomorrow";
+        document.getElementById("timelineDisplay").innerText = "Tomorrow";
+        document.getElementById("standardTodayGate").style.display = "none";
+        document.getElementById("step2Panel").lastElementChild.style.display =
+          "flex";
+      };
+
+      const originalSubmitOrderToFirebase = window.submitOrderToFirebase;
+      window.submitOrderToFirebase = async function () {
+        const origAddDoc = window.addDoc;
+        window.addDoc = async function (colRef, data) {
+          data.sosTimeline = window.appState.targetTimeline;
+          window.addDoc = origAddDoc;
+          return await origAddDoc(colRef, data);
+        };
+
+        try {
+          await originalSubmitOrderToFirebase();
+        } finally {
+          window.addDoc = origAddDoc;
+        }
+      };
     </script>
   </body>
 </html>
