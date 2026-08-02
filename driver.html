@@ -1085,7 +1085,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       // --- AUTHENTICATION LOGIC ---
       window.authMode = "signin";
 
-      window.toggleAuthMode = function () { 
+      window.toggleAuthMode = function () {
         const title = document.getElementById("authTitle");
         const subtitle = document.getElementById("authSubtitle");
         const btn = document.getElementById("authSubmitBtn");
@@ -1479,7 +1479,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
 
-if (data.stops && Array.isArray(data.stops)) {
+            if (data.stops && Array.isArray(data.stops)) {
               data.stops.forEach((stop, index) => {
                 newOrders.push({
                   id: docSnap.id + "_pickup_" + index,
@@ -1492,7 +1492,7 @@ if (data.stops && Array.isArray(data.stops)) {
                   pickupNumber: stop.pickupNumber || "",
                   pin: stop.pin || "",
                   curbsideInstructions: stop.curbsideInstructions || "",
-                  barcodeImageUrl: stop.barcodeImageUrl || ""
+                  barcodeImageUrl: stop.barcodeImageUrl || "",
                 });
               });
             }
@@ -1698,15 +1698,16 @@ if (data.stops && Array.isArray(data.stops)) {
       function drawTriageRoute() {
         AppState.layerGroup.clearLayers();
 
-        
-        
-        
         // Nearest-Neighbor Sorting Logic (Pickups First, Deliveries Last)
         let current = AppState.homeBase;
-        
+
         // Split the queue so we process pickups before deliveries
-        let unsortedPickups = AppState.triageQueue.filter(o => o.type === "pickup");
-        let unsortedDeliveries = AppState.triageQueue.filter(o => o.type === "delivery");
+        let unsortedPickups = AppState.triageQueue.filter(
+          (o) => o.type === "pickup"
+        );
+        let unsortedDeliveries = AppState.triageQueue.filter(
+          (o) => o.type === "delivery"
+        );
         let sorted = [];
 
         // 1. Sort and route all Pickups first
@@ -1732,14 +1733,9 @@ if (data.stops && Array.isArray(data.stops)) {
           sorted.push(next);
           current = [next.lat, next.lng];
         }
-        
-        AppState.triageQueue = sorted; // Save sorted sequence
-        
-        
 
-        
-        
-        
+        AppState.triageQueue = sorted; // Save sorted sequence
+
         // Draw Street-Snapped Polyline via Google Directions
         if (sorted.length > 0) {
           const directionsService = new google.maps.DirectionsService();
@@ -2008,16 +2004,13 @@ if (data.stops && Array.isArray(data.stops)) {
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
 
-          
-          
           wfBtn.onclick = async function () {
-            
             // 1. FIRST: Protect the data. Copy the route into the active queue locally.
             AppState.activeQueue = AppState.triageQueue.map((t) => ({
               ...t,
               status: "approved",
             }));
-            
+
             // 2. Advance the system phase so the 'pending' listener ignores the database changes
             AppState.workflowPhase = "ready_pickup";
             AppState.pendingOrders = 0;
@@ -2028,21 +2021,23 @@ if (data.stops && Array.isArray(data.stops)) {
             // 4. Draw the actual pickup route on the map
             updateDashboardUI();
 
-            // 5. FINALLY: Tell Firebase the orders are approved in the background. 
-            const uniqueOrderIds = [...new Set(AppState.activeQueue.map((item) => item.dbId))];
-            
+            // 5. FINALLY: Tell Firebase the orders are approved in the background.
+            const uniqueOrderIds = [
+              ...new Set(AppState.activeQueue.map((item) => item.dbId)),
+            ];
+
             for (const orderId of uniqueOrderIds) {
               if (orderId) {
-                window.updateDoc(window.doc(window.db, "orders", orderId), {
-                  status: "approved"
-                }).catch(e => console.error("Failed to update status to approved:", e));
+                window
+                  .updateDoc(window.doc(window.db, "orders", orderId), {
+                    status: "approved",
+                  })
+                  .catch((e) =>
+                    console.error("Failed to update status to approved:", e)
+                  );
               }
             }
           };
-          
-          
-
-
 
           drawTriageRoute();
           timeline.innerHTML = "";
@@ -2124,6 +2119,24 @@ if (data.stops && Array.isArray(data.stops)) {
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
           wfBtn.onclick = () => {
+            // 1. Tell Firebase the driver is on the way to the final destination
+            const uniqueOrderIds = [
+              ...new Set(AppState.activeQueue.map((item) => item.dbId)),
+            ];
+
+            for (const orderId of uniqueOrderIds) {
+              if (orderId) {
+                window
+                  .updateDoc(window.doc(window.db, "orders", orderId), {
+                    status: "in_transit",
+                  })
+                  .catch((e) =>
+                    console.error("Failed to update status to in_transit:", e)
+                  );
+              }
+            }
+
+            // 2. Advance the driver's local screen to the delivery phase
             AppState.workflowPhase = "delivery";
             updateDashboardUI();
           };
@@ -2217,7 +2230,7 @@ if (data.stops && Array.isArray(data.stops)) {
       }
 
       // --- CUSTOM TIMELINES & ACTIONS ---
-       window.markPickupComplete = async function (uniqueId) {
+      window.markPickupComplete = async function (uniqueId) {
         // Find the exact stop using its unique internal ID, not the shared database ID
         const item = AppState.activeQueue.find(
           (i) => i.id === uniqueId && i.type === "pickup"
@@ -2227,9 +2240,7 @@ if (data.stops && Array.isArray(data.stops)) {
         // Broadcast to customer that item is picked up and driver is en route
         const cleanId = item.dbId;
 
-        
         try {
-
           await window.updateDoc(window.doc(window.db, "orders", cleanId), {
             status: "picked_up",
           });
@@ -2252,8 +2263,7 @@ if (data.stops && Array.isArray(data.stops)) {
 
         window.saveShiftState();
       };
-      
-      
+
       function drawPickupTimeline() {
         const timeline = document.getElementById("timelineList");
         timeline.innerHTML = "";
@@ -2262,19 +2272,34 @@ if (data.stops && Array.isArray(data.stops)) {
 
         pickups.forEach((node) => {
           const isDone = node.status === "completed";
-          
-          
-         const btnHTML = isDone
+
+          const btnHTML = isDone
             ? `<button class="btn btn-secondary" style="margin-top:10px; padding:8px; font-size:0.85rem;" disabled>Picked Up ✓</button>`
             : `<button class="btn btn-primary" style="margin-top:10px; padding:8px; font-size:0.85rem;" onclick="markPickupComplete('${node.id}')">Items Picked Up</button>`;
 
           // Generate the detailed pickup information UI box
           let extraInfo = `
             <div style="background: var(--surface); padding: 12px; border-radius: 8px; margin-top: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem;">
-              ${node.pickupNumber ? `<div><strong style="color:var(--accent);">Order #:</strong> ${node.pickupNumber}</div>` : ""}
-              ${node.pin ? `<div><strong style="color:var(--accent);">PIN:</strong> ${node.pin}</div>` : ""}
-              ${node.curbsideInstructions ? `<div><strong style="color:var(--accent);">Notes:</strong> ${node.curbsideInstructions}</div>` : ""}
-              ${node.barcodeImageUrl ? `<img src="${node.barcodeImageUrl}" style="max-width: 100%; margin-top: 10px; border-radius: 6px; border: 1px solid white;">` : ""}
+              ${
+                node.pickupNumber
+                  ? `<div><strong style="color:var(--accent);">Order #:</strong> ${node.pickupNumber}</div>`
+                  : ""
+              }
+              ${
+                node.pin
+                  ? `<div><strong style="color:var(--accent);">PIN:</strong> ${node.pin}</div>`
+                  : ""
+              }
+              ${
+                node.curbsideInstructions
+                  ? `<div><strong style="color:var(--accent);">Notes:</strong> ${node.curbsideInstructions}</div>`
+                  : ""
+              }
+              ${
+                node.barcodeImageUrl
+                  ? `<img src="${node.barcodeImageUrl}" style="max-width: 100%; margin-top: 10px; border-radius: 6px; border: 1px solid white;">`
+                  : ""
+              }
             </div>
           `;
 
@@ -2295,9 +2320,7 @@ if (data.stops && Array.isArray(data.stops)) {
           `;
         });
       }
-      
 
-  
       function drawDeliveryTimeline() {
         const timeline = document.getElementById("timelineList");
         timeline.innerHTML = "";
