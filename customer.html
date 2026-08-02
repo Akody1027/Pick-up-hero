@@ -1919,7 +1919,27 @@
                   window.location.reload();
                 }, 2000);
               }
+              
+              } else if (data.status === "cancelled") {
+                title.innerText = "Order Cancelled";
+                subtitle.innerText = "This delivery has been aborted.";
+
+                const timeline = document.getElementById("activeStopsTimeline");
+                if (timeline) timeline.style.display = "none";
+
+                setTimeout(() => {
+                  window.location.reload();
+                }, 2000);
+              
+              
+              
+              
+              
+              
+              
+              
             }
+            
           }
         );
       };
@@ -2427,7 +2447,13 @@
             );
 
             // Reload the page to securely flush the application state, map layers, and UI locks
-            window.location.reload();
+
+          await window.setDoc(
+              window.doc(window.db, "orders", orderId),
+              { status: "cancelled" },
+              { merge: true }
+            );
+
           } catch (err) {
             console.error("Cancellation failed:", err);
             alert("Failed to cancel the order. Please check your connection.");
