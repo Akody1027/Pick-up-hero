@@ -1085,7 +1085,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       // --- AUTHENTICATION LOGIC ---
       window.authMode = "signin";
 
-      window.toggleAuthMode = function () {
+      window.toggleAuthMode = function () { 
         const title = document.getElementById("authTitle");
         const subtitle = document.getElementById("authSubtitle");
         const btn = document.getElementById("authSubmitBtn");
@@ -2217,15 +2217,17 @@ if (data.stops && Array.isArray(data.stops)) {
       }
 
       // --- CUSTOM TIMELINES & ACTIONS ---
-
-      window.markPickupComplete = async function (dbId) {
+       window.markPickupComplete = async function (uniqueId) {
+        // Find the exact stop using its unique internal ID, not the shared database ID
         const item = AppState.activeQueue.find(
-          (i) => (i.dbId || i.id) === dbId && i.type === "pickup"
+          (i) => i.id === uniqueId && i.type === "pickup"
         );
         if (!item) return;
 
         // Broadcast to customer that item is picked up and driver is en route
-        const cleanId = dbId.toString().replace("_del", "");
+        const cleanId = item.dbId;
+
+        
         try {
 
           await window.updateDoc(window.doc(window.db, "orders", cleanId), {
@@ -2260,11 +2262,11 @@ if (data.stops && Array.isArray(data.stops)) {
 
         pickups.forEach((node) => {
           const isDone = node.status === "completed";
-          const btnHTML = isDone
+          
+          
+         const btnHTML = isDone
             ? `<button class="btn btn-secondary" style="margin-top:10px; padding:8px; font-size:0.85rem;" disabled>Picked Up ✓</button>`
-            : `<button class="btn btn-primary" style="margin-top:10px; padding:8px; font-size:0.85rem;" onclick="markPickupComplete('${
-                node.dbId || node.id
-              }')">Items Picked Up</button>`;
+            : `<button class="btn btn-primary" style="margin-top:10px; padding:8px; font-size:0.85rem;" onclick="markPickupComplete('${node.id}')">Items Picked Up</button>`;
 
           // Generate the detailed pickup information UI box
           let extraInfo = `
