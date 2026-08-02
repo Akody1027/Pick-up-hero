@@ -1479,7 +1479,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
 
-            if (data.stops && Array.isArray(data.stops)) {
+if (data.stops && Array.isArray(data.stops)) {
               data.stops.forEach((stop, index) => {
                 newOrders.push({
                   id: docSnap.id + "_pickup_" + index,
@@ -1488,6 +1488,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   lat: stop.lat,
                   lng: stop.lng,
                   type: "pickup",
+                  // Grabbing the new pickup details from Firebase
+                  pickupNumber: stop.pickupNumber || "",
+                  pin: stop.pin || "",
+                  curbsideInstructions: stop.curbsideInstructions || "",
+                  barcodeImageUrl: stop.barcodeImageUrl || ""
                 });
               });
             }
@@ -2003,11 +2008,30 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
 
+          
           wfBtn.onclick = async function () {
+            
+            // 1. FIX: Loop through the triage queue and tell Firebase the orders are approved
+            const uniqueOrderIds = [...new Set(AppState.triageQueue.map((item) => item.dbId))];
+            
+            for (const orderId of uniqueOrderIds) {
+              if (orderId) {
+                try {
+                  await window.updateDoc(window.doc(window.db, "orders", orderId), {
+                    status: "approved"
+                  });
+                } catch (e) {
+                  console.error("Failed to update status to approved:", e);
+                }
+              }
+            }
+
+            // 2. Update the driver's local queue state
             AppState.activeQueue = AppState.triageQueue.map((t) => ({
               ...t,
-              status: "pending",
+              status: "approved",
             }));
+            
             AppState.workflowPhase = "ready_pickup";
             AppState.pendingOrders = 0;
 
@@ -2015,6 +2039,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             updateDashboardUI();
           };
+
 
           drawTriageRoute();
           timeline.innerHTML = "";
@@ -2199,8 +2224,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         // Broadcast to customer that item is picked up and driver is en route
         const cleanId = dbId.toString().replace("_del", "");
         try {
+
           await window.updateDoc(window.doc(window.db, "orders", cleanId), {
-            status: "in_transit",
+            status: "picked_up",
           });
         } catch (e) {
           console.error("Firebase update failed", e);
@@ -2221,7 +2247,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         window.saveShiftState();
       };
-
+      
+      
       function drawPickupTimeline() {
         const timeline = document.getElementById("timelineList");
         timeline.innerHTML = "";
@@ -2236,6 +2263,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 node.dbId || node.id
               }')">Items Picked Up</button>`;
 
+          // Generate the detailed pickup information UI box
+          let extraInfo = `
+            <div style="background: var(--surface); padding: 12px; border-radius: 8px; margin-top: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem;">
+              ${node.pickupNumber ? `<div><strong style="color:var(--accent);">Order #:</strong> ${node.pickupNumber}</div>` : ""}
+              ${node.pin ? `<div><strong style="color:var(--accent);">PIN:</strong> ${node.pin}</div>` : ""}
+              ${node.curbsideInstructions ? `<div><strong style="color:var(--accent);">Notes:</strong> ${node.curbsideInstructions}</div>` : ""}
+              ${node.barcodeImageUrl ? `<img src="${node.barcodeImageUrl}" style="max-width: 100%; margin-top: 10px; border-radius: 6px; border: 1px solid white;">` : ""}
+            </div>
+          `;
+
           timeline.innerHTML += `
             <li class="timeline-item ${isDone ? "completed" : "active"}">
               <div class="node-card">
@@ -2243,13 +2280,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   <strong>${node.title}</strong>
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
+                
+                <!-- Only show the detailed info if the pickup isn't completed yet -->
+                ${!isDone ? extraInfo : ""}
+                
                 ${AppState.workflowPhase === "pickup" ? btnHTML : ""}
               </div>
             </li>
           `;
         });
       }
+      
 
+  
       function drawDeliveryTimeline() {
         const timeline = document.getElementById("timelineList");
         timeline.innerHTML = "";
