@@ -559,10 +559,11 @@
       <div class="drag-handle"></div>
       <div class="sheet-header">
         <img
-          src="https://via.placeholder.com/150"
+          src="https://ui-avatars.com/api/?name=Hero&background=ee611c&color=fff"
           class="driver-avatar"
           alt="Hero"
         />
+
         <div class="sheet-info">
           <h3 id="sheetTitle">Scheduled Run Active</h3>
           <p id="sheetSubtitle">Hero is running tomorrow morning.</p>
@@ -1109,7 +1110,7 @@
       import {
         getAuth,
         deleteUser,
-        signOut
+        signOut,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
       import {
@@ -1155,7 +1156,7 @@
       window.deleteDoc = deleteDoc;
       window.deleteUser = deleteUser;
       window.signOut = signOut;
-      window.auth = auth;      // Standard Firebase implementation matches previous backend logic
+      window.auth = auth; // Standard Firebase implementation matches previous backend logic
 
       window.appState = {
         user: null,
@@ -1290,17 +1291,16 @@
           alert("Failed to submit order. Please check your connection.");
         }
       };
-      
-      
-      
-window.confirmDeleteAccount = async function() {
-        const confirmMsg = "Are you absolutely sure you want to delete your account? All your delivery history will be permanently erased. This cannot be undone.";
+
+      window.confirmDeleteAccount = async function () {
+        const confirmMsg =
+          "Are you absolutely sure you want to delete your account? All your delivery history will be permanently erased. This cannot be undone.";
         if (!confirm(confirmMsg)) return;
 
         const uid = window.appState.userId;
         if (!uid) {
-           alert("No active data to delete.");
-           return;
+          alert("No active data to delete.");
+          return;
         }
 
         try {
@@ -1309,11 +1309,13 @@ window.confirmDeleteAccount = async function() {
             window.collection(window.db, "orders"),
             window.where("userId", "==", uid)
           );
-          
+
           // 2. Loop through and delete every order document
           const querySnapshot = await window.getDocs(q);
           querySnapshot.forEach(async (documentSnapshot) => {
-            await window.deleteDoc(window.doc(window.db, "orders", documentSnapshot.id));
+            await window.deleteDoc(
+              window.doc(window.db, "orders", documentSnapshot.id)
+            );
           });
 
           // 3. Delete the customer's profile document from the 'users' collection
@@ -1324,20 +1326,21 @@ window.confirmDeleteAccount = async function() {
             try {
               await window.deleteUser(window.appState.user);
             } catch (authError) {
-              console.warn("Auth deletion blocked by Firebase, forcing session clear instead.", authError);
+              console.warn(
+                "Auth deletion blocked by Firebase, forcing session clear instead.",
+                authError
+              );
               await window.signOut(window.auth);
             }
           }
 
           alert("Account and all route data successfully deleted.");
           window.location.href = "index.html"; // Kick them back to the landing page
-
         } catch (error) {
           console.error("Error deleting account:", error);
           alert("Failed to delete account data: " + error.message);
         }
       };
-   
     </script>
 
     <!-- UI & MAP SCRIPT -->
@@ -1791,30 +1794,68 @@ window.confirmDeleteAccount = async function() {
         reader.readAsDataURL(file);
       }
 
+      
+      
       window.listenToMyActiveOrder = function (orderId) {
-        const title = document.getElementById("sheetTitle");
-        const subtitle = document.getElementById("sheetSubtitle");
+  const title = document.getElementById("sheetTitle");
+  const subtitle = document.getElementById("sheetSubtitle");
+  const avatar = document.querySelector(".driver-avatar");
 
-        window.onSnapshot(
-          window.doc(window.db, "orders", orderId),
-          (docSnap) => {
-            if (docSnap.exists()) {
-              const data = docSnap.data();
-              if (data.status === "pending") {
-                title.innerText = "Order Pending";
-                subtitle.innerText = "Waiting for Hero approval...";
-              } else if (data.status === "in_transit") {
-                title.innerText = "Hero is on the way!";
-                subtitle.innerText =
-                  "Your driver has secured your curbside pickup.";
-              } else if (data.status === "completed") {
-                title.innerText = "Delivery Complete";
-                subtitle.innerText = "Thanks for using Pick Up Hero!";
-              }
+  // onSnapshot automatically listens for real-time changes without refreshing
+  window.onSnapshot(
+    window.doc(window.db, "orders", orderId),
+    async (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+
+        // 1. FIX: Fetch dynamic driver image during a live delivery
+        if (data.assignedDriverId) {
+          try {
+            const driverDoc = await window.getDoc(window.doc(window.db, "driver_settings", data.assignedDriverId));
+            if (driverDoc.exists() && driverDoc.data().profilePic) {
+              avatar.src = driverDoc.data().profilePic;
+            } else {
+              // Safe fallback if driver document exists but lacks an image
+              avatar.src = "https://ui-avatars.com/api/?name=Hero&background=ee611c&color=fff";
             }
+          } catch (error) {
+            console.error("Failed to load driver avatar:", error);
           }
-        );
-      };
+        }
+
+        // 2. REAL-TIME: Update UI based on dynamic route statuses
+        if (data.status === "pending") {
+          title.innerText = "Order Pending";
+          subtitle.innerText = "Waiting for Hero approval...";
+          
+        } else if (data.status === "approved") {
+          // Triggered when driver accepts/approves the route
+          title.innerText = "Order Approved!";
+          subtitle.innerText = "Your Hero has approved your order and is heading out.";
+          
+        } else if (data.status === "picked_up") {
+          // Triggered when driver secures the items
+          title.innerText = "Order Picked Up";
+          subtitle.innerText = "Your items are secured. Hero is on the way!";
+          
+        } else if (data.status === "in_transit") {
+          title.innerText = "Hero is in transit!";
+          subtitle.innerText = "Your driver is en route to your delivery location.";
+          
+        } else if (data.status === "completed") {
+          title.innerText = "Delivery Complete";
+          subtitle.innerText = "Thanks for using Pick Up Hero!";
+        }
+      }
+    }
+  );
+};
+      
+
+      
+      
+      
+      
 
       let animationFrameId;
 
