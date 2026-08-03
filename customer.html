@@ -2519,11 +2519,13 @@
 
         directionsService.route(request, (result, status) => {
           if (status === google.maps.DirectionsStatus.OK) {
-            const encodedPath = result.routes[0].overview_polyline;
-            const decodedCoords = decodePolyline(encodedPath);
+            const decodedCoords = result.routes[0].overview_path.map((loc) => [
+              loc.lat(),
+              loc.lng(),
+            ]);
 
             activeRouteLayer = L.polyline(decodedCoords, {
-              color: "var(--accent)",
+              color: "#ee611c",
               weight: 5,
               opacity: 0.9,
               lineJoin: "round",
@@ -2589,15 +2591,7 @@
         const order = window.appState.activeOrder;
         if (!order) return;
 
-        
-        
-        
-        
-        
-        
-        
-        
-                const actualStops = order.stops.map((stop) => {
+        const actualStops = order.stops.map((stop) => {
           return new google.maps.LatLng(Number(stop.lat), Number(stop.lng));
         });
 
@@ -2619,21 +2613,12 @@
 
         const actualDelivery =
           order.deliveryLat && order.deliveryLng
-            ? new google.maps.LatLng(Number(order.deliveryLat), Number(order.deliveryLng))
+            ? new google.maps.LatLng(
+                Number(order.deliveryLat),
+                Number(order.deliveryLng)
+              )
             : order.deliveryAddress;
 
-        
-            
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         drawGoogleRoute(heroLoc, actualStops, actualDelivery);
 
         const timeline = document.getElementById("activeStopsTimeline");
