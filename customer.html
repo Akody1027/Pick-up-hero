@@ -2376,19 +2376,18 @@
           let hasActive = false;
           let activeId = null;
 
-
-
-
-
-
-
-
-                      const recoveredId = localStorage.getItem("pickuphero_recoveredOrderId");
+          const recoveredId = localStorage.getItem(
+            "pickuphero_recoveredOrderId"
+          );
 
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
 
-            if (["pending", "approved", "picked_up", "in_transit"].includes(data.status)) {
+            if (
+              ["pending", "approved", "picked_up", "in_transit"].includes(
+                data.status
+              )
+            ) {
               if (!hasActive || docSnap.id === recoveredId) {
                 window.appState.activeOrder = data;
                 hasActive = true;
@@ -2408,7 +2407,8 @@
             fab.classList.add("locked");
 
             if (!window.isTrackingActiveOrder) {
-              document.getElementById("activeDeliveryPrompt").style.display = "flex";
+              document.getElementById("activeDeliveryPrompt").style.display =
+                "flex";
               window.isTrackingActiveOrder = true;
             }
 
@@ -2423,15 +2423,6 @@
                 window.renderRecoveredOrder(window.appState.activeOrder);
               }
             }
-
-
-
-
-
-
-
-
-
           } else {
             fab.classList.remove("locked");
             window.isTrackingActiveOrder = false;
@@ -2551,41 +2542,77 @@
             }).addTo(map);
 
             map.fitBounds(activeRouteLayer.getBounds(), { padding: [60, 60] });
-
-
-                      } else {
+          } else {
             console.error("Directions request failed due to " + status);
           }
-
-
-
-
-
-
         });
       }
 
       window.cancelActiveOrder = async function () {
         const orderId = window.appState.currentOrderId;
+        if (!orderId) return;
 
+        if (
+          confirm(
+            "Are you sure you want to cancel this delivery? This cannot be undone."
+          )
+        ) {
+          try {
+            await window.setDoc(
+              window.doc(window.db, "orders", orderId),
+              { status: "cancelled" },
+              { merge: true }
+            );
 
+            // Reload the page to securely flush the application state, map layers, and UI locks
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+          } catch (err) {
+            console.error("Cancellation failed:", err);
+            alert("Failed to cancel the order. Please check your connection.");
+          }
+        }
+      };
 
-              window.renderRecoveredOrder = function(order) {
+      window.renderRecoveredOrder = function (order) {
         if (!order || !order.stops || !order.stops.length) return;
 
         const actualStops = order.stops
-          .filter(stop => Number.isFinite(Number(stop.lat)) && Number.isFinite(Number(stop.lng)))
-          .map(stop => new google.maps.LatLng(Number(stop.lat), Number(stop.lng)));
+          .filter(
+            (stop) =>
+              Number.isFinite(Number(stop.lat)) &&
+              Number.isFinite(Number(stop.lng))
+          )
+          .map(
+            (stop) => new google.maps.LatLng(Number(stop.lat), Number(stop.lng))
+          );
 
-        const actualDelivery = (Number.isFinite(Number(order.deliveryLat)) && Number.isFinite(Number(order.deliveryLng)))
-          ? new google.maps.LatLng(Number(order.deliveryLat), Number(order.deliveryLng))
-          : order.deliveryAddress;
+        const actualDelivery =
+          Number.isFinite(Number(order.deliveryLat)) &&
+          Number.isFinite(Number(order.deliveryLng))
+            ? new google.maps.LatLng(
+                Number(order.deliveryLat),
+                Number(order.deliveryLng)
+              )
+            : order.deliveryAddress;
 
-        let heroLoc = actualStops.length > 0 ? actualStops[0] : new google.maps.LatLng(39.8283, -98.5795);
-        if (order.assignedDriverId && window.liveMarkers && window.liveMarkers[order.assignedDriverId]) {
+        let heroLoc =
+          actualStops.length > 0
+            ? actualStops[0]
+            : new google.maps.LatLng(39.8283, -98.5795);
+        if (
+          order.assignedDriverId &&
+          window.liveMarkers &&
+          window.liveMarkers[order.assignedDriverId]
+        ) {
           const pos = window.liveMarkers[order.assignedDriverId].getLatLng();
           heroLoc = new google.maps.LatLng(Number(pos.lat), Number(pos.lng));
-        } else if (order.assignedDriverId && window.baseMarkers && window.baseMarkers[order.assignedDriverId]) {
+        } else if (
+          order.assignedDriverId &&
+          window.baseMarkers &&
+          window.baseMarkers[order.assignedDriverId]
+        ) {
           const pos = window.baseMarkers[order.assignedDriverId].getLatLng();
           heroLoc = new google.maps.LatLng(Number(pos.lat), Number(pos.lng));
         }
@@ -2598,32 +2625,34 @@
           iconAnchor: [14, 28],
         });
 
-        order.stops.forEach(stop => {
-          if (Number.isFinite(Number(stop.lat)) && Number.isFinite(Number(stop.lng))) {
-            L.marker([Number(stop.lat), Number(stop.lng)], { icon: storeIcon }).addTo(map);
+        order.stops.forEach((stop) => {
+          if (
+            Number.isFinite(Number(stop.lat)) &&
+            Number.isFinite(Number(stop.lng))
+          ) {
+            L.marker([Number(stop.lat), Number(stop.lng)], {
+              icon: storeIcon,
+            }).addTo(map);
           }
         });
 
-        if (Number.isFinite(Number(order.deliveryLat)) && Number.isFinite(Number(order.deliveryLng))) {
-          L.marker([Number(order.deliveryLat), Number(order.deliveryLng)], { icon: storeIcon }).addTo(map);
+        if (
+          Number.isFinite(Number(order.deliveryLat)) &&
+          Number.isFinite(Number(order.deliveryLng))
+        ) {
+          L.marker([Number(order.deliveryLat), Number(order.deliveryLng)], {
+            icon: storeIcon,
+          }).addTo(map);
         }
       };
 
       function dismissActiveDeliveryPrompt() {
         document.getElementById("activeDeliveryPrompt").style.display = "none";
-        document.getElementById("trackerSheet").style.transform = "translateY(0)";
+        document.getElementById("trackerSheet").style.transform =
+          "translateY(0)";
 
         const order = window.appState.activeOrder;
         if (!order) return;
-
-
-
-
-
-
-
-
-
 
         const timeline = document.getElementById("activeStopsTimeline");
         let timelineHTML = `
