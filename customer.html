@@ -2589,31 +2589,51 @@
         const order = window.appState.activeOrder;
         if (!order) return;
 
-        const actualStops = order.stops.map((stop) => {
-          return { lat: stop.lat, lng: stop.lng };
-        });
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+                const actualStops = order.stops.map((stop) => {
+            return { lat: Number(stop.lat), lng: Number(stop.lng) };
+          });
 
-        let heroLoc =
-          actualStops.length > 0
-            ? actualStops[0]
-            : { lat: 39.8283, lng: -98.5795 };
+          let heroLoc =
+            actualStops.length > 0
+              ? { lat: Number(actualStops[0].lat), lng: Number(actualStops[0].lng) }
+              : { lat: 39.8283, lng: -98.5795 };
 
-        if (window.appState.selectedDriverId) {
-          const dId = window.appState.selectedDriverId;
-          if (window.liveMarkers && window.liveMarkers[dId]) {
-            const pos = window.liveMarkers[dId].getLatLng();
-            heroLoc = { lat: pos.lat, lng: pos.lng };
-          } else if (window.baseMarkers && window.baseMarkers[dId]) {
-            const pos = window.baseMarkers[dId].getLatLng();
-            heroLoc = { lat: pos.lat, lng: pos.lng };
+          if (window.appState.selectedDriverId) {
+            const dId = window.appState.selectedDriverId;
+            if (window.liveMarkers && window.liveMarkers[dId]) {
+              const pos = window.liveMarkers[dId].getLatLng();
+              heroLoc = { lat: Number(pos.lat), lng: Number(pos.lng) };
+            } else if (window.baseMarkers && window.baseMarkers[dId]) {
+              const pos = window.baseMarkers[dId].getLatLng();
+              heroLoc = { lat: Number(pos.lat), lng: Number(pos.lng) };
+            }
           }
-        }
 
-        const actualDelivery =
-          order.deliveryLat && order.deliveryLng
-            ? { lat: order.deliveryLat, lng: order.deliveryLng }
-            : order.deliveryAddress;
-
+          const actualDelivery =
+            order.deliveryLat && order.deliveryLng
+              ? { lat: Number(order.deliveryLat), lng: Number(order.deliveryLng) }
+              : order.deliveryAddress;
+  
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         drawGoogleRoute(heroLoc, actualStops, actualDelivery);
 
         const timeline = document.getElementById("activeStopsTimeline");
