@@ -19,13 +19,13 @@
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
-        --accent-hover: #d95314;
+        --accent-hover: #d95314; 
         --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
         --success: #22c55e;
         --danger: #ef4444;
-        --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
       }
 
       * {
@@ -2360,12 +2360,7 @@
 
       // --- SESSION & MULTI-STOP LOGIC ---
 
-      
-      
-      
-      
-      
-            window.checkActiveSession = function () {
+      window.checkActiveSession = function () {
         if (!window.appState.userId) return; // Prevent ghost listener collision
 
         if (window.activeSessionListener) {
@@ -2432,15 +2427,6 @@
         });
       };
 
-      
-    
-      
-      
-      
-      
-      
-      
-      
       // --- BOTTOM SHEET DRAG LOGIC ---
       const sheet = document.getElementById("trackerSheet");
       let startY,
@@ -2603,20 +2589,26 @@
         const order = window.appState.activeOrder;
         if (!order) return;
 
-        const selectedBase =
-          window.baseMarkers &&
-          window.baseMarkers[window.appState.selectedDriverId];
-        const heroLoc = selectedBase
-          ? {
-              lat: selectedBase.getLatLng().lat,
-              lng: selectedBase.getLatLng().lng,
-            }
-          : { lat: 39.8283, lng: -98.5795 };
+        let heroLoc = { lat: 39.8283, lng: -98.5795 };
+        if (window.appState.selectedDriverId) {
+          const dId = window.appState.selectedDriverId;
+          if (window.liveMarkers && window.liveMarkers[dId]) {
+            const pos = window.liveMarkers[dId].getLatLng();
+            heroLoc = { lat: pos.lat, lng: pos.lng };
+          } else if (window.baseMarkers && window.baseMarkers[dId]) {
+            const pos = window.baseMarkers[dId].getLatLng();
+            heroLoc = { lat: pos.lat, lng: pos.lng };
+          }
+        }
 
         const actualStops = order.stops.map((stop) => {
           return { lat: stop.lat, lng: stop.lng };
         });
-        const actualDelivery = order.deliveryAddress;
+
+        const actualDelivery =
+          order.deliveryLat && order.deliveryLng
+            ? { lat: order.deliveryLat, lng: order.deliveryLng }
+            : order.deliveryAddress;
 
         drawGoogleRoute(heroLoc, actualStops, actualDelivery);
 
