@@ -19,13 +19,13 @@
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
-        --accent-hover: #d95314; 
+        --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
         --success: #22c55e;
         --danger: #ef4444;
-        --shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       }
 
       * {
@@ -2589,7 +2589,15 @@
         const order = window.appState.activeOrder;
         if (!order) return;
 
-        let heroLoc = { lat: 39.8283, lng: -98.5795 };
+        const actualStops = order.stops.map((stop) => {
+          return { lat: stop.lat, lng: stop.lng };
+        });
+
+        let heroLoc =
+          actualStops.length > 0
+            ? actualStops[0]
+            : { lat: 39.8283, lng: -98.5795 };
+
         if (window.appState.selectedDriverId) {
           const dId = window.appState.selectedDriverId;
           if (window.liveMarkers && window.liveMarkers[dId]) {
@@ -2600,10 +2608,6 @@
             heroLoc = { lat: pos.lat, lng: pos.lng };
           }
         }
-
-        const actualStops = order.stops.map((stop) => {
-          return { lat: stop.lat, lng: stop.lng };
-        });
 
         const actualDelivery =
           order.deliveryLat && order.deliveryLng
