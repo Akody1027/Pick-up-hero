@@ -2805,11 +2805,9 @@
             localStorage.setItem("pickuphero_userId", foundOrder.userId);
             window.appState.userId = foundOrder.userId;
 
-            closeRecoveryModule();
-
-            if (window.checkActiveSession) {
-              window.checkActiveSession();
-            }
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
           } else {
             alert("Order not found. Please verify your details.");
             document.getElementById("recoverySearchUI").style.display = "flex";
