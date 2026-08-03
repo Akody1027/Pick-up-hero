@@ -2360,20 +2360,30 @@
 
       // --- SESSION & MULTI-STOP LOGIC ---
 
-      window.checkActiveSession = function () {
+      
+      
+      
+      
+      
+            window.checkActiveSession = function () {
+        if (!window.appState.userId) return; // Prevent ghost listener collision
+
+        if (window.activeSessionListener) {
+          window.activeSessionListener(); // Unsubscribe from the old listener
+        }
+
         const q = window.query(
           window.collection(window.db, "orders"),
           window.where("userId", "==", window.appState.userId)
         );
 
-        window.onSnapshot(q, (snapshot) => {
+        window.activeSessionListener = window.onSnapshot(q, (snapshot) => {
           let hasActive = false;
           let activeId = null;
 
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
 
-            // Only track it as the active order if it's not completed or cancelled
             if (
               ["pending", "approved", "picked_up", "in_transit"].includes(
                 data.status
@@ -2389,14 +2399,12 @@
           if (hasActive) window.appState.currentOrderId = activeId;
 
           const fab = document.getElementById("mainFab");
-
           const defaultActions = document.getElementById("defaultSheetActions");
           const timeline = document.getElementById("activeStopsTimeline");
 
           if (hasActive) {
             fab.classList.add("locked");
 
-            // 1. FIX: Only show the intercept prompt if we aren't already actively tracking it
             if (!window.isTrackingActiveOrder) {
               document.getElementById("activeDeliveryPrompt").style.display =
                 "flex";
@@ -2406,15 +2414,12 @@
             if (defaultActions) defaultActions.style.display = "none";
             if (timeline) timeline.style.display = "flex";
 
-            // 2. FIX: Prevent multiple Firebase listeners from stacking up on the same order
             if (window.currentlyListeningTo !== activeId) {
               window.listenToMyActiveOrder(activeId);
               window.currentlyListeningTo = activeId;
             }
           } else {
             fab.classList.remove("locked");
-
-            // Reset the flags when the order is complete or cancelled
             window.isTrackingActiveOrder = false;
             window.currentlyListeningTo = null;
 
@@ -2427,6 +2432,15 @@
         });
       };
 
+      
+    
+      
+      
+      
+      
+      
+      
+      
       // --- BOTTOM SHEET DRAG LOGIC ---
       const sheet = document.getElementById("trackerSheet");
       let startY,
