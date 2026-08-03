@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -1081,9 +1081,7 @@
     <div class="soft-prompt-overlay" id="sosTimelineSelector">
       <div class="soft-prompt-box">
         <h3>Skip The Line</h3>
-        <p>
-          Choose your priority timeline.
-        </p>
+        <p>Choose your priority timeline.</p>
         <div class="prompt-actions" style="flex-direction: column">
           <button class="btn btn-primary" onclick="handleSOSTimeline('today')">
             Get it ASAP Today
@@ -1296,8 +1294,14 @@
           console.warn(
             "Unauthenticated session. Firing anonymous sign-in for testing."
           );
-          window.appState.userId =
-            "anon_" + Math.random().toString(36).substr(2, 9);
+
+          let savedUserId = localStorage.getItem("pickuphero_userId");
+          if (!savedUserId) {
+            savedUserId = "anon_" + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem("pickuphero_userId", savedUserId);
+          }
+          window.appState.userId = savedUserId;
+          if (window.checkActiveSession) window.checkActiveSession();
         }
       });
 
@@ -1400,8 +1404,6 @@
           };
 
           const docRef = await window.addDoc(
-    
-
             window.collection(window.db, "orders"),
             orderData
           );
@@ -2769,36 +2771,57 @@
         document.getElementById("recoAddress").value = "";
       }
 
-      function executeRecoverySearch() {
-        const orderNum = document.getElementById("recoOrderNum").value;
-        const pinNum = document.getElementById("recoPinNum").value;
-        const address = document.getElementById("recoAddress").value;
+      async function executeRecoverySearch() {
+        const orderNum = document.getElementById("recoOrderNum").value.trim();
+        const pinNum = document.getElementById("recoPinNum").value.trim();
+        const address = document.getElementById("recoAddress").value.trim();
 
         if (!orderNum && !pinNum && !address) {
           alert("Please enter at least one piece of information to search.");
           return;
         }
 
-        // Swap to loading UI
         document.getElementById("recoverySearchUI").style.display = "none";
         document.getElementById("recoveryLoadingUI").style.display = "flex";
 
-        // Execute Firebase Query to find the lost order
-        // Note: For demonstration, if they enter data, we run the global checkActiveSession
-        // In a production environment, you would query window.db directly based on the input
+        try {
+          let foundOrder = null;
 
-        setTimeout(() => {
-          closeRecoveryModule();
-
-          // Force the system to re-check for active sessions
-          // This will automatically lock the UI and plot the route if the user is linked to an order
-          if (window.checkActiveSession) {
-            window.checkActiveSession();
+          if (orderNum) {
+            const docSnap = await window.getDoc(
+              window.doc(window.db, "orders", orderNum)
+            );
+            if (docSnap.exists()) foundOrder = docSnap.data();
+          } else if (address) {
+            const q = window.query(
+              window.collection(window.db, "orders"),
+              window.where("deliveryAddress", "==", address)
+            );
+            const querySnapshot = await window.getDocs(q);
+            if (!querySnapshot.empty) foundOrder = querySnapshot.docs[0].data();
           }
-        }, 2500); // 2.5 second delay to display the success message and spinner
+
+          if (foundOrder && foundOrder.userId) {
+            localStorage.setItem("pickuphero_userId", foundOrder.userId);
+            window.appState.userId = foundOrder.userId;
+
+            closeRecoveryModule();
+
+            if (window.checkActiveSession) {
+              window.checkActiveSession();
+            }
+          } else {
+            alert("Order not found. Please verify your details.");
+            document.getElementById("recoverySearchUI").style.display = "flex";
+            document.getElementById("recoveryLoadingUI").style.display = "none";
+          }
+        } catch (error) {
+          console.error("Recovery search failed:", error);
+          alert("Failed to connect to the database.");
+          document.getElementById("recoverySearchUI").style.display = "flex";
+          document.getElementById("recoveryLoadingUI").style.display = "none";
+        }
       }
-
-
 
       const originalSOSBtn = document.getElementById("sosButtonUI");
       if (originalSOSBtn) {
@@ -2824,18 +2847,26 @@
         document.getElementById("timelineDisplay").innerText = "Today";
         openAddModal("emergency");
       };
-      
-      
-      
-      
-      
-    window.evalDriverStateForTimeline = async function() {
+
+      window.evalDriverStateForTimeline = async function () {
         if (!window.appState.selectedDriverId) return;
         try {
-          const stateSnap = await window.getDoc(window.doc(window.db, "driver_state", window.appState.selectedDriverId));
-          const settingsSnap = await window.getDoc(window.doc(window.db, "driver_settings", window.appState.selectedDriverId));
-          
-          let phase = 'idle'; // Default to idle if the driver hasn't created a state document yet
+          const stateSnap = await window.getDoc(
+            window.doc(
+              window.db,
+              "driver_state",
+              window.appState.selectedDriverId
+            )
+          );
+          const settingsSnap = await window.getDoc(
+            window.doc(
+              window.db,
+              "driver_settings",
+              window.appState.selectedDriverId
+            )
+          );
+
+          let phase = "idle"; // Default to idle if the driver hasn't created a state document yet
           if (stateSnap.exists() && stateSnap.data().workflowPhase) {
             phase = stateSnap.data().workflowPhase;
           }
@@ -2843,45 +2874,44 @@
           let isTodayAllowed = false;
 
           // Only evaluate the schedule if the driver hasn't started their route yet
-          if (phase === 'idle') {
+          if (phase === "idle") {
             if (settingsSnap.exists()) {
-               const sData = settingsSnap.data();
-               const routeDay = sData.routeDay || 'today';
-               const startTime = sData.routeStartTime || '23:59'; // Default to end of day if not set
-               
-               if (routeDay === 'today') {
-                 // Check the customer's real-world clock against the driver's start time
-                 const now = new Date();
-                 const currentHours = now.getHours().toString().padStart(2, '0');
-                 const currentMinutes = now.getMinutes().toString().padStart(2, '0');
-                 const currentTimeStr = `${currentHours}:${currentMinutes}`;
+              const sData = settingsSnap.data();
+              const routeDay = sData.routeDay || "today";
+              const startTime = sData.routeStartTime || "23:59"; // Default to end of day if not set
 
-                 if (currentTimeStr <= startTime) {
-                   isTodayAllowed = true;
-                 }
-               }
+              if (routeDay === "today") {
+                // Check the customer's real-world clock against the driver's start time
+                const now = new Date();
+                const currentHours = now.getHours().toString().padStart(2, "0");
+                const currentMinutes = now
+                  .getMinutes()
+                  .toString()
+                  .padStart(2, "0");
+                const currentTimeStr = `${currentHours}:${currentMinutes}`;
+
+                if (currentTimeStr <= startTime) {
+                  isTodayAllowed = true;
+                }
+              }
             } else {
-               // Fallback if the driver has a brand new account and no saved settings yet
-               isTodayAllowed = true;
+              // Fallback if the driver has a brand new account and no saved settings yet
+              isTodayAllowed = true;
             }
           }
 
           if (isTodayAllowed) {
-            window.appState.targetTimeline = 'today';
-            document.getElementById('timelineDisplay').innerText = 'Today';
+            window.appState.targetTimeline = "today";
+            document.getElementById("timelineDisplay").innerText = "Today";
           } else {
-            window.appState.targetTimeline = 'tomorrow';
-            document.getElementById('timelineDisplay').innerText = 'Tomorrow';
+            window.appState.targetTimeline = "tomorrow";
+            document.getElementById("timelineDisplay").innerText = "Tomorrow";
           }
         } catch (e) {
           console.error("Failed to eval driver state:", e);
         }
       };
-      
-      
-      
-      
-      
+
       const originalOpenAddModal = openAddModal;
       openAddModal = function (type = "scheduled") {
         originalOpenAddModal(type);
@@ -2922,8 +2952,6 @@
         document.getElementById("step2Panel").lastElementChild.style.display =
           "flex";
       };
-
- 
     </script>
   </body>
 </html>
