@@ -2824,35 +2824,64 @@
         document.getElementById("timelineDisplay").innerText = "Today";
         openAddModal("emergency");
       };
-
-      window.evalDriverStateForTimeline = async function () {
+      
+      
+      
+      
+      
+    window.evalDriverStateForTimeline = async function() {
         if (!window.appState.selectedDriverId) return;
         try {
-          const stateSnap = await window.getDoc(
-            window.doc(
-              window.db,
-              "driver_state",
-              window.appState.selectedDriverId
-            )
-          );
-
-          let phase = "idle"; // Default to idle if the driver hasn't created a state document yet
+          const stateSnap = await window.getDoc(window.doc(window.db, "driver_state", window.appState.selectedDriverId));
+          const settingsSnap = await window.getDoc(window.doc(window.db, "driver_settings", window.appState.selectedDriverId));
+          
+          let phase = 'idle'; // Default to idle if the driver hasn't created a state document yet
           if (stateSnap.exists() && stateSnap.data().workflowPhase) {
             phase = stateSnap.data().workflowPhase;
           }
 
-          if (phase === "idle") {
-            window.appState.targetTimeline = "today";
-            document.getElementById("timelineDisplay").innerText = "Today";
+          let isTodayAllowed = false;
+
+          // Only evaluate the schedule if the driver hasn't started their route yet
+          if (phase === 'idle') {
+            if (settingsSnap.exists()) {
+               const sData = settingsSnap.data();
+               const routeDay = sData.routeDay || 'today';
+               const startTime = sData.routeStartTime || '23:59'; // Default to end of day if not set
+               
+               if (routeDay === 'today') {
+                 // Check the customer's real-world clock against the driver's start time
+                 const now = new Date();
+                 const currentHours = now.getHours().toString().padStart(2, '0');
+                 const currentMinutes = now.getMinutes().toString().padStart(2, '0');
+                 const currentTimeStr = `${currentHours}:${currentMinutes}`;
+
+                 if (currentTimeStr <= startTime) {
+                   isTodayAllowed = true;
+                 }
+               }
+            } else {
+               // Fallback if the driver has a brand new account and no saved settings yet
+               isTodayAllowed = true;
+            }
+          }
+
+          if (isTodayAllowed) {
+            window.appState.targetTimeline = 'today';
+            document.getElementById('timelineDisplay').innerText = 'Today';
           } else {
-            window.appState.targetTimeline = "tomorrow";
-            document.getElementById("timelineDisplay").innerText = "Tomorrow";
+            window.appState.targetTimeline = 'tomorrow';
+            document.getElementById('timelineDisplay').innerText = 'Tomorrow';
           }
         } catch (e) {
           console.error("Failed to eval driver state:", e);
         }
       };
-
+      
+      
+      
+      
+      
       const originalOpenAddModal = openAddModal;
       openAddModal = function (type = "scheduled") {
         originalOpenAddModal(type);
