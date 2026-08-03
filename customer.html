@@ -2051,19 +2051,31 @@
                 // then reload the app to cleanly reset the map and UI state.
                 setTimeout(() => {
                   window.location.reload();
+                }, 2000)
+              }
+
+
+
+                            } else if (data.status === "cancelled") {
+                title.innerText = "Order Cancelled";
+                subtitle.innerText = "This delivery has been aborted.";
+
+                const timeline = document.getElementById("activeStopsTimeline");
+                if (timeline) timeline.style.display = "none";
+
+                setTimeout(() => {
+                  window.location.reload();
                 }, 2000);
               }
-            } else if (data.status === "cancelled") {
-              title.innerText = "Order Cancelled";
-              subtitle.innerText = "This delivery has been aborted.";
-
-              const timeline = document.getElementById("activeStopsTimeline");
-              if (timeline) timeline.style.display = "none";
-
-              setTimeout(() => {
-                window.location.reload();
-              }, 2000);
             }
+
+
+
+
+
+
+
+
           }
         );
       };
