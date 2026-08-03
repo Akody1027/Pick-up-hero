@@ -688,6 +688,37 @@
         margin-bottom: 20px;
         line-height: 1.4;
       }
+      
+      
+      .glowing-pin {
+        box-shadow: 0 0 20px 5px var(--accent) !important;
+        animation: pulse-glow 1.5s infinite alternate;
+      }
+
+      @keyframes pulse-glow {
+        from { box-shadow: 0 0 10px 2px var(--accent); }
+        to { box-shadow: 0 0 25px 8px var(--accent); }
+      }
+
+      .floating-lock-btn {
+        position: absolute;
+        bottom: 110px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 4000;
+        display: none;
+        padding: 14px 28px;
+        border-radius: 30px;
+        font-weight: 800;
+        font-size: 1.1rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      }
+      
+      
+      
+      
+      
+      
     </style>
   </head>
   <body>
@@ -826,6 +857,13 @@
 
     <!-- MAP LAYER -->
     <div id="map"></div>
+    
+    
+    <button id="lockPinBtn" class="btn btn-primary floating-lock-btn" onclick="lockHomePin()">
+      Save Location
+    </button>
+    
+    
 
     <!-- DUTY STATUS LAYER -->
     <div class="duty-toggle-container">
@@ -927,13 +965,74 @@
         <span>Map</span>
       </button>
 
-      <div class="fab-container">
+<div class="fab-container">
         <button class="fab-btn" onclick="openModal('scheduleModal')">
+          <!-- Calendar Icon -->
           <svg viewBox="0 0 24 24">
-            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+            <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z" />
           </svg>
         </button>
       </div>
+
+      <button
+        class="nav-btn"
+        id="navProfile"
+        onclick="openModal('settingsModal')"
+      >
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49-.12-.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"
+          />
+        </svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <!-- MODAL: SCHEDULE ROUTE (+) -->
+    <div id="scheduleModal" class="modal">
+      <div class="modal-header">
+        <h2>Home Base Schedule</h2>
+        <button class="close-btn" onclick="closeAllModals()">✕</button>
+      </div>
+      <div class="modal-content">
+        <div class="form-group">
+          <label>Date</label>
+          <select id="routeDaySelect">
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 15px">
+          <div class="form-group" style="flex: 1">
+            <label>Start Time</label>
+            <input type="time" id="routeStartTime" value="08:00" />
+          </div>
+          <div class="form-group" style="flex: 1">
+            <label>End Time</label>
+            <input type="time" id="routeEndTime" value="13:00" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 30px;">
+          <label>Max Stops (Capacity)</label>
+          <input type="number" id="routeMaxStops" value="6" />
+        </div>
+        
+        <button
+          class="btn btn-secondary"
+          style="margin-bottom: 15px;"
+          onclick="activatePinMove()"
+        >
+          Move Pin Position
+        </button>
+        <button
+          class="btn btn-primary"
+          id="saveScheduleBtn"
+          onclick="saveScheduleBlock()"
+        >
+          Save Schedule
+        </button>
+      </div>
+    </div>
 
       <button
         class="nav-btn"
@@ -1459,6 +1558,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               AppState.homeBase = [data.baseLat, data.baseLng];
               hasSavedLocation = true;
             }
+            
+            
+           if (data.routeDay) document.getElementById("routeDaySelect").value = data.routeDay;
+            if (data.routeStartTime) document.getElementById("routeStartTime").value = data.routeStartTime;
+            if (data.routeEndTime) document.getElementById("routeEndTime").value = data.routeEndTime;
+            if (data.routeMaxStops) document.getElementById("routeMaxStops").value = data.routeMaxStops; 
+            
+            
 
             const killSwitch = document.getElementById("killSwitchToggle");
             if (data.globalKillSwitch) killSwitch.classList.add("on");
@@ -1578,6 +1685,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         startTelemetry();
       }
 
+      
+      
+      
+     
+
       function renderHomeBase() {
         if (!AppState.homeBase) return;
 
@@ -1594,32 +1706,73 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           icon: icon,
           draggable: false,
         }).addTo(AppState.mapInstance);
+        
+        // Tapping the pin opens the Master Schedule Modal instead of just a drag prompt
         AppState.homeMarker.bindPopup(
-          '<div style="text-align:center;"><strong>Home Base</strong><br><button onclick="toggleHomeEdit()" style="margin-top:8px; padding:6px 12px; background:var(--surface-elevated); color:white; border:1px solid var(--border); border-radius:6px;">Edit Base</button></div>'
+          '<div style="text-align:center;"><strong>Home Base</strong><br><button onclick="openModal(\'scheduleModal\'); AppState.mapInstance.closePopup();" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Edit Schedule</button></div>'
         );
       }
 
-      window.toggleHomeEdit = function () {
-        if (AppState.homeMarker.dragging.enabled()) {
+      window.activatePinMove = function() {
+        closeAllModals(); // Hide modal to show full map
+        if(AppState.homeMarker) {
+          AppState.homeMarker.dragging.enable();
+          L.DomUtil.addClass(AppState.homeMarker._icon, 'glowing-pin');
+        }
+        document.getElementById('lockPinBtn').style.display = 'block';
+      };
+
+      window.lockHomePin = function() {
+        if(AppState.homeMarker) {
           AppState.homeMarker.dragging.disable();
+          L.DomUtil.removeClass(AppState.homeMarker._icon, 'glowing-pin');
           AppState.homeBase = [
             AppState.homeMarker.getLatLng().lat,
             AppState.homeMarker.getLatLng().lng,
           ];
-          // Silently trigger the database save in the background
-          if (window.saveDriverSettings) window.saveDriverSettings();
-
-          renderHomeBase();
-        } else {
-          AppState.homeMarker.dragging.enable();
-          AppState.homeMarker
-            .bindPopup(
-              '<div style="text-align:center;"><strong>Drag to New Base</strong><br><button onclick="toggleHomeEdit()" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Save Location</button></div>'
-            )
-            .openPopup();
         }
+        document.getElementById('lockPinBtn').style.display = 'none';
+        openModal('scheduleModal'); // Bring modal back up to hit save
       };
 
+      window.saveScheduleBlock = async function() {
+        const btn = document.getElementById("saveScheduleBtn");
+        const origText = btn.innerText;
+        btn.innerText = "Saving..."; 
+        
+        try {
+          await window.setDoc(
+            window.doc(window.db, "driver_settings", DRIVER_DOC_ID),
+            {
+              baseLat: AppState.homeBase[0],
+              baseLng: AppState.homeBase[1],
+              routeDay: document.getElementById("routeDaySelect").value,
+              routeStartTime: document.getElementById("routeStartTime").value,
+              routeEndTime: document.getElementById("routeEndTime").value,
+              routeMaxStops: parseInt(document.getElementById("routeMaxStops").value) || 6
+            },
+            { merge: true }
+          );
+          btn.innerText = "Saved!";
+          btn.classList.replace("btn-primary", "btn-success");
+          setTimeout(() => {
+            btn.innerText = origText;
+            btn.classList.replace("btn-success", "btn-primary");
+            closeAllModals();
+          }, 1500);
+        } catch (e) {
+          console.error("Save failed:", e);
+          btn.innerText = "Error Saving";
+        }
+      };
+      
+      
+      
+      
+      
+      
+      
+      
       // Modal & Sheet Controls
       function openModal(id) {
         document
