@@ -1,5 +1,8 @@
 
-  <!DOCTYPE html>
+
+
+
+<!DOCTYPE html>
   <html lang="en">
     <head>
       <meta charset="UTF-8" />
@@ -974,6 +977,17 @@
           >
             Contact Support
           </button>
+          
+          <button
+            class="btn btn-secondary"
+            style="margin-bottom: 10px; color: var(--accent); border-color: var(--accent);"
+            onclick="signOutUser()"
+          >
+            Sign Out
+          </button>
+          
+          
+          
           <button class="btn btn-emergency" onclick="confirmDeleteAccount()">
             Delete Account
           </button>
@@ -1523,11 +1537,29 @@
             alert("Failed to delete account data: " + error.message);
           }
         };
+        
+        
+        
+        
+        window.signOutUser = async function () {
+          try {
+            await window.signOut(window.auth);
+            localStorage.removeItem("pickuphero_userId");
+            localStorage.removeItem("pickuphero_recoveredOrderId");
+            window.location.reload();
+          } catch (error) {
+            console.error("Error signing out:", error);
+            alert("Failed to sign out.");
+          }
+        };
+        
+        
+   
       </script>
 
       <!-- UI & MAP SCRIPT -->
 
-      <script>
+      <script> 
         let map, driverMarker, storeMarker;
 
         let userMarker;
