@@ -19,10 +19,10 @@
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
-        --accent-hover: #d95314; 
+        --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
-        --border: #333333;  
+        --border: #333333;
         --success: #22c55e;
         --danger: #ef4444;
         --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -1309,7 +1309,11 @@
           window.appState.userId = savedUserId;
         }
 
-        if (window.loadActiveDriver) window.loadActiveDriver();
+        // Flag auth as complete, but only fire the data pull if the map DOM is already ready
+        window.appState.authReady = true;
+        if (window.isMapReady && window.loadActiveDriver) {
+          window.loadActiveDriver();
+        }
       });
 
       window.submitOrderToFirebase = async function () {
@@ -1497,6 +1501,16 @@
       document.addEventListener("DOMContentLoaded", () => {
         initMap();
         initAutocomplete();
+
+        // Flag map as complete, but only fire the data pull if Auth has already resolved
+        window.isMapReady = true;
+        if (
+          window.appState &&
+          window.appState.authReady &&
+          window.loadActiveDriver
+        ) {
+          window.loadActiveDriver();
+        }
       });
 
       // --- BACKGROUND SYNC ENGINE ---
@@ -2143,7 +2157,9 @@
 
       window.loadActiveDriver = async function () {
         try {
-          // 1. Load ALL Driver Hubs (Stationary Pins)
+          let initialSettingsLoaded = false;
+
+          // 1. Load ALL Driver Hubs (Stationary Pins) FIRST
           window.onSnapshot(
             window.collection(window.db, "driver_settings"),
             (settingsSnap) => {
@@ -2151,8 +2167,6 @@
                 settingsSnap.forEach((docSnap) => {
                   const driverId = docSnap.id;
                   const settingsData = docSnap.data();
-
-                  // Auto-select the very first driver that loads so the UI isn't empty
 
                   if (!window.appState.selectedDriverId) {
                     window.selectHero(
@@ -2176,12 +2190,9 @@
                     if (!window.baseMarkers[driverId]) {
                       window.baseMarkers[driverId] = L.marker(
                         [settingsData.baseLat, settingsData.baseLng],
-                        {
-                          icon: baseIcon,
-                        }
+                        { icon: baseIcon }
                       ).addTo(map);
 
-                      // Add click listener so customers can switch drivers by tapping pins
                       window.baseMarkers[driverId].on("click", () => {
                         window.selectHero(
                           driverId,
@@ -2201,101 +2212,120 @@
                   }
                 });
               }
-            }
-          );
 
-          // 2. Track Live Telemetry for ALL Online Drivers
-          const driversQuery = window.query(
-            window.collection(window.db, "driver_locations"),
-            window.where("isOnline", "==", true)
-          );
+              // 2. CHAINING: Only attach live telemetry AFTER bases are loaded in memory
+              if (!initialSettingsLoaded) {
+                initialSettingsLoaded = true;
 
-          window.onSnapshot(driversQuery, async (querySnapshot) => {
-            Object.values(window.liveMarkers).forEach((marker) =>
-              marker.setOpacity(0)
-            );
-
-            if (querySnapshot.empty) {
-              if (!window.initialDriversLoaded) {
-                window.initialDriversLoaded = true;
-                if (window.checkActiveSession) window.checkActiveSession();
-              }
-              return;
-            }
-
-            const mapPromises = querySnapshot.docs.map(async (locationSnap) => {
-              const activeDriverId = locationSnap.id;
-              const locData = locationSnap.data();
-
-              if (locData.lat && locData.lng) {
-                const settingsSnap = await window.getDoc(
-                  window.doc(window.db, "driver_settings", activeDriverId)
+                const driversQuery = window.query(
+                  window.collection(window.db, "driver_locations"),
+                  window.where("isOnline", "==", true)
                 );
-                let faceHtml = "";
-                let faceIconClass = "live-pin-override";
 
-                if (settingsSnap.exists()) {
-                  const sData = settingsSnap.data();
-                  if (sData.profilePic) {
-                    faceHtml = `<img src="${sData.profilePic}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-                    faceIconClass = "custom-orange-pin";
-                  }
-                }
-
-                const faceIcon = L.divIcon({
-                  className: faceIconClass,
-                  html: faceHtml,
-                  iconSize:
-                    faceIconClass === "custom-orange-pin" ? [42, 42] : [26, 26],
-                  iconAnchor:
-                    faceIconClass === "custom-orange-pin" ? [21, 21] : [13, 13],
-                });
-
-                const targetPos = { lat: locData.lat, lng: locData.lng };
-
-                if (!window.liveMarkers[activeDriverId]) {
-                  window.liveMarkers[activeDriverId] = L.marker(
-                    [locData.lat, locData.lng],
-                    {
-                      icon: faceIcon,
-                      zIndexOffset: 1000,
-                    }
-                  ).addTo(map);
-
-                  window.liveMarkers[activeDriverId].on("click", () => {
-                    if (settingsSnap.exists()) {
-                      const sData = settingsSnap.data();
-                      window.selectHero(
-                        activeDriverId,
-                        sData.profilePic,
-                        sData.displayName,
-                        sData.bio,
-                        sData.premiumRate
-                      );
-                    }
-                  });
-                } else {
-                  window.liveMarkers[activeDriverId].setIcon(faceIcon);
-                  window.liveMarkers[activeDriverId].setOpacity(1);
-                  const currentPos =
-                    window.liveMarkers[activeDriverId].getLatLng();
-                  animateMarker(
-                    window.liveMarkers[activeDriverId],
-                    currentPos,
-                    targetPos,
-                    2500
+                window.onSnapshot(driversQuery, async (querySnapshot) => {
+                  Object.values(window.liveMarkers).forEach((marker) =>
+                    marker.setOpacity(0)
                   );
-                }
+
+                  if (querySnapshot.empty) {
+                    if (!window.initialDriversLoaded) {
+                      window.initialDriversLoaded = true;
+                      if (window.checkActiveSession)
+                        window.checkActiveSession();
+                    }
+                    return;
+                  }
+
+                  const mapPromises = querySnapshot.docs.map(
+                    async (locationSnap) => {
+                      const activeDriverId = locationSnap.id;
+                      const locData = locationSnap.data();
+
+                      if (locData.lat && locData.lng) {
+                        const settingsSnap = await window.getDoc(
+                          window.doc(
+                            window.db,
+                            "driver_settings",
+                            activeDriverId
+                          )
+                        );
+                        let faceHtml = "";
+                        let faceIconClass = "live-pin-override";
+
+                        if (settingsSnap.exists()) {
+                          const sData = settingsSnap.data();
+                          if (sData.profilePic) {
+                            faceHtml = `<img src="${sData.profilePic}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+                            faceIconClass = "custom-orange-pin";
+                          }
+                        }
+
+                        const faceIcon = L.divIcon({
+                          className: faceIconClass,
+                          html: faceHtml,
+                          iconSize:
+                            faceIconClass === "custom-orange-pin"
+                              ? [42, 42]
+                              : [26, 26],
+                          iconAnchor:
+                            faceIconClass === "custom-orange-pin"
+                              ? [21, 21]
+                              : [13, 13],
+                        });
+
+                        const targetPos = {
+                          lat: locData.lat,
+                          lng: locData.lng,
+                        };
+
+                        if (!window.liveMarkers[activeDriverId]) {
+                          window.liveMarkers[activeDriverId] = L.marker(
+                            [locData.lat, locData.lng],
+                            {
+                              icon: faceIcon,
+                              zIndexOffset: 1000,
+                            }
+                          ).addTo(map);
+
+                          window.liveMarkers[activeDriverId].on("click", () => {
+                            if (settingsSnap.exists()) {
+                              const sData = settingsSnap.data();
+                              window.selectHero(
+                                activeDriverId,
+                                sData.profilePic,
+                                sData.displayName,
+                                sData.bio,
+                                sData.premiumRate
+                              );
+                            }
+                          });
+                        } else {
+                          window.liveMarkers[activeDriverId].setIcon(faceIcon);
+                          window.liveMarkers[activeDriverId].setOpacity(1);
+                          const currentPos =
+                            window.liveMarkers[activeDriverId].getLatLng();
+                          animateMarker(
+                            window.liveMarkers[activeDriverId],
+                            currentPos,
+                            targetPos,
+                            2500
+                          );
+                        }
+                      }
+                    }
+                  );
+
+                  await Promise.all(mapPromises);
+
+                  // 3. FINISH BOOT: Map is armed, fire the session checker
+                  if (!window.initialDriversLoaded) {
+                    window.initialDriversLoaded = true;
+                    if (window.checkActiveSession) window.checkActiveSession();
+                  }
+                });
               }
-            });
-
-            await Promise.all(mapPromises);
-
-            if (!window.initialDriversLoaded) {
-              window.initialDriversLoaded = true;
-              if (window.checkActiveSession) window.checkActiveSession();
             }
-          });
+          );
         } catch (e) {
           console.error("Error loading dynamic driver data:", e);
         }
