@@ -16,7 +16,7 @@
     <style>
       :root {
         --bg: #121212;
-        --surface: #1e1e1e; 
+        --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
@@ -598,11 +598,11 @@
         </button>
       </div>
 
-      <div class="stop-timeline" id="activeStopsTimeline" style="display: none"> 
+      <div class="stop-timeline" id="activeStopsTimeline" style="display: none">
         <!-- Timeline injected dynamically via JS -->
       </div>
     </div>
- 
+
     <!-- BOTTOM NAVIGATION BAR -->
     <nav class="bottom-nav">
       <button class="nav-btn active" id="navHome" onclick="closeAllModals()">
@@ -2406,81 +2406,209 @@
 
       // --- SESSION & MULTI-STOP LOGIC ---
 
-      window.checkActiveSession = function () {
-        if (!window.appState.userId) return; // Prevent ghost listener collision
+      window.checkActiveSession = async function () {
+        if (!window.appState.userId) return;
 
+        // Prevent multiple Firestore listeners from running at the same time.
         if (window.activeSessionListener) {
-          window.activeSessionListener(); // Unsubscribe from the old listener
+          window.activeSessionListener();
+          window.activeSessionListener = null;
         }
 
-        const q = window.query(
-          window.collection(window.db, "orders"),
-          window.where("userId", "==", window.appState.userId)
-        );
+        const recoveredId = localStorage.getItem("pickuphero_recoveredOrderId");
 
-        window.activeSessionListener = window.onSnapshot(q, (snapshot) => {
-          let hasActive = false;
-          let activeId = null;
+        try {
+          let recoveredOrderData = null;
+          let recoveredOrderId = null;
 
-          const recoveredId = localStorage.getItem(
-            "pickuphero_recoveredOrderId"
-          );
+          /*
+           * RECOVERY PATH
+           *
+           * If the customer came through the Recovery tool, load the exact
+           * order document directly. This removes the dependency on the
+           * normal customer-order query finding the recovered order first.
+           */
+          if (recoveredId) {
+            const recoveredSnap = await window.getDoc(
+              window.doc(window.db, "orders", recoveredId)
+            );
 
-          snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
+            if (recoveredSnap.exists()) {
+              const recoveredData = recoveredSnap.data();
 
-            if (
-              ["pending", "approved", "picked_up", "in_transit"].includes(
-                data.status
-              )
-            ) {
-              if (!hasActive || docSnap.id === recoveredId) {
-                window.appState.activeOrder = data;
-                hasActive = true;
-                activeId = docSnap.id;
-                window.appState.selectedDriverId = data.assignedDriverId;
+              if (
+                ["pending", "approved", "picked_up", "in_transit"].includes(
+                  recoveredData.status
+                )
+              ) {
+                recoveredOrderData = recoveredData;
+                recoveredOrderId = recoveredSnap.id;
+              } else {
+                // The recovered delivery is no longer active.
+                localStorage.removeItem("pickuphero_recoveredOrderId");
               }
+            } else {
+              // The recovered order no longer exists.
+              localStorage.removeItem("pickuphero_recoveredOrderId");
             }
-          });
+          }
 
-          if (hasActive) window.appState.currentOrderId = activeId;
+          /*
+           * NORMAL PATH
+           *
+           * If there is no recovered order, continue using the customer's
+           * normal active-order query.
+           */
+          if (!recoveredOrderData) {
+            const q = window.query(
+              window.collection(window.db, "orders"),
+              window.where("userId", "==", window.appState.userId)
+            );
+
+            const snapshot = await window.getDocs(q);
+
+            snapshot.forEach((docSnap) => {
+              const data = docSnap.data();
+
+              if (
+                !recoveredOrderData &&
+                ["pending", "approved", "picked_up", "in_transit"].includes(
+                  data.status
+                )
+              ) {
+                recoveredOrderData = data;
+                recoveredOrderId = docSnap.id;
+              }
+            });
+          }
 
           const fab = document.getElementById("mainFab");
           const defaultActions = document.getElementById("defaultSheetActions");
           const timeline = document.getElementById("activeStopsTimeline");
 
-          if (hasActive) {
+          if (recoveredOrderData && recoveredOrderId) {
+            window.appState.activeOrder = recoveredOrderData;
+            window.appState.currentOrderId = recoveredOrderId;
+            window.appState.selectedDriverId =
+              recoveredOrderData.assignedDriverId || null;
+
             fab.classList.add("locked");
 
             if (!window.isTrackingActiveOrder) {
               document.getElementById("activeDeliveryPrompt").style.display =
                 "flex";
+
               window.isTrackingActiveOrder = true;
             }
 
-            if (defaultActions) defaultActions.style.display = "none";
-            if (timeline) timeline.style.display = "flex";
+            if (defaultActions) {
+              defaultActions.style.display = "none";
+            }
 
-            if (window.currentlyListeningTo !== activeId) {
-              window.listenToMyActiveOrder(activeId);
-              window.currentlyListeningTo = activeId;
+            if (timeline) {
+              timeline.style.display = "flex";
+            }
 
-              if (window.renderRecoveredOrder) {
-                window.renderRecoveredOrder(window.appState.activeOrder);
-              }
+            /*
+             * Always render the recovered route here.
+             *
+             * Do NOT wait for the driver telemetry/base-marker system.
+             * Pickup and delivery coordinates are stored directly on the order.
+             */
+            if (window.renderRecoveredOrder) {
+              window.renderRecoveredOrder(recoveredOrderData);
+            }
+
+            /*
+             * Listen for live changes to this exact order.
+             */
+            if (window.currentlyListeningTo !== recoveredOrderId) {
+              window.listenToMyActiveOrder(recoveredOrderId);
+              window.currentlyListeningTo = recoveredOrderId;
             }
           } else {
             fab.classList.remove("locked");
+
             window.isTrackingActiveOrder = false;
             window.currentlyListeningTo = null;
+            window.appState.activeOrder = null;
+            window.appState.currentOrderId = null;
 
-            if (defaultActions) defaultActions.style.display = "flex";
+            if (defaultActions) {
+              defaultActions.style.display = "flex";
+            }
+
             if (timeline) {
               timeline.style.display = "none";
               timeline.innerHTML = "";
             }
+
+            if (window.clearRecoveredMap) {
+              window.clearRecoveredMap();
+            }
           }
-        });
+
+          /*
+           * Keep listening for future changes to the customer's orders.
+           *
+           * This listener is intentionally separate from the initial recovery
+           * lookup above.
+           */
+          const q = window.query(
+            window.collection(window.db, "orders"),
+            window.where("userId", "==", window.appState.userId)
+          );
+
+          window.activeSessionListener = window.onSnapshot(
+            q,
+            (snapshot) => {
+              let activeOrder = null;
+              let activeOrderId = null;
+
+              snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+
+                if (
+                  ["pending", "approved", "picked_up", "in_transit"].includes(
+                    data.status
+                  )
+                ) {
+                  /*
+                   * Always prefer the recovered order if one exists.
+                   */
+                  if (
+                    !activeOrder ||
+                    (recoveredId && docSnap.id === recoveredId)
+                  ) {
+                    activeOrder = data;
+                    activeOrderId = docSnap.id;
+                  }
+                }
+              });
+
+              if (!activeOrder || !activeOrderId) {
+                return;
+              }
+
+              window.appState.activeOrder = activeOrder;
+              window.appState.currentOrderId = activeOrderId;
+              window.appState.selectedDriverId =
+                activeOrder.assignedDriverId || null;
+
+              if (window.renderRecoveredOrder) {
+                window.renderRecoveredOrder(activeOrder);
+              }
+            },
+            (error) => {
+              console.error("Active delivery listener failed:", error);
+            }
+          );
+        } catch (error) {
+          console.error(
+            "Failed to initialize active/recovered delivery:",
+            error
+          );
+        }
       };
 
       // --- BOTTOM SHEET DRAG LOGIC ---
@@ -2555,68 +2683,193 @@
         }
         return points;
       }
-      
-      
-      
-      
-      
-      
-      
-    
-      
-      
-      
-      
-      
-            function drawGoogleRoute(heroLocation, stopsArray, deliveryLocation) {
-        if (activeRouteLayer) map.removeLayer(activeRouteLayer);
+
+      function drawGoogleRoute(heroLocation, stopsArray, deliveryLocation) {
+        /*
+         * Remove the previous route first.
+         */
+        if (activeRouteLayer) {
+          try {
+            if (map.hasLayer(activeRouteLayer)) {
+              map.removeLayer(activeRouteLayer);
+            }
+          } catch (e) {
+            console.warn("Unable to remove previous route:", e);
+          }
+
+          activeRouteLayer = null;
+        }
+
+        window.activeRouteLayer = null;
+
+        /*
+         * Convert Google LatLng objects into plain [lat, lng] pairs.
+         */
+        const fallbackCoords = [];
+
+        function addCoordinate(location) {
+          if (!location) return;
+
+          let lat;
+          let lng;
+
+          if (typeof location.lat === "function") {
+            lat = Number(location.lat());
+            lng = Number(location.lng());
+          } else {
+            lat = Number(location.lat);
+            lng = Number(location.lng);
+          }
+
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            fallbackCoords.push([lat, lng]);
+          }
+        }
+
+        /*
+         * HERO
+         */
+        addCoordinate(heroLocation);
+
+        /*
+         * PICKUPS IN THEIR ORIGINAL ORDER
+         */
+        if (Array.isArray(stopsArray)) {
+          stopsArray.forEach((stop) => {
+            addCoordinate(stop);
+          });
+        }
+
+        /*
+         * FINAL DELIVERY
+         */
+        addCoordinate(deliveryLocation);
+
+        /*
+         * We need at least two points to draw a line.
+         */
+        if (fallbackCoords.length < 2) {
+          console.error(
+            "Recovery route: not enough valid coordinates to draw route.",
+            fallbackCoords
+          );
+          return;
+        }
+
+        /*
+         * FIRST DRAW A FALLBACK LINE IMMEDIATELY.
+         *
+         * This guarantees the customer sees a connection even before
+         * Google's routing response returns.
+         */
+        activeRouteLayer = L.polyline(fallbackCoords, {
+          color: "#ee611c",
+          weight: 5,
+          opacity: 0.75,
+          dashArray: "10, 10",
+          lineJoin: "round",
+        }).addTo(map);
+
+        window.activeRouteLayer = activeRouteLayer;
+
+        /*
+         * Now ask Google for the actual road route.
+         */
+        if (
+          typeof google === "undefined" ||
+          !google.maps ||
+          !google.maps.DirectionsService
+        ) {
+          console.warn(
+            "Google Directions is unavailable. Keeping fallback route."
+          );
+          return;
+        }
 
         const directionsService = new google.maps.DirectionsService();
 
-        const waypoints = stopsArray.map((addressString) => ({
-          location: addressString,
-          stopover: true,
-        }));
+        const waypoints = [];
+
+        if (Array.isArray(stopsArray)) {
+          stopsArray.forEach((stop) => {
+            if (
+              stop &&
+              typeof stop.lat === "function" &&
+              typeof stop.lng === "function"
+            ) {
+              waypoints.push({
+                location: stop,
+                stopover: true,
+              });
+            }
+          });
+        }
 
         const request = {
           origin: heroLocation,
           destination: deliveryLocation,
           waypoints: waypoints,
+          optimizeWaypoints: false,
           travelMode: google.maps.TravelMode.DRIVING,
         };
 
         directionsService.route(request, (result, status) => {
-          if (status === google.maps.DirectionsStatus.OK) {
-            const decodedCoords = result.routes[0].overview_path.map((loc) => [
+          if (
+            status === google.maps.DirectionsStatus.OK &&
+            result &&
+            result.routes &&
+            result.routes.length > 0 &&
+            result.routes[0].overview_path &&
+            result.routes[0].overview_path.length > 1
+          ) {
+            const roadCoords = result.routes[0].overview_path.map((loc) => [
               loc.lat(),
               loc.lng(),
             ]);
 
-            activeRouteLayer = L.polyline(decodedCoords, {
+            /*
+             * Replace the temporary dashed line with Google's actual
+             * road-following route.
+             */
+            if (activeRouteLayer) {
+              try {
+                if (map.hasLayer(activeRouteLayer)) {
+                  map.removeLayer(activeRouteLayer);
+                }
+              } catch (e) {
+                console.warn("Unable to remove fallback route:", e);
+              }
+            }
+
+            activeRouteLayer = L.polyline(roadCoords, {
               color: "#ee611c",
               weight: 5,
               opacity: 0.9,
               lineJoin: "round",
             }).addTo(map);
-          } else {
-            const fallbackCoords = [];
-            if (heroLocation && typeof heroLocation.lat === "function") fallbackCoords.push([heroLocation.lat(), heroLocation.lng()]);
-            
-            stopsArray.forEach(stop => {
-              if (typeof stop.lat === "function") fallbackCoords.push([stop.lat(), stop.lng()]);
-            });
-            
-            if (deliveryLocation && typeof deliveryLocation.lat === "function") fallbackCoords.push([deliveryLocation.lat(), deliveryLocation.lng()]);
-            
-            if (fallbackCoords.length > 1) {
-              activeRouteLayer = L.polyline(fallbackCoords, {
-                color: "#ee611c",
-                weight: 4,
-                opacity: 0.7,
-                dashArray: "10, 10",
-                lineJoin: "round",
-              }).addTo(map);
+
+            window.activeRouteLayer = activeRouteLayer;
+
+            /*
+             * Make sure the final road route remains visible.
+             */
+            const routeBounds = L.latLngBounds(roadCoords);
+
+            if (routeBounds.isValid()) {
+              map.fitBounds(routeBounds, {
+                padding: [80, 80],
+                maxZoom: 16,
+              });
             }
+          } else {
+            /*
+             * Google failed, but the fallback route is already visible.
+             */
+            console.warn(
+              "Google Directions failed:",
+              status,
+              "Keeping fallback route."
+            );
           }
         });
       }
@@ -2647,72 +2900,304 @@
         }
       };
 
-      window.renderRecoveredOrder = function (order) {
-        if (!order || !order.stops || !order.stops.length) return;
+      // --- RECOVERED DELIVERY MAP RENDERER ---
 
-        const bounds = L.latLngBounds();
-        const storeIcon = L.divIcon({
-          className: "custom-store-pin",
-          iconSize: [28, 28],
-          iconAnchor: [14, 28],
-        });
+      window.recoveredMapMarkers = [];
 
-        const actualStops = [];
-        
-        order.stops.forEach((stop) => {
-          if (Number.isFinite(Number(stop.lat)) && Number.isFinite(Number(stop.lng))) {
-            const latLng = new google.maps.LatLng(Number(stop.lat), Number(stop.lng));
-            actualStops.push(latLng);
-            
-            L.marker([Number(stop.lat), Number(stop.lng)], {
-              icon: storeIcon,
-            }).addTo(map);
-            
-            bounds.extend([Number(stop.lat), Number(stop.lng)]);
+      window.clearRecoveredMap = function () {
+        if (window.recoveredMapMarkers) {
+          window.recoveredMapMarkers.forEach((marker) => {
+            try {
+              if (map && map.hasLayer(marker)) {
+                map.removeLayer(marker);
+              }
+            } catch (e) {
+              console.warn("Unable to remove recovered marker:", e);
+            }
+          });
+        }
+
+        window.recoveredMapMarkers = [];
+
+        if (window.activeRouteLayer) {
+          try {
+            if (map.hasLayer(window.activeRouteLayer)) {
+              map.removeLayer(window.activeRouteLayer);
+            }
+          } catch (e) {
+            console.warn("Unable to remove recovered route:", e);
           }
-        });
 
-        let actualDelivery = order.deliveryAddress;
-        if (Number.isFinite(Number(order.deliveryLat)) && Number.isFinite(Number(order.deliveryLng))) {
-          actualDelivery = new google.maps.LatLng(Number(order.deliveryLat), Number(order.deliveryLng));
-          
-          L.marker([Number(order.deliveryLat), Number(order.deliveryLng)], {
-            icon: storeIcon,
-          }).addTo(map);
-          
-          bounds.extend([Number(order.deliveryLat), Number(order.deliveryLng)]);
+          window.activeRouteLayer = null;
         }
 
-        let heroLoc = actualStops.length > 0 ? actualStops[0] : new google.maps.LatLng(39.8283, -98.5795);
-        
-        if (order.assignedDriverId && window.liveMarkers && window.liveMarkers[order.assignedDriverId]) {
-          const pos = window.liveMarkers[order.assignedDriverId].getLatLng();
-          heroLoc = new google.maps.LatLng(Number(pos.lat), Number(pos.lng));
-          bounds.extend([Number(pos.lat), Number(pos.lng)]);
-        } else if (order.assignedDriverId && window.baseMarkers && window.baseMarkers[order.assignedDriverId]) {
-          const pos = window.baseMarkers[order.assignedDriverId].getLatLng();
-          heroLoc = new google.maps.LatLng(Number(pos.lat), Number(pos.lng));
-          bounds.extend([Number(pos.lat), Number(pos.lng)]);
-        }
-
-        if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [60, 60] });
-        }
-
-        drawGoogleRoute(heroLoc, actualStops, actualDelivery);
+        // Keep the existing variable synchronized with the new route layer.
+        activeRouteLayer = null;
       };
 
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
+      window.renderRecoveredOrder = function (order) {
+        if (!map) {
+          console.error("Recovery map is not initialized yet.");
+          return;
+        }
+
+        if (!order) {
+          console.error("No recovered order was supplied.");
+          return;
+        }
+
+        if (!Array.isArray(order.stops) || order.stops.length === 0) {
+          console.error("Recovered order has no pickup stops:", order);
+          return;
+        }
+
+        /*
+         * Make sure the map has finished initializing before rendering.
+         */
+        setTimeout(() => {
+          try {
+            window.clearRecoveredMap();
+
+            const bounds = L.latLngBounds();
+
+            /*
+             * PICKUP ICON
+             */
+            const pickupIcon = L.divIcon({
+              className: "custom-store-pin",
+              iconSize: [28, 28],
+              iconAnchor: [14, 28],
+              popupAnchor: [0, -28],
+            });
+
+            /*
+             * DELIVERY ICON
+             *
+             * Use a different icon class so the customer can distinguish
+             * the final destination from pickup locations.
+             */
+            const deliveryIcon = L.divIcon({
+              className: "custom-orange-pin",
+              html: `
+                <div style="
+                  width: 32px;
+                  height: 32px;
+                  background: #22c55e;
+                  border: 3px solid #ffffff;
+                  border-radius: 50%;
+                  box-shadow: 0 0 12px rgba(0,0,0,0.7);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: #ffffff;
+                  font-size: 16px;
+                  font-weight: bold;
+                ">⌂</div>
+              `,
+              iconSize: [32, 32],
+              iconAnchor: [16, 16],
+            });
+
+            /*
+             * HERO LOCATION
+             *
+             * Default to the first pickup. This guarantees the route still
+             * has a valid starting point even when live driver telemetry has
+             * not loaded yet.
+             */
+            let heroLocation = null;
+
+            /*
+             * Prefer live driver telemetry.
+             */
+            if (
+              order.assignedDriverId &&
+              window.liveMarkers &&
+              window.liveMarkers[order.assignedDriverId]
+            ) {
+              const heroPos =
+                window.liveMarkers[order.assignedDriverId].getLatLng();
+
+              if (
+                heroPos &&
+                Number.isFinite(Number(heroPos.lat)) &&
+                Number.isFinite(Number(heroPos.lng))
+              ) {
+                heroLocation = new google.maps.LatLng(
+                  Number(heroPos.lat),
+                  Number(heroPos.lng)
+                );
+
+                bounds.extend([Number(heroPos.lat), Number(heroPos.lng)]);
+              }
+            }
+
+            /*
+             * If live telemetry isn't available, use the driver's base.
+             */
+            if (
+              !heroLocation &&
+              order.assignedDriverId &&
+              window.baseMarkers &&
+              window.baseMarkers[order.assignedDriverId]
+            ) {
+              const heroPos =
+                window.baseMarkers[order.assignedDriverId].getLatLng();
+
+              if (
+                heroPos &&
+                Number.isFinite(Number(heroPos.lat)) &&
+                Number.isFinite(Number(heroPos.lng))
+              ) {
+                heroLocation = new google.maps.LatLng(
+                  Number(heroPos.lat),
+                  Number(heroPos.lng)
+                );
+
+                bounds.extend([Number(heroPos.lat), Number(heroPos.lng)]);
+              }
+            }
+
+            const actualStops = [];
+
+            /*
+             * CREATE EVERY PICKUP MARKER
+             */
+            order.stops.forEach((stop, index) => {
+              const lat = Number(stop.lat);
+              const lng = Number(stop.lng);
+
+              if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                console.warn(
+                  `Recovery: Pickup ${index + 1} has invalid coordinates:`,
+                  stop
+                );
+                return;
+              }
+
+              const pickupLocation = new google.maps.LatLng(lat, lng);
+
+              actualStops.push(pickupLocation);
+
+              /*
+               * If there is no live/base Hero location, the first pickup
+               * becomes the guaranteed route origin.
+               */
+              if (!heroLocation && index === 0) {
+                heroLocation = pickupLocation;
+              }
+
+              const marker = L.marker([lat, lng], {
+                icon: pickupIcon,
+                zIndexOffset: 500,
+              }).addTo(map).bindPopup(`
+                  <div style="text-align:center;">
+                    <strong>Pickup ${index + 1}</strong><br>
+                    <span style="
+                      font-size:0.85rem;
+                      color:var(--text-muted);
+                    ">
+                      ${stop.storeName || "Pickup Location"}
+                    </span>
+                  </div>
+                `);
+
+              window.recoveredMapMarkers.push(marker);
+
+              bounds.extend([lat, lng]);
+            });
+
+            /*
+             * CREATE DELIVERY MARKER
+             */
+            let actualDelivery = null;
+
+            const deliveryLat = Number(order.deliveryLat);
+            const deliveryLng = Number(order.deliveryLng);
+
+            if (Number.isFinite(deliveryLat) && Number.isFinite(deliveryLng)) {
+              actualDelivery = new google.maps.LatLng(deliveryLat, deliveryLng);
+
+              const deliveryMarker = L.marker([deliveryLat, deliveryLng], {
+                icon: deliveryIcon,
+                zIndexOffset: 600,
+              }).addTo(map).bindPopup(`
+                  <div style="text-align:center;">
+                    <strong>Final Delivery</strong><br>
+                    <span style="
+                      font-size:0.85rem;
+                      color:var(--text-muted);
+                    ">
+                      ${order.deliveryAddress || "Delivery Location"}
+                    </span>
+                  </div>
+                `);
+
+              window.recoveredMapMarkers.push(deliveryMarker);
+
+              bounds.extend([deliveryLat, deliveryLng]);
+            } else {
+              console.error(
+                "Recovery: deliveryLat/deliveryLng are missing or invalid.",
+                order
+              );
+            }
+
+            /*
+             * If there is no valid Hero position, use the first valid pickup.
+             */
+            if (!heroLocation && actualStops.length > 0) {
+              heroLocation = actualStops[0];
+            }
+
+            /*
+             * We cannot route without a delivery coordinate.
+             */
+            if (!actualDelivery) {
+              console.error(
+                "Recovery route not drawn because the delivery coordinates are invalid."
+              );
+
+              if (bounds.isValid()) {
+                map.fitBounds(bounds, {
+                  padding: [80, 80],
+                  maxZoom: 16,
+                });
+              }
+
+              return;
+            }
+
+            /*
+             * Make sure the map includes every location.
+             */
+            if (bounds.isValid()) {
+              map.fitBounds(bounds, {
+                padding: [80, 80],
+                maxZoom: 16,
+              });
+            }
+
+            /*
+             * Draw the actual route.
+             */
+            drawGoogleRoute(heroLocation, actualStops, actualDelivery);
+
+            /*
+             * Leaflet sometimes needs a resize after a modal/overlay has
+             * changed the viewport.
+             */
+            setTimeout(() => {
+              if (map) {
+                map.invalidateSize();
+              }
+            }, 150);
+          } catch (error) {
+            console.error("Recovered delivery map rendering failed:", error);
+          }
+        }, 100);
+      };
+
       function dismissActiveDeliveryPrompt() {
         document.getElementById("activeDeliveryPrompt").style.display = "none";
         document.getElementById("trackerSheet").style.transform =
@@ -2940,10 +3425,21 @@
           }
 
           if (foundOrder && foundOrderId) {
+            /*
+             * Save the exact customer and exact order being recovered.
+             */
             localStorage.setItem("pickuphero_userId", foundOrder.userId);
-            localStorage.setItem("pickuphero_recoveredOrderId", foundOrderId);
-            window.appState.userId = foundOrder.userId;
 
+            localStorage.setItem("pickuphero_recoveredOrderId", foundOrderId);
+
+            window.appState.userId = foundOrder.userId;
+            window.appState.currentOrderId = foundOrderId;
+            window.appState.activeOrder = foundOrder;
+
+            /*
+             * Give the customer time to see:
+             * "We found your order! Loading map now..."
+             */
             setTimeout(() => {
               window.location.reload();
             }, 2000);
