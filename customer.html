@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html>
+
   <!DOCTYPE html>
   <html lang="en">
     <head>
@@ -646,59 +645,35 @@
         </div>
 
         <div class="modal-content">
-          <!-- STEP 1: PICKUP STOPS -->
-          <div id="step1Panel" class="step-panel active">
-            <!-- AUTHENTICATION GATE -->
-            <div id="authPanel" class="step-panel">
-              <div style="text-align: center; margin-bottom: 20px">
-                <h3 style="color: var(--accent)">Quick Sign up/Sign In</h3>
-                <p
-                  style="
-                    font-size: 0.9rem;
-                    color: var(--text-muted);
-                    margin-top: 8px;
-                  "
-                >
-                  Create account to securely save your progress and track
-                  deliveries across any device.
-                </p>
-              </div>
-
-              <div class="form-group">
-                <label>Email or Phone Number</label>
-                <input
-                  type="text"
-                  id="authIdentifier"
-                  placeholder="Email or 10-digit phone"
-                />
-              </div>
-              <div class="form-group">
-                <label>Password</label>
-                <input
-                  type="password"
-                  id="authPassword"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div style="display: flex; gap: 10px; margin-top: 15px">
-                <button
-                  class="btn btn-secondary"
-                  style="flex: 1"
-                  onclick="handleAuth('signup')"
-                >
-                  Sign Up
-                </button>
-                <button
-                  class="btn btn-primary"
-                  style="flex: 1"
-                  onclick="handleAuth('login')"
-                >
-                  Sign In
-                </button>
-              </div>
+          
+          <!-- AUTHENTICATION GATE -->
+          <div id="authPanel" class="step-panel">
+            <div style="text-align: center; margin-bottom: 20px">
+              <h3 style="color: var(--accent)">Quick Sign up/Sign In</h3>
+              <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 8px;"> 
+                Create account to securely save your progress and track deliveries across any device.
+              </p>
             </div>
 
+            <div class="form-group">
+              <label>Email or Phone Number</label>
+              <input type="text" id="authIdentifier" placeholder="Email or 10-digit phone" />
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" id="authPassword" placeholder="••••••••" />
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px">
+              <button class="btn btn-secondary" style="flex: 1" onclick="handleAuth('signup')">Sign Up</button>
+              <button class="btn btn-primary" style="flex: 1" onclick="handleAuth('login')">Sign In</button>
+            </div>
+          </div>
+
+          <!-- STEP 1: PICKUP STOPS -->
+          <div id="step1Panel" class="step-panel">
+   
+            
             <div
               id="dynamicTimelineHeader"
               style="
