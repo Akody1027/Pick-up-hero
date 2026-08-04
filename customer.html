@@ -19,10 +19,10 @@
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
-        --accent-hover: #d95314;
+        --accent-hover: #d95314; 
         --text: #ffffff;
         --text-muted: #94a3b8;
-        --border: #333333;
+        --border: #333333;  
         --success: #22c55e;
         --danger: #ef4444;
         --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -1286,23 +1286,30 @@
       };
 
       auth.onAuthStateChanged((user) => {
-        if (user) {
+        const recoveredOrderId = localStorage.getItem(
+          "pickuphero_recoveredOrderId"
+        );
+        const recoveredUserId = localStorage.getItem("pickuphero_userId");
+
+        if (recoveredOrderId && recoveredUserId) {
+          window.appState.user = user || null;
+          window.appState.userId = recoveredUserId;
+        } else if (user) {
           window.appState.user = user;
           window.appState.userId = user.uid;
-          if (window.checkActiveSession) window.checkActiveSession();
         } else {
           console.warn(
             "Unauthenticated session. Firing anonymous sign-in for testing."
           );
-
           let savedUserId = localStorage.getItem("pickuphero_userId");
           if (!savedUserId) {
             savedUserId = "anon_" + Math.random().toString(36).substr(2, 9);
             localStorage.setItem("pickuphero_userId", savedUserId);
           }
           window.appState.userId = savedUserId;
-          if (window.checkActiveSession) window.checkActiveSession();
         }
+
+        if (window.loadActiveDriver) window.loadActiveDriver();
       });
 
       window.submitOrderToFirebase = async function () {
@@ -1489,14 +1496,7 @@
 
       document.addEventListener("DOMContentLoaded", () => {
         initMap();
-        initAutocomplete(); // Run this immediately so Google inputs work
-
-        // Delay database fetch by 1 second so Firebase can finish initializing
-        setTimeout(() => {
-          if (window.loadActiveDriver) window.loadActiveDriver();
-
-          if (window.checkActiveSession) window.checkActiveSession();
-        }, 1000);
+        initAutocomplete();
       });
 
       // --- BACKGROUND SYNC ENGINE ---
@@ -2049,6 +2049,9 @@
 
                 // Wait 2 seconds so the customer can read the completion message,
                 // then reload the app to cleanly reset the map and UI state.
+
+                localStorage.removeItem("pickuphero_recoveredOrderId");
+
                 setTimeout(() => {
                   window.location.reload();
                 }, 2000);
@@ -2059,6 +2062,8 @@
 
               const timeline = document.getElementById("activeStopsTimeline");
               if (timeline) timeline.style.display = "none";
+
+              localStorage.removeItem("pickuphero_recoveredOrderId");
 
               setTimeout(() => {
                 window.location.reload();
@@ -2206,14 +2211,19 @@
           );
 
           window.onSnapshot(driversQuery, async (querySnapshot) => {
-            // Temporarily hide all live markers, then unhide only the ones still online
             Object.values(window.liveMarkers).forEach((marker) =>
               marker.setOpacity(0)
             );
 
-            if (querySnapshot.empty) return;
+            if (querySnapshot.empty) {
+              if (!window.initialDriversLoaded) {
+                window.initialDriversLoaded = true;
+                if (window.checkActiveSession) window.checkActiveSession();
+              }
+              return;
+            }
 
-            querySnapshot.forEach(async (locationSnap) => {
+            const mapPromises = querySnapshot.docs.map(async (locationSnap) => {
               const activeDriverId = locationSnap.id;
               const locData = locationSnap.data();
 
@@ -2252,7 +2262,6 @@
                     }
                   ).addTo(map);
 
-                  // Allow selecting the driver by clicking their live moving face
                   window.liveMarkers[activeDriverId].on("click", () => {
                     if (settingsSnap.exists()) {
                       const sData = settingsSnap.data();
@@ -2279,6 +2288,13 @@
                 }
               }
             });
+
+            await Promise.all(mapPromises);
+
+            if (!window.initialDriversLoaded) {
+              window.initialDriversLoaded = true;
+              if (window.checkActiveSession) window.checkActiveSession();
+            }
           });
         } catch (e) {
           console.error("Error loading dynamic driver data:", e);
