@@ -2603,7 +2603,82 @@
         
         
         
- 
+ window.checkActiveSession = function () {
+          if (!window.appState.userId) return; 
+
+          if (window.activeSessionListener) {
+            window.activeSessionListener(); 
+          }
+
+          const q = window.query(
+            window.collection(window.db, "orders"),
+            window.where("userId", "==", window.appState.userId)
+          );
+
+          window.activeSessionListener = window.onSnapshot(q, (snapshot) => {
+            let hasActive = false;
+            let activeId = null;
+
+            const recoveredId = localStorage.getItem(
+              "pickuphero_recoveredOrderId"
+            );
+
+            snapshot.forEach((docSnap) => {
+              const data = docSnap.data();
+
+              if (
+                ["pending", "accepted", "approved", "picked_up", "in_transit"].includes(
+                  data.status
+                )
+              ) {
+                if (!hasActive || docSnap.id === recoveredId) {
+                  window.appState.activeOrder = data;
+                  hasActive = true;
+                  activeId = docSnap.id;
+                  window.appState.selectedDriverId = data.assignedDriverId;
+                }
+              }
+            });
+
+            if (hasActive) window.appState.currentOrderId = activeId;
+
+            const fab = document.getElementById("mainFab");
+            const defaultActions = document.getElementById("defaultSheetActions");
+            const timeline = document.getElementById("activeStopsTimeline");
+
+            if (hasActive) {
+              fab.classList.add("locked");
+
+              if (!window.isTrackingActiveOrder) {
+                document.getElementById("activeDeliveryPrompt").style.display =
+                  "flex";
+                window.isTrackingActiveOrder = true;
+              }
+
+              if (defaultActions) defaultActions.style.display = "none";
+              if (timeline) timeline.style.display = "flex";
+
+              if (window.currentlyListeningTo !== activeId) {
+                window.listenToMyActiveOrder(activeId);
+                window.currentlyListeningTo = activeId;
+
+                if (window.renderRecoveredOrder) {
+                  window.renderRecoveredOrder(window.appState.activeOrder);
+                }
+              }
+            } else {
+              fab.classList.remove("locked");
+              window.isTrackingActiveOrder = false;
+              window.currentlyListeningTo = null;
+
+              if (defaultActions) defaultActions.style.display = "flex";
+              if (timeline) {
+                timeline.style.display = "none";
+                timeline.innerHTML = "";
+              }
+            }
+          });
+        };
         
         
         
