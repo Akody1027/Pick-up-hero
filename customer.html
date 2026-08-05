@@ -1328,8 +1328,13 @@
         }
 
         window.appState.authReady = true;
+
         if (window.isMapReady && window.loadActiveDriver) {
-          window.loadActiveDriver();
+          if (window.initialDriversLoaded) {
+            if (window.checkActiveSession) window.checkActiveSession();
+          } else {
+            window.loadActiveDriver();
+          }
         }
       });
 
