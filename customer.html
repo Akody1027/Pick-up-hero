@@ -978,14 +978,18 @@
           </div>
 
           <div style="flex: 1"></div>
+
           <button
             class="btn btn-primary"
             id="saveCustomerBtn"
-            onclick="alert('Profile Saved!')"
+            onclick="saveCustomerProfile()"
             style="margin-bottom: 10px"
           >
             Save Profile
           </button>
+          
+          
+          
           <button
             class="btn btn-secondary"
             style="margin-bottom: 10px"
@@ -1570,7 +1574,39 @@
         };
         
         
-   
+   window.saveCustomerProfile = async function () {
+          if (!window.appState.userId) {
+            alert("You must be signed in to save your profile.");
+            return;
+          }
+
+          const nameInput = document.getElementById("customerNameInput").value.trim();
+          const phoneInput = document.getElementById("customerPhoneInput").value.trim();
+
+          const saveBtn = document.getElementById("saveCustomerBtn");
+          const originalText = saveBtn.innerText;
+          saveBtn.innerText = "Saving...";
+          saveBtn.disabled = true;
+
+          try {
+            await window.setDoc(
+              window.doc(window.db, "users", window.appState.userId),
+              {
+                fullName: nameInput,
+                phoneNumber: phoneInput,
+                updatedAt: new Date()
+              },
+              { merge: true }
+            );
+            alert("Profile successfully saved!");
+          } catch (error) {
+            console.error("Error saving profile:", error);
+            alert("Failed to save profile. Please check your connection.");
+          } finally {
+            saveBtn.innerText = originalText;
+            saveBtn.disabled = false;
+          }
+        };
       </script>
 
       <!-- UI & MAP SCRIPT -->
@@ -1845,15 +1881,27 @@
       };
         
         
-        
-        
-
-        function openSettingsModal() {
+        async function openSettingsModal() {
           document.getElementById("settingsModal").classList.add("active");
           document.getElementById("trackerSheet").style.transform =
             "translateY(150%)";
           updateNavState("navProfile");
+          
+          if (window.appState && window.appState.userId) {
+            try {
+              const userDoc = await window.getDoc(window.doc(window.db, "users", window.appState.userId));
+              if (userDoc.exists()) {
+                const data = userDoc.data();
+                if (data.fullName) document.getElementById("customerNameInput").value = data.fullName;
+                if (data.phoneNumber) document.getElementById("customerPhoneInput").value = data.phoneNumber;
+              }
+            } catch (error) {
+              console.error("Error fetching profile data:", error);
+            }
+          }
         }
+        
+
 
         function closeAllModals() {
           document.getElementById("addModal").classList.remove("active");
