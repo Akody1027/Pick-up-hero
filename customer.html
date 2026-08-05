@@ -678,14 +678,14 @@
             <button
               class="btn btn-secondary"
               style="flex: 1"
-              onclick="handleAuth('signup')"
+              onclick="handleAuth('signup', true)"
             >
               Sign Up
             </button>
             <button
               class="btn btn-primary"
               style="flex: 1"
-              onclick="handleAuth('login')"
+              onclick="handleAuth('login', true)"
             >
               Sign In
             </button>
@@ -994,20 +994,23 @@
           </div>
 
           <div style="display: flex; gap: 10px; margin-top: 15px">
+            
+            
             <button
               class="btn btn-secondary"
               style="flex: 1"
-              onclick="handleAuth('signup', false, true)"
+              onclick="handleAuth('signup', true)"
             >
               Sign Up
             </button>
             <button
               class="btn btn-primary"
               style="flex: 1"
-              onclick="handleAuth('login', false, true)"
+              onclick="handleAuth('login', true)"
             >
               Sign In
             </button>
+
           </div>
         </div>
 
