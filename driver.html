@@ -17,7 +17,7 @@
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
-        --surface-elevated: #2c2c2c; 
+        --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
@@ -688,16 +688,19 @@
         margin-bottom: 20px;
         line-height: 1.4;
       }
-      
-      
+
       .glowing-pin {
         box-shadow: 0 0 20px 5px var(--accent) !important;
         animation: pulse-glow 1.5s infinite alternate;
       }
 
       @keyframes pulse-glow {
-        from { box-shadow: 0 0 10px 2px var(--accent); }
-        to { box-shadow: 0 0 25px 8px var(--accent); }
+        from {
+          box-shadow: 0 0 10px 2px var(--accent);
+        }
+        to {
+          box-shadow: 0 0 25px 8px var(--accent);
+        }
       }
 
       .floating-lock-btn {
@@ -711,14 +714,8 @@
         border-radius: 30px;
         font-weight: 800;
         font-size: 1.1rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
       }
-      
-      
-      
-      
-      
-      
     </style>
   </head>
   <body>
@@ -857,13 +854,14 @@
 
     <!-- MAP LAYER -->
     <div id="map"></div>
-    
-    
-    <button id="lockPinBtn" class="btn btn-primary floating-lock-btn" onclick="lockHomePin()">
+
+    <button
+      id="lockPinBtn"
+      class="btn btn-primary floating-lock-btn"
+      onclick="lockHomePin()"
+    >
       Save Location
     </button>
-    
-    
 
     <!-- DUTY STATUS LAYER -->
     <div class="duty-toggle-container">
@@ -965,11 +963,13 @@
         <span>Map</span>
       </button>
 
-<div class="fab-container">
+      <div class="fab-container">
         <button class="fab-btn" onclick="openModal('scheduleModal')">
           <!-- Calendar Icon -->
           <svg viewBox="0 0 24 24">
-            <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z" />
+            <path
+              d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"
+            />
           </svg>
         </button>
       </div>
@@ -1012,14 +1012,14 @@
             <input type="time" id="routeEndTime" value="13:00" />
           </div>
         </div>
-        <div class="form-group" style="margin-bottom: 30px;">
+        <div class="form-group" style="margin-bottom: 30px">
           <label>Max Stops (Capacity)</label>
           <input type="number" id="routeMaxStops" value="6" />
         </div>
-        
+
         <button
           class="btn btn-secondary"
-          style="margin-bottom: 15px;"
+          style="margin-bottom: 15px"
           onclick="activatePinMove()"
         >
           Move Pin Position
@@ -1030,57 +1030,6 @@
           onclick="saveScheduleBlock()"
         >
           Save Schedule
-        </button>
-      </div>
-    </div>
-
-      <button
-        class="nav-btn"
-        id="navProfile"
-        onclick="openModal('settingsModal')"
-      >
-        <svg viewBox="0 0 24 24">
-          <path
-            d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"
-          />
-        </svg>
-        <span>Settings</span>
-      </button>
-    </nav>
-
-    <!-- MODAL: SCHEDULE ROUTE (+) -->
-    <div id="scheduleModal" class="modal">
-      <div class="modal-header">
-        <h2>New Route Block</h2>
-        <button class="close-btn" onclick="closeAllModals()">✕</button>
-      </div>
-      <div class="modal-content">
-        <div class="form-group">
-          <label>Date</label>
-          <select>
-            <option>Today</option>
-            <option>Tomorrow</option>
-          </select>
-        </div>
-        <div style="display: flex; gap: 15px">
-          <div class="form-group" style="flex: 1">
-            <label>Start Time</label>
-            <input type="time" value="08:00" />
-          </div>
-          <div class="form-group" style="flex: 1">
-            <label>End Time</label>
-            <input type="time" value="13:00" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Max Stops (Capacity)</label>
-          <input type="number" value="6" />
-        </div>
-        <button
-          class="btn btn-primary"
-          onclick="alert('Route block published to customers!'); closeAllModals();"
-        >
-          Publish Run
         </button>
       </div>
     </div>
@@ -1558,14 +1507,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               AppState.homeBase = [data.baseLat, data.baseLng];
               hasSavedLocation = true;
             }
-            
-            
-           if (data.routeDay) document.getElementById("routeDaySelect").value = data.routeDay;
-            if (data.routeStartTime) document.getElementById("routeStartTime").value = data.routeStartTime;
-            if (data.routeEndTime) document.getElementById("routeEndTime").value = data.routeEndTime;
-            if (data.routeMaxStops) document.getElementById("routeMaxStops").value = data.routeMaxStops; 
-            
-            
+
+            if (data.routeDay)
+              document.getElementById("routeDaySelect").value = data.routeDay;
+            if (data.routeStartTime)
+              document.getElementById("routeStartTime").value =
+                data.routeStartTime;
+            if (data.routeEndTime)
+              document.getElementById("routeEndTime").value = data.routeEndTime;
+            if (data.routeMaxStops)
+              document.getElementById("routeMaxStops").value =
+                data.routeMaxStops;
 
             const killSwitch = document.getElementById("killSwitchToggle");
             if (data.globalKillSwitch) killSwitch.classList.add("on");
@@ -1685,11 +1637,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         startTelemetry();
       }
 
-      
-      
-      
-     
-
       function renderHomeBase() {
         if (!AppState.homeBase) return;
 
@@ -1706,40 +1653,40 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           icon: icon,
           draggable: false,
         }).addTo(AppState.mapInstance);
-        
+
         // Tapping the pin opens the Master Schedule Modal instead of just a drag prompt
         AppState.homeMarker.bindPopup(
           '<div style="text-align:center;"><strong>Home Base</strong><br><button onclick="openModal(\'scheduleModal\'); AppState.mapInstance.closePopup();" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Edit Schedule</button></div>'
         );
       }
 
-      window.activatePinMove = function() {
+      window.activatePinMove = function () {
         closeAllModals(); // Hide modal to show full map
-        if(AppState.homeMarker) {
+        if (AppState.homeMarker) {
           AppState.homeMarker.dragging.enable();
-          L.DomUtil.addClass(AppState.homeMarker._icon, 'glowing-pin');
+          L.DomUtil.addClass(AppState.homeMarker._icon, "glowing-pin");
         }
-        document.getElementById('lockPinBtn').style.display = 'block';
+        document.getElementById("lockPinBtn").style.display = "block";
       };
 
-      window.lockHomePin = function() {
-        if(AppState.homeMarker) {
+      window.lockHomePin = function () {
+        if (AppState.homeMarker) {
           AppState.homeMarker.dragging.disable();
-          L.DomUtil.removeClass(AppState.homeMarker._icon, 'glowing-pin');
+          L.DomUtil.removeClass(AppState.homeMarker._icon, "glowing-pin");
           AppState.homeBase = [
             AppState.homeMarker.getLatLng().lat,
             AppState.homeMarker.getLatLng().lng,
           ];
         }
-        document.getElementById('lockPinBtn').style.display = 'none';
-        openModal('scheduleModal'); // Bring modal back up to hit save
+        document.getElementById("lockPinBtn").style.display = "none";
+        openModal("scheduleModal"); // Bring modal back up to hit save
       };
 
-      window.saveScheduleBlock = async function() {
+      window.saveScheduleBlock = async function () {
         const btn = document.getElementById("saveScheduleBtn");
         const origText = btn.innerText;
-        btn.innerText = "Saving..."; 
-        
+        btn.innerText = "Saving...";
+
         try {
           await window.setDoc(
             window.doc(window.db, "driver_settings", DRIVER_DOC_ID),
@@ -1749,7 +1696,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               routeDay: document.getElementById("routeDaySelect").value,
               routeStartTime: document.getElementById("routeStartTime").value,
               routeEndTime: document.getElementById("routeEndTime").value,
-              routeMaxStops: parseInt(document.getElementById("routeMaxStops").value) || 6
+              routeMaxStops:
+                parseInt(document.getElementById("routeMaxStops").value) || 6,
             },
             { merge: true }
           );
@@ -1765,14 +1713,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           btn.innerText = "Error Saving";
         }
       };
-      
-      
-      
-      
-      
-      
-      
-      
+
       // Modal & Sheet Controls
       function openModal(id) {
         document
@@ -1878,10 +1819,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 );
               }
             }
-          }); 
-          
-          
-window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
+          });
+
+          window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
           let hasNewSOS = false;
 
           newOrders.forEach((order) => {
@@ -1899,16 +1839,20 @@ window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
             const sosAudio = document.getElementById("sosAlarmSound");
             if (sosAudio) {
               sosAudio.loop = true;
-              sosAudio.play().catch((e) => console.log("SOS Audio blocked:", e));
+              sosAudio
+                .play()
+                .catch((e) => console.log("SOS Audio blocked:", e));
             }
           } else if (
             !AppState.isInitialLoad &&
             newOrders.length > AppState.triageQueue.length &&
             AppState.workflowPhase === "idle"
           ) {
-            document.getElementById("alertSound").play().catch(() => console.log("Audio blocked."));
+            document
+              .getElementById("alertSound")
+              .play()
+              .catch(() => console.log("Audio blocked."));
           }
- 
 
           const previousTriageLength = AppState.triageQueue.length;
           AppState.isInitialLoad = false;
@@ -2064,9 +2008,6 @@ window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
         }, 30000);
       }
 
-
-
-
       window.acknowledgeSOS = function () {
         document.getElementById("sosAlertModal").style.display = "none";
         // Force the app into triage mode so the driver can immediately route it
@@ -2096,10 +2037,6 @@ window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
         // Auto-expand the bottom sheet to show the route details
         document.getElementById("activeQueueSheet").classList.add("expanded");
       };
-
-
-
-
 
       function getDistance(p1, p2) {
         const dy = p1[0] - p2[0];
@@ -2424,12 +2361,12 @@ window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
         });
       };
 
-
-
       window.drawFinancialSummary = function () {
         const container = document.getElementById("financialSummaryContainer");
         const grid = document.getElementById("financialGrid");
-        const timelineHeader = document.getElementById("deliveryTimelineHeader");
+        const timelineHeader = document.getElementById(
+          "deliveryTimelineHeader"
+        );
 
         const activeData =
           AppState.workflowPhase === "triage" ||
@@ -2445,14 +2382,16 @@ window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
         }
 
         // Determine if any active order is scheduled for today
-        const isToday = activeData.some(item => item.sosTimeline === 'today' || item.sosTimeline === 'asap_today');
+        const isToday = activeData.some(
+          (item) =>
+            item.sosTimeline === "today" || item.sosTimeline === "asap_today"
+        );
         if (timelineHeader) {
           timelineHeader.style.display = "block";
-          timelineHeader.innerText = isToday ? "DELIVERY FOR TODAY" : "DELIVERY FOR TOMORROW";
+          timelineHeader.innerText = isToday
+            ? "DELIVERY FOR TODAY"
+            : "DELIVERY FOR TOMORROW";
         }
-
-
-
 
         const customerMap = {};
         activeData.forEach((item) => {
@@ -2686,25 +2625,34 @@ window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
           wfBtn.innerText = "Begin Deliveries";
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
-          wfBtn.onclick = () => {
-            // 1. Tell Firebase the driver is on the way to the final destination
-            const uniqueOrderIds = [
-              ...new Set(AppState.activeQueue.map((item) => item.dbId)),
-            ];
+          wfBtn.onclick = async () => {
+            // 1. Extract only the delivery stops to establish their exact order in line
+            const deliveryStops = AppState.activeQueue.filter(
+              (q) => q.type === "delivery"
+            );
 
-            for (const orderId of uniqueOrderIds) {
+            // 2. Tell Firebase the driver is on the way and push their exact queue position
+            for (let i = 0; i < deliveryStops.length; i++) {
+              const orderId = deliveryStops[i].dbId;
               if (orderId) {
-                window
-                  .updateDoc(window.doc(window.db, "orders", orderId), {
-                    status: "in_transit",
-                  })
-                  .catch((e) =>
-                    console.error("Failed to update status to in_transit:", e)
+                try {
+                  await window.updateDoc(
+                    window.doc(window.db, "orders", orderId),
+                    {
+                      status: "in_transit",
+                      queuePosition: i + 1,
+                    }
                   );
+                } catch (e) {
+                  console.error(
+                    "Failed to update in_transit and queue position:",
+                    e
+                  );
+                }
               }
             }
 
-            // 2. Advance the driver's local screen to the delivery phase
+            // 3. Advance the driver's local screen to the delivery phase
             AppState.workflowPhase = "delivery";
             updateDashboardUI();
           };
@@ -2736,6 +2684,7 @@ window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
               );
             });
           }
+
           drawDeliveryTimeline();
         } else if (AppState.workflowPhase === "delivery") {
           const nextDelivery = AppState.activeQueue.find(
@@ -2758,14 +2707,40 @@ window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
               "_del",
               ""
             );
+
+            // 1. Mark the current delivery as completed
             try {
               await window.updateDoc(window.doc(window.db, "orders", cleanId), {
                 status: "completed",
               });
             } catch (e) {
-              console.error(e);
+              console.error("Failed to complete order:", e);
             }
+
             nextDelivery.status = "completed";
+
+            // 2. Find all remaining deliveries and decrement their queuePosition
+            const remainingDeliveries = AppState.activeQueue.filter(
+              (q) => q.type === "delivery" && q.status !== "completed"
+            );
+
+            for (let i = 0; i < remainingDeliveries.length; i++) {
+              const remainingId = remainingDeliveries[i].dbId;
+              if (remainingId) {
+                try {
+                  // Force the database integer to precisely match their new index + 1
+                  await window.updateDoc(
+                    window.doc(window.db, "orders", remainingId),
+                    {
+                      queuePosition: i + 1,
+                    }
+                  );
+                } catch (e) {
+                  console.error("Failed to update queue position:", e);
+                }
+              }
+            }
+
             updateDashboardUI();
           };
 
