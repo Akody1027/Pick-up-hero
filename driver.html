@@ -1253,12 +1253,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
     <!-- FIREBASE SDK -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+
       import {
         getAuth,
         signInWithEmailAndPassword,
         createUserWithEmailAndPassword,
         signOut,
+        setPersistence,
+        browserSessionPersistence,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
       import {
         getFirestore,
         collection,
@@ -1291,6 +1295,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.signInWithEmailAndPassword = signInWithEmailAndPassword;
       window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
       window.signOut = signOut;
+      window.setPersistence = setPersistence;
+      window.browserSessionPersistence = browserSessionPersistence;
       window.collection = collection;
       window.query = query;
       window.where = where;
@@ -1375,6 +1381,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         btn.disabled = true;
 
         try {
+          await window.setPersistence(
+            window.auth,
+            window.browserSessionPersistence
+          );
+
           if (window.authMode === "signin") {
             await window.signInWithEmailAndPassword(
               window.auth,
