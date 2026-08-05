@@ -994,8 +994,6 @@
           </div>
 
           <div style="display: flex; gap: 10px; margin-top: 15px">
-            
-            
             <button
               class="btn btn-secondary"
               style="flex: 1"
@@ -1010,7 +1008,6 @@
             >
               Sign In
             </button>
-
           </div>
         </div>
 
@@ -2190,15 +2187,38 @@
                 title.innerText = "Order Approved!";
                 subtitle.innerText =
                   "Your Hero has approved your order and is heading out.";
-              } else if (data.status === "picked_up") {
-                // Triggered when driver secures the items
+
+                 } else if (data.status === "picked_up") {
                 title.innerText = "Order Picked Up";
-                subtitle.innerText =
-                  "Your items are secured. Hero is on the way!";
+                subtitle.innerText = "Your items are secured. Route mapping in progress...";
+
+                // HARD LOCKOUT: Remove cancel button physically
+                const cancelBtn = document.getElementById("cancelDeliveryActionBtn");
+                if (cancelBtn) cancelBtn.style.display = "none";
+
               } else if (data.status === "in_transit") {
                 title.innerText = "Hero is in transit!";
-                subtitle.innerText =
-                  "Your driver is en route to your delivery location.";
+
+                // DYNAMIC STOP COUNTER UX
+                if (data.queuePosition) {
+                  if (data.queuePosition === 1) {
+                    subtitle.innerText = "You are next in line! Hero is approaching.";
+                    subtitle.style.color = "var(--success)";
+                    subtitle.style.fontWeight = "bold";
+                  } else {
+                    subtitle.innerText = `Your stop is number ${data.queuePosition}. Hero is completing prior deliveries.`;
+                    subtitle.style.color = "";
+                    subtitle.style.fontWeight = "normal";
+                  }
+                } else {
+                  subtitle.innerText = "Your driver is en route to your delivery location.";
+                }
+
+                // HARD LOCKOUT: Ensure cancel button remains hidden
+                const cancelBtn = document.getElementById("cancelDeliveryActionBtn");
+                if (cancelBtn) cancelBtn.style.display = "none";
+
+
               } else if (data.status === "completed") {
                 title.innerText = "Delivery Complete";
                 subtitle.innerText = "Thanks for using Pick Up Hero!";
@@ -3240,11 +3260,24 @@
         timelineHTML += `
           <div class="timeline-item">
             <div class="timeline-title">Final Delivery</div>
-            <div class="timeline-subtitle">${order.deliveryAddress}</div>
+            <div class="timeline-subtitle">${order.deliveryAddress</div>
           </div>
-          <button class="btn btn-emergency" style="margin-top: 25px; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;" onclick="cancelActiveOrder()">Cancel Delivery</button>
+
+
+
+
+
+
+
+                <button id="cancelDeliveryActionBtn" class="btn btn-emergency" style="margin-top: 25px; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;" onclick="cancelActiveOrder()">Cancel Delivery</button>
         `;
         timeline.innerHTML = timelineHTML;
+
+        // Failsafe: Hide button immediately if the customer opens the prompt after items are secured
+        if (order.status === "picked_up" || order.status === "in_transit") {
+          const cancelBtn = document.getElementById("cancelDeliveryActionBtn");
+          if (cancelBtn) cancelBtn.style.display = "none";
+        }
       }
 
       function bindStoreAutocomplete(index) {
