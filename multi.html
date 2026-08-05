@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1e1e1e">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Dark Theme Web Workspace</title>
+    <style>
+        /* Mobile Safe Area OS Integration */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            background-color: #1e1e1e;
+            color: #cccccc;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* Browser Header & Tabs */
+        .browser-header {
+            background-color: #252526;
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px solid #333333;
+        }
+
+        .tab-bar-container {
+            display: flex;
+            background-color: #1e1e1e;
+            width: 100%;
+            align-items: flex-end;
+            padding-top: 8px;
+            padding-left: 8px;
+            box-sizing: border-box;
+        }
+
+        .tab-headers {
+            display: flex;
+            flex: 1 1 auto;
+            min-width: 0; 
+            gap: 2px;
+        }
+
+        .tab-button {
+            flex: 1 1 0;
+            min-width: 60px;
+            max-width: 240px;
+            background: #2d2d2d;
+            color: #969696;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            padding: 10px 35px 10px 15px;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+            text-align: left;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .tab-button:hover {
+            background: #333333;
+        }
+
+        .tab-button.active {
+            background: #1e1e1e;
+            color: #ffffff;
+            border-top: 2px solid #007acc;
+        }
+
+        .tab-title {
+            pointer-events: none;
+        }
+
+        .tab-close-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #969696;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            line-height: 1;
+        }
+
+        .tab-close-btn:hover {
+            background-color: #444444;
+            color: #ffffff;
+        }
+
+        .add-tab-btn {
+            background: transparent;
+            color: #969696;
+            border: none;
+            padding: 0 15px;
+            font-size: 20px;
+            cursor: pointer;
+            height: 35px;
+            margin-right: 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .add-tab-btn:hover {
+            background: #333333;
+            color: #ffffff;
+        }
+
+        /* URL Navigation Bar */
+        .nav-bar {
+            display: flex;
+            padding: 10px;
+            background-color: #252526;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .url-input {
+            flex: 1;
+            background-color: #3c3c3c;
+            border: 1px solid #3c3c3c;
+            color: #ffffff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .url-input:focus {
+            border-color: #007acc;
+        }
+
+        .go-btn {
+            background-color: #007acc;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .go-btn:hover {
+            background-color: #0098ff;
+        }
+
+        /* Viewport Area */
+        .viewport-area {
+            flex: 1;
+            position: relative;
+            background-color: #1e1e1e;
+        }
+
+        .browser-viewport {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+            background-color: #ffffff; 
+        }
+
+        .browser-viewport.active {
+            display: block;
+        }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666666;
+            display: none;
+        }
+        
+        .empty-state.active {
+            display: flex;
+        }
+
+        /* Non-blocking Notification System */
+        #notification-hub {
+            position: fixed;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 9999;
+        }
+
+        .safe-bottom-nav {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Delete Confirmation Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #252526;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            padding: 24px;
+            width: 320px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: scale(0.95);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            margin: 0 0 12px 0;
+            font-size: 18px;
+            color: #ffffff;
+        }
+
+        .modal-body {
+            margin: 0 0 24px 0;
+            font-size: 14px;
+            color: #cccccc;
+            line-height: 1.4;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .modal-btn.cancel {
+            background: #3c3c3c;
+            color: #ffffff;
+        }
+
+        .modal-btn.cancel:hover {
+            background: #4a4a4a;
+        }
+
+        .modal-btn.confirm {
+            background: #e74c3c;
+            color: #ffffff;
+        }
+
+        .modal-btn.confirm:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="browser-header">
+        <div class="tab-bar-container">
+            <button class="add-tab-btn" onclick="toggleFullScreen()" title="Toggle Fullscreen Mode">⛶</button>
+            <div class="tab-headers" id="tab-headers">
+                <!-- Dynamic tabs mount here -->
+            </div>
+            <button class="add-tab-btn" onclick="createNewTab()" title="New Tab">+</button>
+        </div>
+        <div class="nav-bar">
+            <input type="text" class="url-input" id="url-bar" placeholder="Enter web address..." onkeydown="handleEnterKey(event)">
+            <button class="go-btn" onclick="navigateActiveTab()">Go</button>
+        </div>
+    </div>
+
+    <div class="viewport-area" id="viewport-area">
+        <div class="empty-state" id="empty-state">
+            <h2>No Tabs Open</h2>
+            <p>Click the + button to open a new tab.</p>
+        </div>
+        <!-- Dynamic iframes mount here -->
+    </div>
+
+    <div id="notification-hub"></div>
+
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Close Tab?</h3>
+            <p class="modal-body">Are you sure you want to close this tab? Any unsaved work inside this viewport will be lost.</p>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="cancelCloseTab()">Cancel</button>
+                <button class="modal-btn confirm" onclick="confirmCloseTab()">Close Tab</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global State Management
+        const tabsState = new Map();
+        let activeTabId = null;
+        let tabCounter = 1;
+        let pendingTabDeletionId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createNewTab();
+        });
+
+        // Modal Logic
+        function promptCloseTab(tabId) {
+            pendingTabDeletionId = tabId;
+            document.getElementById('delete-modal').classList.add('active');
+        }
+
+        function cancelCloseTab() {
+            pendingTabDeletionId = null;
+            document.getElementById('delete-modal').classList.remove('active');
+        }
+
+        function confirmCloseTab() {
+            if (pendingTabDeletionId) {
+                closeTab(pendingTabDeletionId);
+                cancelCloseTab();
+            }
+        }
+
+        // Fullscreen Controls
+        function toggleFullScreen() {
+            const doc = window.document;
+            const docEl = doc.documentElement;
+
+            const requestFullScreen = docEl.requestFullscreen || docEl.webkitRequestFullScreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+            const cancelFullScreen = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+
+            if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.mozFullScreenElement && !doc.msFullscreenElement) {
+                if (requestFullScreen) requestFullScreen.call(docEl);
+            } else {
+                if (cancelFullScreen) cancelFullScreen.call(doc);
+            }
+        }
+
+        // Tab & Viewport Creation
+        function createNewTab() {
+            const tabId = 'tab_' + Date.now();
+            
+            tabsState.set(tabId, {
+                url: ''
+            });
+
+            buildTabUI(tabId, 'New Tab');
+            buildViewportUI(tabId);
+            activateTab(tabId);
+        }
+
+        function buildTabUI(tabId, title) {
+            const headerContainer = document.getElementById('tab-headers');
+
+            const tabButton = document.createElement('button');
+            tabButton.className = 'tab-button';
+            tabButton.id = `tab-btn-${tabId}`;
+            
+            tabButton.onclick = (e) => {
+                if (e.target.classList.contains('tab-close-btn')) return; 
+                activateTab(tabId);
+            };
+
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'tab-title';
+            titleSpan.innerText = title;
+            tabButton.appendChild(titleSpan);
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'tab-close-btn';
+            closeBtn.innerHTML = '×';
+            // Routed through the modal check instead of direct deletion
+            closeBtn.onclick = () => promptCloseTab(tabId);
+            tabButton.appendChild(closeBtn);
+
+            headerContainer.appendChild(tabButton);
+        }
+
+        function buildViewportUI(tabId) {
+            const viewportContainer = document.getElementById('viewport-area');
+
+            const iframe = document.createElement('iframe');
+            iframe.className = 'browser-viewport';
+            iframe.id = `viewport-${tabId}`;
+            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
+            
+            viewportContainer.appendChild(iframe);
+        }
+
+        // Tab Navigation & Lifecycle
+        function activateTab(tabId) {
+            activeTabId = tabId;
+
+            // Manage DOM UI states
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.browser-viewport').forEach(vp => vp.classList.remove('active'));
+            document.getElementById('empty-state').classList.remove('active');
+
+            const targetBtn = document.getElementById(`tab-btn-${tabId}`);
+            const targetViewport = document.getElementById(`viewport-${tabId}`);
+            
+            if (targetBtn && targetViewport) {
+                targetBtn.classList.add('active');
+                targetViewport.classList.add('active');
+                
+                // Sync URL bar to the stored state of the activated tab
+                const currentData = tabsState.get(tabId);
+                const urlBar = document.getElementById('url-bar');
+                urlBar.value = currentData.url;
+                
+                // Focus the URL bar if it's a completely new/empty tab
+                if (currentData.url === '') {
+                    urlBar.focus();
+                }
+            }
+        }
+
+        function closeTab(tabId) {
+            const tabBtn = document.getElementById(`tab-btn-${tabId}`);
+            const tabViewport = document.getElementById(`viewport-${tabId}`);
+            const wasActive = tabBtn.classList.contains('active');
+
+            tabsState.delete(tabId);
+            if (tabBtn) tabBtn.remove();
+            if (tabViewport) tabViewport.remove();
+
+            // Fallback routing logic if the user closed the active tab
+            if (wasActive) {
+                const remainingTabs = Array.from(tabsState.keys());
+                if (remainingTabs.length > 0) {
+                    activateTab(remainingTabs[remainingTabs.length - 1]);
+                } else {
+                    activeTabId = null;
+                    document.getElementById('url-bar').value = '';
+                    document.getElementById('empty-state').classList.add('active');
+                }
+            }
+        }
+
+        // URL Engine
+        function handleEnterKey(event) {
+            if (event.key === 'Enter') {
+                navigateActiveTab();
+            }
+        }
+
+        function navigateActiveTab() {
+            if (!activeTabId) return;
+
+            let targetUrl = document.getElementById('url-bar').value.trim();
+            
+            if (targetUrl === '') return;
+
+            // Enforce protocol architecture
+            if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+                targetUrl = 'https://' + targetUrl;
+            }
+            
+            // Normalize the URL bar display
+            document.getElementById('url-bar').value = targetUrl;
+
+            // Update the state map
+            const currentData = tabsState.get(activeTabId);
+            currentData.url = targetUrl;
+
+            // Route the UI
+            const iframe = document.getElementById(`viewport-${activeTabId}`);
+            if (iframe) {
+                iframe.src = targetUrl;
+            }
+
+            // Update tab title to reflect the navigation
+            const tabTitleSpan = document.querySelector(`#tab-btn-${activeTabId} .tab-title`);
+            if (tabTitleSpan) {
+                // Remove protocol for a cleaner tab title
+                tabTitleSpan.innerText = targetUrl.replace(/^https?:\/\//, '');
+                document.getElementById(`tab-btn-${activeTabId}`).title = targetUrl;
+            }
+        }
+    </script>
+</body>
+</html>
