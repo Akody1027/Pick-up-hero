@@ -17,7 +17,7 @@
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
-        --surface-elevated: #2c2c2c; 
+        --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
@@ -2187,22 +2187,24 @@
                 title.innerText = "Order Approved!";
                 subtitle.innerText =
                   "Your Hero has approved your order and is heading out.";
-
-                 } else if (data.status === "picked_up") {
+              } else if (data.status === "picked_up") {
                 title.innerText = "Order Picked Up";
-                subtitle.innerText = "Your items are secured. Route mapping in progress...";
+                subtitle.innerText =
+                  "Your items are secured. Route mapping in progress...";
 
                 // HARD LOCKOUT: Remove cancel button physically
-                const cancelBtn = document.getElementById("cancelDeliveryActionBtn");
+                const cancelBtn = document.getElementById(
+                  "cancelDeliveryActionBtn"
+                );
                 if (cancelBtn) cancelBtn.style.display = "none";
-
               } else if (data.status === "in_transit") {
                 title.innerText = "Hero is in transit!";
 
                 // DYNAMIC STOP COUNTER UX
                 if (data.queuePosition) {
                   if (data.queuePosition === 1) {
-                    subtitle.innerText = "You are next in line! Hero is approaching.";
+                    subtitle.innerText =
+                      "You are next in line! Hero is approaching.";
                     subtitle.style.color = "var(--success)";
                     subtitle.style.fontWeight = "bold";
                   } else {
@@ -2211,14 +2213,15 @@
                     subtitle.style.fontWeight = "normal";
                   }
                 } else {
-                  subtitle.innerText = "Your driver is en route to your delivery location.";
+                  subtitle.innerText =
+                    "Your driver is en route to your delivery location.";
                 }
 
                 // HARD LOCKOUT: Ensure cancel button remains hidden
-                const cancelBtn = document.getElementById("cancelDeliveryActionBtn");
+                const cancelBtn = document.getElementById(
+                  "cancelDeliveryActionBtn"
+                );
                 if (cancelBtn) cancelBtn.style.display = "none";
-
-
               } else if (data.status === "completed") {
                 title.innerText = "Delivery Complete";
                 subtitle.innerText = "Thanks for using Pick Up Hero!";
@@ -2325,16 +2328,6 @@
                 settingsSnap.forEach((docSnap) => {
                   const driverId = docSnap.id;
                   const settingsData = docSnap.data();
-
-                  if (!window.appState.selectedDriverId) {
-                    window.selectHero(
-                      driverId,
-                      settingsData.profilePic,
-                      settingsData.displayName,
-                      settingsData.bio,
-                      settingsData.premiumRate
-                    );
-                  }
 
                   if (settingsData.baseLat && settingsData.baseLng) {
                     const customBaseImageUrl = "cart1.png";
@@ -2807,7 +2800,7 @@
         window.activeRouteLayer = activeRouteLayer;
 
         /*
-         * Now ask Google for the actual road route. 
+         * Now ask Google for the actual road route.
          */
         if (
           typeof google === "undefined" ||
