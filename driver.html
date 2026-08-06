@@ -1096,6 +1096,21 @@
         </div>
 
         <div class="form-group">
+          <label>Account Email</label>
+          <input
+            type="text"
+            id="driverEmailDisplay"
+            disabled
+            style="
+              background: var(--surface-elevated);
+              color: var(--text-muted);
+              cursor: not-allowed;
+              border-style: dashed;
+            "
+          />
+        </div>
+
+        <div class="form-group">
           <label>Display Name</label>
           <input type="text" id="driverNameInput" value="Hero Driver" />
         </div>
@@ -1472,6 +1487,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             // Valid session detected. Drop the overlay and boot map.
             document.getElementById("authOverlay").style.display = "none";
             DRIVER_DOC_ID = user.uid;
+            document.getElementById("driverEmailDisplay").value =
+              user.email || "";
 
             if (!hasBooted) {
               hasBooted = true;
