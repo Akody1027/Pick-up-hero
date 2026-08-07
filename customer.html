@@ -19,7 +19,7 @@
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
-        --accent-hover: #d95314;
+        --accent-hover: #d95314; 
         --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
@@ -1923,13 +1923,14 @@
         if (
           window.appState &&
           window.appState.selectedDriverId &&
-          window.baseMarkers[window.appState.selectedDriverId]
+          window.appState.selectedPinLat &&
+          window.appState.selectedPinLng
         ) {
-          const selectedBase =
-            window.baseMarkers[window.appState.selectedDriverId].getLatLng();
-          centerLat = selectedBase.lat;
-          centerLng = selectedBase.lng;
+          centerLat = window.appState.selectedPinLat;
+          centerLng = window.appState.selectedPinLng;
         } else if (userLat && userLng) {
+        
+
           centerLat = userLat;
           centerLng = userLng;
         } else {
@@ -2290,18 +2291,25 @@
 
       window.baseMarkers = {};
       window.liveMarkers = {};
-
+      
+      
+      
       window.selectHero = function (
         driverId,
         profilePic,
         displayName,
         bio,
-        premiumRate
+        premiumRate,
+        pinLat,
+        pinLng
       ) {
         window.appState.selectedDriverId = driverId;
+        window.appState.selectedPinLat = pinLat;
+        window.appState.selectedPinLng = pinLng;
 
         // Store the dynamic premium rate, default to 50 if the driver hasn't set one yet
         window.appState.currentPremiumRate = premiumRate || 50.0;
+
 
         // Update Bottom Sheet UI with the selected Hero's data
         if (profilePic)
@@ -2341,8 +2349,15 @@
                 settingsSnap.forEach((docSnap) => {
                   const driverId = docSnap.id;
                   const settingsData = docSnap.data();
+                  
+                  let locations = [];
+                  if (Array.isArray(settingsData.baseLocations) && settingsData.baseLocations.length > 0) {
+                    locations = settingsData.baseLocations;
+                  } else if (settingsData.baseLat && settingsData.baseLng) {
+                    locations = [{ lat: settingsData.baseLat, lng: settingsData.baseLng }];
+                  }
 
-                  if (settingsData.baseLat && settingsData.baseLng) {
+                  if (locations.length > 0) {
                     const customBaseImageUrl = "cart1.png";
                     const baseIcon = L.divIcon({
                       className: "custom-orange-pin",
@@ -2351,29 +2366,29 @@
                       iconAnchor: [21, 21],
                     });
 
-                    if (!window.baseMarkers[driverId]) {
-                      window.baseMarkers[driverId] = L.marker(
-                        [settingsData.baseLat, settingsData.baseLng],
-                        { icon: baseIcon }
-                      ).addTo(map);
+                    // Clear old markers for this driver if they exist to prevent duplicates
+                    if (window.baseMarkers[driverId]) {
+                      window.baseMarkers[driverId].forEach((m) => map.removeLayer(m));
+                    }
+                    window.baseMarkers[driverId] = [];
 
-                      window.baseMarkers[driverId].on("click", () => {
+                    locations.forEach((loc) => {
+                      const marker = L.marker([loc.lat, loc.lng], { icon: baseIcon }).addTo(map);
+                      marker.on("click", () => {
                         window.selectHero(
                           driverId,
                           settingsData.profilePic,
                           settingsData.displayName,
                           settingsData.bio,
-                          settingsData.premiumRate
+                          settingsData.premiumRate,
+                          loc.lat,
+                          loc.lng
                         );
                       });
-                    } else {
-                      window.baseMarkers[driverId].setLatLng([
-                        settingsData.baseLat,
-                        settingsData.baseLng,
-                      ]);
-                      window.baseMarkers[driverId].setIcon(baseIcon);
-                    }
+                      window.baseMarkers[driverId].push(marker);
+                    });
                   }
+ 
                 });
               }
 
@@ -2450,7 +2465,9 @@
                               zIndexOffset: 1000,
                             }
                           ).addTo(map);
-
+                          
+                          
+                          
                           window.liveMarkers[activeDriverId].on("click", () => {
                             if (settingsSnap.exists()) {
                               const sData = settingsSnap.data();
@@ -2459,10 +2476,14 @@
                                 sData.profilePic,
                                 sData.displayName,
                                 sData.bio,
-                                sData.premiumRate
+                                sData.premiumRate,
+                                locData.lat,
+                                locData.lng
                               );
                             }
                           });
+  
+                          
                         } else {
                           window.liveMarkers[activeDriverId].setIcon(faceIcon);
                           window.liveMarkers[activeDriverId].setOpacity(1);
@@ -2557,13 +2578,15 @@
           userMarker.setOpacity(1);
 
           // Zoom the map to perfectly frame the customer and their selected Hero's hub
+          
+          
           const targetBase =
-            window.baseMarkers &&
-            window.baseMarkers[window.appState.selectedDriverId]
-              ? window.baseMarkers[window.appState.selectedDriverId].getLatLng()
+            window.appState.selectedPinLat && window.appState.selectedPinLng
+              ? [window.appState.selectedPinLat, window.appState.selectedPinLng]
               : [userLat, userLng];
 
           const bounds = L.latLngBounds([userLat, userLng], targetBase);
+
           map.fitBounds(bounds, { padding: [70, 70] });
         }, 1500);
       }
@@ -3075,16 +3098,20 @@
             /*
              * If live telemetry isn't available, use the driver's base.
              */
+            
+             
             if (
               !heroLocation &&
               order.assignedDriverId &&
               window.baseMarkers &&
-              window.baseMarkers[order.assignedDriverId]
+              window.baseMarkers[order.assignedDriverId] &&
+              window.baseMarkers[order.assignedDriverId].length > 0
             ) {
               const heroPos =
-                window.baseMarkers[order.assignedDriverId].getLatLng();
+                window.baseMarkers[order.assignedDriverId][0].getLatLng();
 
               if (
+
                 heroPos &&
                 Number.isFinite(Number(heroPos.lat)) &&
                 Number.isFinite(Number(heroPos.lng))
