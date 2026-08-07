@@ -10,16 +10,16 @@
 
     <link
       rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
     />
 
     <style>
       :root {
-        --bg: #121212;
+        --bg: #121212; 
         --surface: #1e1e1e;
-        --surface-elevated: #2c2c2c;
+        --surface-elevated: #2c2c2c; 
         --accent: #ee611c;
-        --accent-hover: #d95314;
+        --accent-hover: #d95314;  
         --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
@@ -1017,13 +1017,18 @@
           <input type="number" id="routeMaxStops" value="6" />
         </div>
 
-        <button
-          class="btn btn-secondary"
-          style="margin-bottom: 15px"
-          onclick="activatePinMove()"
-        >
-          Move Pin Position
-        </button>
+        <div class="form-group" style="margin-bottom: 20px">
+          <label id="basePinCountLabel">Base Locations (0 / 5)</label>
+          <div id="baseLocationsList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;"></div>
+          <button
+            class="btn btn-secondary"
+            id="addPinBtn"
+            onclick="addNewBasePin()"
+          >
+            + Add Location Pin (Max 5)
+          </button>
+        </div>
+
         <button
           class="btn btn-primary"
           id="saveScheduleBtn"
@@ -1333,6 +1338,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         pendingOrders: 0,
         triageQueue: [], // The generous net array
         activeQueue: [], // Final confirmed route
+        baseLocations: [],
+        baseMarkers: [],
+        tempMarker: null,
         homeBase: null,
         mapInstance: null,
         homeMarker: null,
@@ -1530,11 +1538,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             if (data.profilePic)
               document.getElementById("profileImagePreview").src =
                 data.profilePic;
-
-            if (data.baseLat && data.baseLng) {
+            
+            
+            if (Array.isArray(data.baseLocations) && data.baseLocations.length > 0) {
+              AppState.baseLocations = data.baseLocations;
+              AppState.homeBase = [AppState.baseLocations[0].lat, AppState.baseLocations[0].lng];
+              hasSavedLocation = true;
+            } else if (data.baseLat && data.baseLng) {
+              AppState.baseLocations = [{ lat: data.baseLat, lng: data.baseLng }];
               AppState.homeBase = [data.baseLat, data.baseLng];
               hasSavedLocation = true;
             }
+            
 
             if (data.routeDay)
               document.getElementById("routeDaySelect").value = data.routeDay;
@@ -1581,7 +1596,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             // Apply the saved database location
             if (AppState.mapInstance) {
               AppState.mapInstance.setView(AppState.homeBase, 12);
-              renderHomeBase();
+              
+              
+              renderHomeBases();
+              
+              
             }
           }
         } catch (e) {
@@ -1664,50 +1683,153 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         startTelemetry();
       }
+      
+      
+      
+      
+      
 
-      function renderHomeBase() {
-        if (!AppState.homeBase) return;
+function renderHomeBases() {
+        if (!AppState.mapInstance) return;
 
-        if (AppState.homeMarker)
-          AppState.mapInstance.removeLayer(AppState.homeMarker);
+        if (AppState.baseMarkers && AppState.baseMarkers.length > 0) {
+          AppState.baseMarkers.forEach((m) => AppState.mapInstance.removeLayer(m));
+        }
+        AppState.baseMarkers = [];
 
-        const icon = L.divIcon({
-          className: "custom-orange-pin",
-          html: "",
-          iconSize: [24, 24],
+        const listContainer = document.getElementById("baseLocationsList");
+        const countLabel = document.getElementById("basePinCountLabel");
+        if (listContainer) listContainer.innerHTML = "";
+        if (countLabel) countLabel.innerText = `Base Locations (${AppState.baseLocations.length} / 5)`;
+
+        const addBtn = document.getElementById("addPinBtn");
+        if (addBtn) addBtn.style.display = AppState.baseLocations.length >= 5 ? "none" : "block";
+
+        AppState.baseLocations.forEach((loc, idx) => {
+          const icon = L.divIcon({
+            className: "custom-orange-pin",
+            html: "",
+            iconSize: [24, 24],
+          });
+
+          const marker = L.marker([loc.lat, loc.lng], {
+            icon: icon,
+            draggable: false,
+          }).addTo(AppState.mapInstance);
+
+          
+          
+          
+          
+  
+      marker.bindPopup(`
+            <div style="text-align:center;">
+              <strong>Base Location #${idx + 1}</strong><br>
+              <div style="display:flex; gap: 8px; margin-top:8px; justify-content: center;">
+                <button onclick="moveBasePin(${idx})" style="padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px; cursor:pointer;">Move</button>
+                <button onclick="removeBasePin(${idx})" style="padding:6px 12px; background:var(--danger); color:white; border:none; border-radius:6px; cursor:pointer;">Remove</button>
+              </div>
+            </div>
+          `);
+
+          AppState.baseMarkers.push(marker);
+
+          if (listContainer) {
+            listContainer.innerHTML += `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:var(--surface); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+                <span style="font-size:0.85rem; color:var(--text);">Pin #${idx + 1}: ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}</span>
+                <button onclick="removeBasePin(${idx})" style="background:transparent; color:var(--danger); border:none; font-weight:bold; cursor:pointer; font-size:0.9rem;">✕</button>
+              </div>
+            `;
+          }
         });
-
-        AppState.homeMarker = L.marker(AppState.homeBase, {
-          icon: icon,
-          draggable: false,
-        }).addTo(AppState.mapInstance);
-
-        // Tapping the pin opens the Master Schedule Modal instead of just a drag prompt
-        AppState.homeMarker.bindPopup(
-          '<div style="text-align:center;"><strong>Home Base</strong><br><button onclick="openModal(\'scheduleModal\'); AppState.mapInstance.closePopup();" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">Edit Schedule</button></div>'
-        );
       }
 
-      window.activatePinMove = function () {
-        closeAllModals(); // Hide modal to show full map
-        if (AppState.homeMarker) {
-          AppState.homeMarker.dragging.enable();
-          L.DomUtil.addClass(AppState.homeMarker._icon, "glowing-pin");
+      window.removeBasePin = function (index) {
+        AppState.baseLocations.splice(index, 1);
+        renderHomeBases();
+      };
+
+      window.moveBasePin = function (index) {
+        closeAllModals();
+        
+        // Grab the coordinates and remove the static pin from the array
+        const loc = AppState.baseLocations[index];
+        AppState.baseLocations.splice(index, 1);
+        renderHomeBases(); 
+
+        // Recreate it as a draggable temp marker
+        const icon = L.divIcon({
+          className: "custom-orange-pin glowing-pin",
+          html: "",
+          iconSize: [28, 28],
+        });
+
+        if (AppState.tempMarker) {
+          AppState.mapInstance.removeLayer(AppState.tempMarker);
         }
+
+        AppState.tempMarker = L.marker([loc.lat, loc.lng], {
+          icon: icon,
+          draggable: true,
+        }).addTo(AppState.mapInstance);
+
+        // Explicitly enable dragging for touchscreen compatibility
+        if (AppState.tempMarker.dragging) {
+          AppState.tempMarker.dragging.enable();
+        }
+
         document.getElementById("lockPinBtn").style.display = "block";
       };
 
-      window.lockHomePin = function () {
-        if (AppState.homeMarker) {
-          AppState.homeMarker.dragging.disable();
-          L.DomUtil.removeClass(AppState.homeMarker._icon, "glowing-pin");
-          AppState.homeBase = [
-            AppState.homeMarker.getLatLng().lat,
-            AppState.homeMarker.getLatLng().lng,
-          ];
+      window.addNewBasePin = function () {
+        if (AppState.baseLocations.length >= 5) {
+          window.showCustomAlert("Maximum Reached", "You can set a maximum of 5 base pickup pins.");
+          return;
         }
+
+        closeAllModals();
+
+        const center = AppState.mapInstance.getCenter();
+        const icon = L.divIcon({
+          className: "custom-orange-pin glowing-pin",
+          html: "",
+          iconSize: [28, 28], 
+        });
+
+        if (AppState.tempMarker) {
+          AppState.mapInstance.removeLayer(AppState.tempMarker);
+        }
+
+        AppState.tempMarker = L.marker([center.lat, center.lng], {
+          icon: icon,
+          draggable: true,
+        }).addTo(AppState.mapInstance);
+
+        // Explicitly enable dragging for touchscreen compatibility
+        if (AppState.tempMarker.dragging) {
+          AppState.tempMarker.dragging.enable();
+        }
+
+        document.getElementById("lockPinBtn").style.display = "block";
+      };
+      
+      
+      
+      
+      
+
+      window.lockHomePin = function () {
+        if (AppState.tempMarker) {
+          const pos = AppState.tempMarker.getLatLng();
+          AppState.baseLocations.push({ lat: pos.lat, lng: pos.lng });
+          AppState.mapInstance.removeLayer(AppState.tempMarker);
+          AppState.tempMarker = null;
+        }
+
         document.getElementById("lockPinBtn").style.display = "none";
-        openModal("scheduleModal"); // Bring modal back up to hit save
+        renderHomeBases();
+        openModal("scheduleModal");
       };
 
       window.saveScheduleBlock = async function () {
@@ -1715,12 +1837,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         const origText = btn.innerText;
         btn.innerText = "Saving...";
 
+        const primaryBase = AppState.baseLocations.length > 0 
+          ? AppState.baseLocations[0] 
+          : { lat: 39.8283, lng: -98.5795 };
+
         try {
           await window.setDoc(
             window.doc(window.db, "driver_settings", DRIVER_DOC_ID),
             {
-              baseLat: AppState.homeBase[0],
-              baseLng: AppState.homeBase[1],
+              baseLocations: AppState.baseLocations,
+              baseLat: primaryBase.lat,
+              baseLng: primaryBase.lng,
               routeDay: document.getElementById("routeDaySelect").value,
               routeStartTime: document.getElementById("routeStartTime").value,
               routeEndTime: document.getElementById("routeEndTime").value,
@@ -1742,6 +1869,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
+      
+      
+      
+      
+      
+      
+      
+      
+      
       // Modal & Sheet Controls
       function openModal(id) {
         document
@@ -2076,7 +2212,22 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         AppState.layerGroup.clearLayers();
 
         // Nearest-Neighbor Sorting Logic (Pickups First, Deliveries Last)
-        let current = AppState.homeBase;
+        
+        
+        let liveOrigin = null;
+        if (AppState.liveDriverMarker) {
+          const livePos = AppState.liveDriverMarker.getLatLng();
+          liveOrigin = [livePos.lat, livePos.lng];
+        } else if (AppState.baseLocations && AppState.baseLocations.length > 0) {
+          liveOrigin = [AppState.baseLocations[0].lat, AppState.baseLocations[0].lng]; 
+        } else if (AppState.homeBase) {
+          liveOrigin = AppState.homeBase;
+        } else {
+          liveOrigin = [39.8283, -98.5795];
+        }
+
+        let current = liveOrigin;
+        
 
         // Split the queue so we process pickups before deliveries
         let unsortedPickups = AppState.triageQueue.filter(
