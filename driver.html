@@ -1928,7 +1928,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       function listenForPendingOrders() {
         const q = window.query(
           window.collection(window.db, "orders"),
-          window.where("status", "==", "pending"),
+          window.where("status", "in", ["pending", "accepted"]),
+
           window.where("assignedDriverId", "==", DRIVER_DOC_ID)
         );
 
@@ -1946,6 +1947,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   title: `Pickup: ${stop.storeName || "Store"}`,
                   lat: stop.lat,
                   lng: stop.lng,
+                  status: data.status,
+
                   type: "pickup",
                   tipAmount: data.tipAmount || 0,
                   totalCost: data.totalCost || 0,
@@ -1970,6 +1973,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   title: `Delivery: ${data.deliveryAddress}`,
                   lat: data.deliveryLat,
                   lng: data.deliveryLng,
+                  status: data.status,
+
                   type: "delivery",
                   tipAmount: data.tipAmount || 0,
                   totalCost: data.totalCost || 0,
@@ -2214,33 +2219,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         // Nearest-Neighbor Sorting Logic (Pickups First, Deliveries Last)
 
-        let liveOrigin = null;
-        if (AppState.liveDriverMarker) {
-          const livePos = AppState.liveDriverMarker.getLatLng();
-          liveOrigin = [livePos.lat, livePos.lng];
-        } else if (
-          AppState.baseLocations &&
-          AppState.baseLocations.length > 0
-        ) {
-          liveOrigin = [
-            AppState.baseLocations[0].lat,
-            AppState.baseLocations[0].lng,
-          ];
-        } else if (AppState.homeBase) {
-          liveOrigin = AppState.homeBase;
-        } else {
-          liveOrigin = [39.8283, -98.5795];
-        }
-
-        let current = liveOrigin;
-
-        // Split the queue so we process pickups before deliveries
         let unsortedPickups = AppState.triageQueue.filter(
           (o) => o.type === "pickup"
         );
         let unsortedDeliveries = AppState.triageQueue.filter(
           (o) => o.type === "delivery"
         );
+
+        let current = [39.8283, -98.5795];
+        if (unsortedPickups.length > 0) {
+          current = [unsortedPickups[0].lat, unsortedPickups[0].lng];
+        } else if (unsortedDeliveries.length > 0) {
+          current = [unsortedDeliveries[0].lat, unsortedDeliveries[0].lng];
+        }
+
         let sorted = [];
 
         // 1. Sort and route all Pickups first
@@ -2290,10 +2282,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         // Draw Street-Snapped Polyline via Google Directions
         if (sorted.length > 0) {
           const directionsService = new google.maps.DirectionsService();
-          const origin = new google.maps.LatLng(
-            AppState.homeBase[0],
-            AppState.homeBase[1]
-          );
+
+          const origin = new google.maps.LatLng(sorted[0].lat, sorted[0].lng);
+
           const destination = new google.maps.LatLng(
             sorted[sorted.length - 1].lat,
             sorted[sorted.length - 1].lng
@@ -2359,15 +2350,27 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       }
 
-      window.rejectTriageOrder = function (id) {
-        AppState.triageQueue = AppState.triageQueue.filter((o) => o.id !== id);
-        drawTriageRoute(); // Instantly recalculates nearest neighbor and redraws map
+      window.acceptTriageOrder = async function (dbId) {
+        try {
+          await window.updateDoc(window.doc(window.db, "orders", dbId), {
+            status: "accepted",
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      };
 
-        // Update UI text
-        const gSub = document.getElementById("glanceSubtitle");
-        gSub.innerText = `${AppState.triageQueue.length} Stops Remaining.`;
-
-        window.saveShiftState();
+      window.declineTriageOrder = async function (dbId) {
+        const reason = prompt("Explain why you are declining this route:");
+        if (reason === null) return;
+        try {
+          await window.updateDoc(window.doc(window.db, "orders", dbId), {
+            status: "cancelled",
+            cancelReason: reason || "Declined by driver.",
+          });
+        } catch (e) {
+          console.error(e);
+        }
       };
 
       // --- ROUTING & DISTANCE MATRIX UTILS ---
@@ -2652,43 +2655,45 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         const timeline = document.getElementById("timelineList");
 
         if (AppState.workflowPhase === "triage") {
-          gTitle.innerText = "Proposed Route Canvas";
-          gSub.innerText = `${AppState.triageQueue.length} Stops. Tap map pins to reject outliers.`;
-          wfBtn.innerText = "Confirm Route";
+          gTitle.innerText = "Waiting Room";
+          gSub.innerText = `${AppState.triageQueue.length} Incoming Request(s).`;
+          wfBtn.innerText = "Proceed to Pickups";
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
 
           wfBtn.onclick = async function () {
-            // 1. FIRST: Protect the data. Copy the route into the active queue locally.
-            AppState.activeQueue = AppState.triageQueue.map((t) => ({
+            const acceptedOrders = AppState.triageQueue.filter(
+              (t) => t.status === "accepted"
+            );
+            if (acceptedOrders.length === 0) {
+              window.showCustomAlert(
+                "Queue Empty",
+                "You must accept at least one order before starting the run."
+              );
+              return;
+            }
+
+            AppState.activeQueue = acceptedOrders.map((t) => ({
               ...t,
               status: "approved",
             }));
 
-            // 2. Advance the system phase so the 'pending' listener ignores the database changes
             AppState.workflowPhase = "ready_pickup";
             AppState.pendingOrders = 0;
 
-            // 3. Lock in the active route monitors
             if (window.monitorActiveRoute) window.monitorActiveRoute();
-
-            // 4. Draw the actual pickup route on the map
             updateDashboardUI();
 
-            // 5. FINALLY: Tell Firebase the orders are approved in the background.
             const uniqueOrderIds = [
               ...new Set(AppState.activeQueue.map((item) => item.dbId)),
             ];
-
             for (const orderId of uniqueOrderIds) {
               if (orderId) {
                 window
                   .updateDoc(window.doc(window.db, "orders", orderId), {
                     status: "approved",
                   })
-                  .catch((e) =>
-                    console.error("Failed to update status to approved:", e)
-                  );
+                  .catch((e) => console.error(e));
               }
             }
           };
@@ -2696,11 +2701,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           drawTriageRoute();
           timeline.innerHTML = "";
           AppState.triageQueue.forEach((o, i) => {
+            let actions = "";
+            if (o.status === "pending") {
+              actions = `<div style="margin-top: 10px; display: flex; gap: 10px;">
+                    <button class="btn btn-primary" style="padding: 8px; font-size: 0.8rem; flex: 1;" onclick="acceptTriageOrder('${o.dbId}')">Accept</button>
+                    <button class="btn btn-secondary" style="padding: 8px; font-size: 0.8rem; flex: 1; color: var(--danger); border-color: var(--danger);" onclick="declineTriageOrder('${o.dbId}')">Decline</button>
+                </div>`;
+            } else {
+              actions = `<div style="margin-top: 10px; color: var(--success); font-weight: bold; font-size: 0.85rem;">✓ Accepted - Waiting to Start</div>`;
+            }
             timeline.innerHTML += `<li class="timeline-item"><div class="node-card"><strong>Stop ${
               i + 1
             }: ${
               o.title
-            }</strong><p style="font-size:0.8rem; color:var(--text-muted);">Distance sorted automatically.</p></div></li>`;
+            }</strong><p style="font-size:0.8rem; color:var(--text-muted);">Distance sorted automatically.</p>${actions}</div></li>`;
           });
         } else if (AppState.workflowPhase === "ready_pickup") {
           AppState.layerGroup.clearLayers();
@@ -2717,7 +2731,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           if (groupedPickups.length > 0) {
             drawActualRoute(
-              AppState.homeBase,
+              [groupedPickups[0][0].lat, groupedPickups[0][0].lng],
+
               groupedPickups.slice(0, -1).map((g) => [g[0].lat, g[0].lng]),
               [
                 groupedPickups[groupedPickups.length - 1][0].lat,
