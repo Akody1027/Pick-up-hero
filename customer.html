@@ -1494,14 +1494,25 @@
           });
 
           const session = await response.json();
+          
+          
+          if (session.id) {
+            await window.setDoc(
+              window.doc(window.db, "orders", docRef.id),
+              { stripeSessionId: session.id },
+              { merge: true }
+            );
+          }
 
           if (session.url) {
             window.location.href = session.url;
           } else {
-            throw new Error(
-              session.error || "Unable to initiate payment session."
-            );
+            throw new Error(session.error || "Unable to initiate payment session.");
           }
+          
+          
+ 
+          
         } catch (error) {
           console.error("Submission failed:", error);
           alert("Payment setup failed: " + error.message);
