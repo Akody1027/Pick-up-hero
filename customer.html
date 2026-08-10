@@ -13,13 +13,15 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
 
+    <script src="https://js.stripe.com/v3/"></script>
+
     <style>
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
-        --accent-hover: #d95314; 
+        --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
@@ -671,8 +673,8 @@
           </div>
           <div class="form-group">
             <label>Password</label>
-            <input type="password" id="authPassword" placeholder="••••••••" />            
-             </div>
+            <input type="password" id="authPassword" placeholder="••••••••" />
+          </div>
 
           <div style="display: flex; gap: 10px; margin-top: 15px">
             <button
@@ -692,14 +694,6 @@
           </div>
         </div>
 
-        
-        
-        
-        
-        
-        
-        
-        
         <!-- STEP 1: PICKUP STOPS -->
         <div id="step1Panel" class="step-panel">
           <div
@@ -1346,6 +1340,32 @@
         }
       });
 
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("payment_success") === "true") {
+        const paidOrderId = urlParams.get("order_id");
+        if (paidOrderId) {
+          window
+            .setDoc(
+              window.doc(window.db, "orders", paidOrderId),
+              { status: "pending", paymentStatus: "paid" },
+              { merge: true }
+            )
+            .then(() => {
+              localStorage.setItem("pickuphero_recoveredOrderId", paidOrderId);
+              window.appState.currentOrderId = paidOrderId;
+              alert(
+                "Payment confirmed! Your order has been sent to Hero Dispatch."
+              );
+              window.history.replaceState(
+                {},
+                document.title,
+                window.location.pathname
+              );
+            })
+            .catch((e) => console.error("Error updating payment status:", e));
+        }
+      }
+
       window.submitOrderToFirebase = async function () {
         const address = document.getElementById("deliveryAddressInput").value;
         const instructions = document.getElementById("instructionsInput").value;
@@ -1440,7 +1460,7 @@
             tipAmount: tipAmount,
             bookingType: window.appState.bookingType,
             sosTimeline: window.appState.targetTimeline || "scheduled",
-            status: "pending",
+            status: "pending_payment",
             createdAt: new Date(),
           };
 
@@ -1450,17 +1470,41 @@
           );
           window.appState.currentOrderId = docRef.id;
 
-          alert(
-            `Payment of $${totalCost.toFixed(
-              2
-            )} authorized via Stripe. Order sent to Hero Dispatch!`
-          );
-          closeAllModals();
+          // Replace URL below with your deployed Cloud Function endpoint URL
+          const cloudFunctionUrl =
+            "https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/createPickupHeroCheckout";
 
-          if (window.checkActiveSession) window.checkActiveSession();
+          const response = await fetch(cloudFunctionUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount: totalCost,
+              orderId: docRef.id,
+              orderData: orderData,
+              successUrl:
+                window.location.origin +
+                window.location.pathname +
+                "?payment_success=true&order_id=" +
+                docRef.id,
+              cancelUrl:
+                window.location.origin +
+                window.location.pathname +
+                "?payment_cancelled=true",
+            }),
+          });
+
+          const session = await response.json();
+
+          if (session.url) {
+            window.location.href = session.url;
+          } else {
+            throw new Error(
+              session.error || "Unable to initiate payment session."
+            );
+          }
         } catch (error) {
           console.error("Submission failed:", error);
-          alert("Failed to submit order. Please check your connection.");
+          alert("Payment setup failed: " + error.message);
         }
       };
 
@@ -1929,8 +1973,6 @@
           centerLat = window.appState.selectedPinLat;
           centerLng = window.appState.selectedPinLng;
         } else if (userLat && userLng) {
-        
-
           centerLat = userLat;
           centerLng = userLng;
         } else {
@@ -2291,9 +2333,7 @@
 
       window.baseMarkers = {};
       window.liveMarkers = {};
-      
-      
-      
+
       window.selectHero = function (
         driverId,
         profilePic,
@@ -2309,7 +2349,6 @@
 
         // Store the dynamic premium rate, default to 50 if the driver hasn't set one yet
         window.appState.currentPremiumRate = premiumRate || 50.0;
-
 
         // Update Bottom Sheet UI with the selected Hero's data
         if (profilePic)
@@ -2349,12 +2388,17 @@
                 settingsSnap.forEach((docSnap) => {
                   const driverId = docSnap.id;
                   const settingsData = docSnap.data();
-                  
+
                   let locations = [];
-                  if (Array.isArray(settingsData.baseLocations) && settingsData.baseLocations.length > 0) {
+                  if (
+                    Array.isArray(settingsData.baseLocations) &&
+                    settingsData.baseLocations.length > 0
+                  ) {
                     locations = settingsData.baseLocations;
                   } else if (settingsData.baseLat && settingsData.baseLng) {
-                    locations = [{ lat: settingsData.baseLat, lng: settingsData.baseLng }];
+                    locations = [
+                      { lat: settingsData.baseLat, lng: settingsData.baseLng },
+                    ];
                   }
 
                   if (locations.length > 0) {
@@ -2368,12 +2412,16 @@
 
                     // Clear old markers for this driver if they exist to prevent duplicates
                     if (window.baseMarkers[driverId]) {
-                      window.baseMarkers[driverId].forEach((m) => map.removeLayer(m));
+                      window.baseMarkers[driverId].forEach((m) =>
+                        map.removeLayer(m)
+                      );
                     }
                     window.baseMarkers[driverId] = [];
 
                     locations.forEach((loc) => {
-                      const marker = L.marker([loc.lat, loc.lng], { icon: baseIcon }).addTo(map);
+                      const marker = L.marker([loc.lat, loc.lng], {
+                        icon: baseIcon,
+                      }).addTo(map);
                       marker.on("click", () => {
                         window.selectHero(
                           driverId,
@@ -2388,7 +2436,6 @@
                       window.baseMarkers[driverId].push(marker);
                     });
                   }
- 
                 });
               }
 
@@ -2465,9 +2512,7 @@
                               zIndexOffset: 1000,
                             }
                           ).addTo(map);
-                          
-                          
-                          
+
                           window.liveMarkers[activeDriverId].on("click", () => {
                             if (settingsSnap.exists()) {
                               const sData = settingsSnap.data();
@@ -2482,8 +2527,6 @@
                               );
                             }
                           });
-  
-                          
                         } else {
                           window.liveMarkers[activeDriverId].setIcon(faceIcon);
                           window.liveMarkers[activeDriverId].setOpacity(1);
@@ -2578,8 +2621,7 @@
           userMarker.setOpacity(1);
 
           // Zoom the map to perfectly frame the customer and their selected Hero's hub
-          
-          
+
           const targetBase =
             window.appState.selectedPinLat && window.appState.selectedPinLng
               ? [window.appState.selectedPinLat, window.appState.selectedPinLng]
@@ -3098,8 +3140,7 @@
             /*
              * If live telemetry isn't available, use the driver's base.
              */
-            
-             
+
             if (
               !heroLocation &&
               order.assignedDriverId &&
@@ -3111,7 +3152,6 @@
                 window.baseMarkers[order.assignedDriverId][0].getLatLng();
 
               if (
-
                 heroPos &&
                 Number.isFinite(Number(heroPos.lat)) &&
                 Number.isFinite(Number(heroPos.lng))
