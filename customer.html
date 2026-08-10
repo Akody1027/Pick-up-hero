@@ -16,7 +16,7 @@
     <script src="https://js.stripe.com/v3/"></script>
 
     <style>
-      :root {
+      :root { 
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
@@ -2295,7 +2295,9 @@
                   "cancelDeliveryActionBtn"
                 );
                 if (cancelBtn) cancelBtn.style.display = "none";
-              } else if (data.status === "completed") {
+                
+                
+                } else if (data.status === "completed") {
                 title.innerText = "Delivery Complete";
                 subtitle.innerText = "Thanks for using Pick Up Hero!";
 
@@ -2303,28 +2305,33 @@
                 if (timeline) timeline.style.display = "none";
 
                 setTimeout(() => {
-                window.location.reload();
-              }, 2000);
-            } else if (data.status === "cancelled") {
-              title.innerText = "Order Declined";
-              subtitle.innerText = "Your Hero had to decline this request.";
+                  window.location.reload();
+                }, 2000);
+              } else if (data.status === "cancelled") {
+                title.innerText = "Order Declined";
+                subtitle.innerText = "Your Hero had to decline this request.";
 
-              const timeline = document.getElementById("activeStopsTimeline");
-              if (timeline) {
-                 timeline.style.display = "flex";
-                 timeline.innerHTML = `
-                    <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); padding: 15px; border-radius: 12px; margin-top: 10px;">
-                        <strong style="color: var(--danger); font-size: 0.9rem;">Driver's Note:</strong>
-                        <p style="color: var(--text); font-size: 0.85rem; margin-top: 5px;">"${data.cancelReason || 'Route declined by driver.'}"</p>
-                    </div>
-                    <button class="btn btn-primary" style="margin-top: 15px; padding: 14px;" onclick="recoverEditDelivery()">Edit Delivery & Resubmit</button>
-                    <button class="btn btn-secondary" style="margin-top: 5px; padding: 14px;" onclick="window.location.reload()">Cancel Order Entirely</button>
-                 `;
+                const timeline = document.getElementById("activeStopsTimeline");
+                if (timeline) {
+                   timeline.style.display = "flex";
+                   timeline.innerHTML = `
+                      <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); padding: 15px; border-radius: 12px; margin-top: 10px;">
+                          <strong style="color: var(--danger); font-size: 0.9rem;">Driver's Note:</strong>
+                          <p style="color: var(--text); font-size: 0.85rem; margin-top: 5px;">"${data.cancelReason || 'Route declined by driver.'}"</p>
+                      </div>
+                      <button class="btn btn-primary" style="margin-top: 15px; padding: 14px;" onclick="recoverEditDelivery()">Edit Delivery & Resubmit</button>
+                      <button class="btn btn-secondary" style="margin-top: 5px; padding: 14px;" onclick="window.location.reload()">Cancel Order Entirely</button>
+                   `;
+                }
               }
             }
-          }
+          } 
         );
       };
+                
+                
+                
+ 
 
 
 
