@@ -1366,8 +1366,17 @@
         }
       }
 
+      window.recoverEditDelivery = function () {
+        document.getElementById("trackerSheet").style.transform =
+          "translateY(150%)";
+        window.appState.currentOrderId = null;
+        localStorage.removeItem("pickuphero_recoveredOrderId");
+        openAddModal(window.appState.bookingType);
+      };
+
       window.submitOrderToFirebase = async function () {
         const address = document.getElementById("deliveryAddressInput").value;
+
         const instructions = document.getElementById("instructionsInput").value;
 
         let stops = [];
@@ -1494,8 +1503,7 @@
           });
 
           const session = await response.json();
-          
-          
+
           if (session.id) {
             await window.setDoc(
               window.doc(window.db, "orders", docRef.id),
@@ -1507,12 +1515,10 @@
           if (session.url) {
             window.location.href = session.url;
           } else {
-            throw new Error(session.error || "Unable to initiate payment session.");
+            throw new Error(
+              session.error || "Unable to initiate payment session."
+            );
           }
-          
-          
- 
-          
         } catch (error) {
           console.error("Submission failed:", error);
           alert("Payment setup failed: " + error.message);
@@ -2246,18 +2252,18 @@
               if (data.status === "pending") {
                 title.innerText = "Order Pending";
                 subtitle.innerText = "Waiting for Hero approval...";
-              } else if (
-                data.status === "approved" ||
-                data.status === "accepted"
-              ) {
-                // Triggered when driver accepts/approves the route
-                title.innerText = "Order Approved!";
+              } else if (data.status === "accepted") {
+                title.innerText = "Order Accepted!";
                 subtitle.innerText =
-                  "Your Hero has approved your order and is heading out.";
+                  "Your slot is secured. ";
+              } else if (data.status === "approved") {
+                title.innerText = "Hero is on the move!";
+                subtitle.innerText =
+                  "Your Hero has started the route and is heading out.";
               } else if (data.status === "picked_up") {
                 title.innerText = "Order Picked Up";
                 subtitle.innerText =
-                  "Your items are secured. Route mapping in progress...";
+                  "Your items are secured. ";
 
                 // HARD LOCKOUT: Remove cancel button physically
                 const cancelBtn = document.getElementById(
@@ -2271,11 +2277,11 @@
                 if (data.queuePosition) {
                   if (data.queuePosition === 1) {
                     subtitle.innerText =
-                      "You are next in line! Hero is approaching.";
+                      "You are next in line! ";
                     subtitle.style.color = "var(--success)";
                     subtitle.style.fontWeight = "bold";
                   } else {
-                    subtitle.innerText = `Your stop is number ${data.queuePosition}. Hero is completing prior deliveries.`;
+                    subtitle.innerText = `Your stop is number ${data.queuePosition}.`;
                     subtitle.style.color = "";
                     subtitle.style.fontWeight = "normal";
                   }
@@ -2297,23 +2303,33 @@
                 if (timeline) timeline.style.display = "none";
 
                 setTimeout(() => {
-                  window.location.reload();
-                }, 2000);
-              }
-            } else if (data.status === "cancelled") {
-              title.innerText = "Order Cancelled";
-              subtitle.innerText = "This delivery has been aborted.";
-
-              const timeline = document.getElementById("activeStopsTimeline");
-              if (timeline) timeline.style.display = "none";
-
-              setTimeout(() => {
                 window.location.reload();
               }, 2000);
+            } else if (data.status === "cancelled") {
+              title.innerText = "Order Declined";
+              subtitle.innerText = "Your Hero had to decline this request.";
+
+              const timeline = document.getElementById("activeStopsTimeline");
+              if (timeline) {
+                 timeline.style.display = "flex";
+                 timeline.innerHTML = `
+                    <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); padding: 15px; border-radius: 12px; margin-top: 10px;">
+                        <strong style="color: var(--danger); font-size: 0.9rem;">Driver's Note:</strong>
+                        <p style="color: var(--text); font-size: 0.85rem; margin-top: 5px;">"${data.cancelReason || 'Route declined by driver.'}"</p>
+                    </div>
+                    <button class="btn btn-primary" style="margin-top: 15px; padding: 14px;" onclick="recoverEditDelivery()">Edit Delivery & Resubmit</button>
+                    <button class="btn btn-secondary" style="margin-top: 5px; padding: 14px;" onclick="window.location.reload()">Cancel Order Entirely</button>
+                 `;
+              }
             }
           }
         );
       };
+
+
+
+
+
 
       let animationFrameId;
 
@@ -3152,29 +3168,14 @@
              * If live telemetry isn't available, use the driver's base.
              */
 
-            if (
-              !heroLocation &&
-              order.assignedDriverId &&
-              window.baseMarkers &&
-              window.baseMarkers[order.assignedDriverId] &&
-              window.baseMarkers[order.assignedDriverId].length > 0
-            ) {
-              const heroPos =
-                window.baseMarkers[order.assignedDriverId][0].getLatLng();
 
-              if (
-                heroPos &&
-                Number.isFinite(Number(heroPos.lat)) &&
-                Number.isFinite(Number(heroPos.lng))
-              ) {
-                heroLocation = new google.maps.LatLng(
-                  Number(heroPos.lat),
-                  Number(heroPos.lng)
-                );
 
-                bounds.extend([Number(heroPos.lat), Number(heroPos.lng)]);
-              }
-            }
+
+
+
+
+
+
 
             const actualStops = [];
 
