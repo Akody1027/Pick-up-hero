@@ -12,14 +12,14 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
-
+ 
     <style>
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
-        --accent-hover: #d95314;
+        --accent-hover: #d95314;    
         --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
@@ -2702,14 +2702,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           timeline.innerHTML = "";
           AppState.triageQueue.forEach((o, i) => {
             let actions = "";
-            if (o.status === "pending") {
-              actions = `<div style="margin-top: 10px; display: flex; gap: 10px;">
-                    <button class="btn btn-primary" style="padding: 8px; font-size: 0.8rem; flex: 1;" onclick="acceptTriageOrder('${o.dbId}')">Accept</button>
-                    <button class="btn btn-secondary" style="padding: 8px; font-size: 0.8rem; flex: 1; color: var(--danger); border-color: var(--danger);" onclick="declineTriageOrder('${o.dbId}')">Decline</button>
-                </div>`;
+
+            if (o.type === "pickup") {
+              if (o.status === "pending") {
+                actions = `<div style="margin-top: 10px; display: flex; gap: 10px;">
+                      <button class="btn btn-primary" style="padding: 8px; font-size: 0.8rem; flex: 1;" onclick="acceptTriageOrder('${o.dbId}')">Accept</button>
+                      <button class="btn btn-secondary" style="padding: 8px; font-size: 0.8rem; flex: 1; color: var(--danger); border-color: var(--danger);" onclick="declineTriageOrder('${o.dbId}')">Decline</button>
+                  </div>`;
+              } else {
+                actions = `<div style="margin-top: 10px; color: var(--success); font-weight: bold; font-size: 0.85rem;">✓ Accepted - Waiting to Start</div>`;
+              }
             } else {
-              actions = `<div style="margin-top: 10px; color: var(--success); font-weight: bold; font-size: 0.85rem;">✓ Accepted - Waiting to Start</div>`;
+              actions = `<div style="margin-top: 10px; color: var(--text-muted); font-size: 0.85rem; font-weight: bold;"> Final Delivery Drop-off</div>`;
             }
+
             timeline.innerHTML += `<li class="timeline-item"><div class="node-card"><strong>Stop ${
               i + 1
             }: ${
