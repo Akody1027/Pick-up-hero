@@ -16,7 +16,7 @@
     <script src="https://js.stripe.com/v3/"></script>
 
     <style>
-      :root { 
+      :root {
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
@@ -1456,6 +1456,16 @@
           tipElement && tipElement.value ? parseFloat(tipElement.value) : 0;
         const totalCost = activeStopsFound * perStopRate + tipAmount;
 
+        const submitBtn = document.querySelector(
+          'button[onclick="submitOrderToFirebase()"]'
+        );
+        if (submitBtn) {
+          submitBtn.innerHTML =
+            '<div class="search-spinner" style="width: 18px; height: 18px; border-width: 2px;"></div> Loading...';
+          submitBtn.disabled = true;
+          submitBtn.style.opacity = "0.6";
+        }
+
         try {
           const orderData = {
             userId: window.appState.userId,
@@ -1522,6 +1532,15 @@
         } catch (error) {
           console.error("Submission failed:", error);
           alert("Payment setup failed: " + error.message);
+
+          const submitBtn = document.querySelector(
+            'button[onclick="submitOrderToFirebase()"]'
+          );
+          if (submitBtn) {
+            submitBtn.innerHTML = "Confirm & Reserve";
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = "1";
+          }
         }
       };
 
@@ -2254,16 +2273,14 @@
                 subtitle.innerText = "Waiting for Hero approval...";
               } else if (data.status === "accepted") {
                 title.innerText = "Order Accepted!";
-                subtitle.innerText =
-                  "Your slot is secured. ";
+                subtitle.innerText = "Your slot is secured. ";
               } else if (data.status === "approved") {
                 title.innerText = "Hero is on the move!";
                 subtitle.innerText =
                   "Your Hero has started the route and is heading out.";
               } else if (data.status === "picked_up") {
                 title.innerText = "Order Picked Up";
-                subtitle.innerText =
-                  "Your items are secured. ";
+                subtitle.innerText = "Your items are secured. ";
 
                 // HARD LOCKOUT: Remove cancel button physically
                 const cancelBtn = document.getElementById(
@@ -2276,8 +2293,7 @@
                 // DYNAMIC STOP COUNTER UX
                 if (data.queuePosition) {
                   if (data.queuePosition === 1) {
-                    subtitle.innerText =
-                      "You are next in line! ";
+                    subtitle.innerText = "You are next in line! ";
                     subtitle.style.color = "var(--success)";
                     subtitle.style.fontWeight = "bold";
                   } else {
@@ -2295,9 +2311,7 @@
                   "cancelDeliveryActionBtn"
                 );
                 if (cancelBtn) cancelBtn.style.display = "none";
-                
-                
-                } else if (data.status === "completed") {
+              } else if (data.status === "completed") {
                 title.innerText = "Delivery Complete";
                 subtitle.innerText = "Thanks for using Pick Up Hero!";
 
@@ -2313,11 +2327,13 @@
 
                 const timeline = document.getElementById("activeStopsTimeline");
                 if (timeline) {
-                   timeline.style.display = "flex";
-                   timeline.innerHTML = `
+                  timeline.style.display = "flex";
+                  timeline.innerHTML = `
                       <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); padding: 15px; border-radius: 12px; margin-top: 10px;">
                           <strong style="color: var(--danger); font-size: 0.9rem;">Driver's Note:</strong>
-                          <p style="color: var(--text); font-size: 0.85rem; margin-top: 5px;">"${data.cancelReason || 'Route declined by driver.'}"</p>
+                          <p style="color: var(--text); font-size: 0.85rem; margin-top: 5px;">"${
+                            data.cancelReason || "Route declined by driver."
+                          }"</p>
                       </div>
                       <button class="btn btn-primary" style="margin-top: 15px; padding: 14px;" onclick="recoverEditDelivery()">Edit Delivery & Resubmit</button>
                       <button class="btn btn-secondary" style="margin-top: 5px; padding: 14px;" onclick="window.location.reload()">Cancel Order Entirely</button>
@@ -2325,18 +2341,9 @@
                 }
               }
             }
-          } 
+          }
         );
       };
-                
-                
-                
- 
-
-
-
-
-
 
       let animationFrameId;
 
@@ -3174,15 +3181,6 @@
             /*
              * If live telemetry isn't available, use the driver's base.
              */
-
-
-
-
-
-
-
-
-
 
             const actualStops = [];
 
