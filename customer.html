@@ -19,7 +19,7 @@
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
-        --surface-elevated: #2c2c2c;
+        --surface-elevated: #2c2c2c; 
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
@@ -27,7 +27,7 @@
         --border: #333333;
         --success: #22c55e;
         --danger: #ef4444;
-        --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
       }
 
       * {
@@ -547,6 +547,191 @@
 
       #quick {
       }
+
+      /* --- TOP NOTIFICATION BELL --- */
+      .top-controls {
+        position: absolute;
+        top: env(safe-area-inset-top, 20px);
+        right: 20px;
+        z-index: 1000;
+      }
+      .bell-btn {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        position: relative;
+      }
+      .bell-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: var(--text);
+      }
+      .badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: var(--accent);
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 800;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--bg);
+        display: none;
+      }
+
+      /* --- HERO CONNECT UI --- */
+      .hero-connect-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-left: auto;
+      }
+      .connect-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        text-decoration: none;
+        color: var(--text);
+        transition: background 0.2s;
+      }
+      .connect-btn:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .connect-btn svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+
+      /* --- CHAT MODAL --- */
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .chat-bubble {
+        max-width: 80%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        font-size: 0.95rem;
+        line-height: 1.4;
+      }
+      .chat-bubble.hero {
+        background: var(--surface-elevated);
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+      }
+      .chat-bubble.customer {
+        background: var(--accent);
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+      }
+      .chat-timestamp {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+        text-align: right;
+      }
+      .chat-input-area {
+        display: flex;
+        gap: 10px;
+        padding: 15px;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        align-items: center;
+        padding-bottom: calc(15px + env(safe-area-inset-bottom));
+      }
+      .chat-input-area input {
+        flex: 1;
+        padding: 14px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+        outline: none;
+      }
+      .chat-input-area input:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .chat-send-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .chat-send-btn:disabled {
+        background: var(--surface-elevated);
+        cursor: not-allowed;
+      }
+      .chat-send-btn svg {
+        width: 20px;
+        height: 20px;
+        fill: white;
+      }
+
+      /* --- SETTINGS HAMBURGER DROPDOWN --- */
+      .settings-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+        z-index: 2500;
+        width: 200px;
+      }
+      .settings-dropdown.active {
+        display: flex;
+      }
+      .settings-dropdown button {
+        background: none;
+        border: none;
+        padding: 15px;
+        text-align: left;
+        color: var(--text);
+        font-size: 0.95rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border);
+      }
+      .settings-dropdown button:last-child {
+        border-bottom: none;
+      }
+      .settings-dropdown button:hover {
+        background: var(--surface);
+      }
     </style>
   </head>
   <body>
@@ -558,6 +743,18 @@
 
     <!-- MAP BASE -->
     <div id="map"></div>
+
+    <!-- TOP NOTIFICATION BELL -->
+    <div class="top-controls">
+      <button class="bell-btn" onclick="openNotificationModal()">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
+          />
+        </svg>
+        <div class="badge" id="customerNotificationBadge">0</div>
+      </button>
+    </div>
 
     <!-- FLOATING BOTTOM SHEET (Active Status / Announcements) -->
 
@@ -580,6 +777,27 @@
         <div class="sheet-info">
           <h3 id="sheetTitle">Scheduled Run Active</h3>
           <p id="sheetSubtitle">Hero is running tomorrow morning.</p>
+        </div>
+
+        <div
+          class="hero-connect-container"
+          id="heroConnectUI"
+          style="display: none"
+        >
+          <a href="#" id="heroPhoneBtn" class="connect-btn">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"
+              />
+            </svg>
+          </a>
+          <button class="connect-btn" onclick="openChatModal()">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"
+              />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -957,9 +1175,37 @@
 
     <!-- FULL SCREEN MODAL: SETTINGS -->
     <div id="settingsModal" class="modal">
-      <div class="modal-header">
+      <div class="modal-header" style="position: relative">
         <h2>Customer Profile</h2>
-        <button class="close-btn" onclick="closeAllModals()">✕</button>
+        <div style="display: flex; gap: 15px; align-items: center">
+          <button
+            class="close-btn"
+            style="background: transparent"
+            onclick="toggleSettingsDropdown()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              style="width: 24px; height: 24px; fill: var(--text)"
+            >
+              <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+            </svg>
+          </button>
+          <button class="close-btn" onclick="closeAllModals()">✕</button>
+        </div>
+
+        <div class="settings-dropdown" id="settingsDropdownMenu">
+          <button
+            onclick="window.location.href='mailto:roadwatchero@gmail.com?subject=Customer Support Request'"
+          >
+            Contact Support
+          </button>
+          <button style="color: var(--accent)" onclick="signOutUser()">
+            Sign Out
+          </button>
+          <button style="color: var(--danger)" onclick="confirmDeleteAccount()">
+            Delete Account
+          </button>
+        </div>
       </div>
 
       <div class="modal-content">
@@ -1037,30 +1283,6 @@
             style="margin-bottom: 10px"
           >
             Save Profile
-          </button>
-
-          <button
-            class="btn btn-secondary"
-            style="margin-bottom: 10px"
-            onclick="window.location.href='mailto:roadwatchero@gmail.com?subject=Customer Support Request'"
-          >
-            Contact Support
-          </button>
-
-          <button
-            class="btn btn-secondary"
-            style="
-              margin-bottom: 10px;
-              color: var(--accent);
-              border-color: var(--accent);
-            "
-            onclick="signOutUser()"
-          >
-            Sign Out
-          </button>
-
-          <button class="btn btn-emergency" onclick="confirmDeleteAccount()">
-            Delete Account
           </button>
         </div>
       </div>
@@ -1233,6 +1455,79 @@
       </div>
     </div>
 
+    <!-- PROFILE ENFORCEMENT GATE -->
+    <div class="soft-prompt-overlay" id="profileGateModal">
+      <div class="soft-prompt-box">
+        <h3>Contact Info Required</h3>
+        <p>
+          Please add your name and phone number so your Hero can contact you if
+          there are issues at the store.
+        </p>
+        <button class="btn btn-primary" onclick="routeToSettingsFromGate()">
+          Go to Settings
+        </button>
+      </div>
+    </div>
+
+    <!-- NOTIFICATION CENTER MODAL -->
+    <div id="notificationModal" class="modal">
+      <div class="modal-header">
+        <h2>Notifications</h2>
+        <button class="close-btn" onclick="closeNotificationModal()">✕</button>
+      </div>
+      <div class="modal-content" id="notificationList">
+        <p
+          style="color: var(--text-muted); text-align: center; margin-top: 20px"
+        >
+          No new notifications.
+        </p>
+      </div>
+    </div>
+
+    <!-- CHAT MODAL -->
+    <div id="chatModal" class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="chatHeaderTitle">Hero Connect</h2>
+          <span
+            id="chatHeaderSubtitle"
+            style="font-size: 0.8rem; color: var(--text-muted)"
+            >Waiting for Hero</span
+          >
+        </div>
+        <button
+          class="close-btn"
+          style="color: var(--accent)"
+          onclick="closeChatModal()"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="chat-messages" id="chatMessageContainer">
+        <!-- Messages populate here -->
+      </div>
+
+      <div class="chat-input-area">
+        <input
+          type="text"
+          id="chatTextInput"
+          placeholder="Message your Hero..."
+          disabled
+        />
+        <button
+          class="chat-send-btn"
+          id="chatSendBtn"
+          onclick="sendChatMessage()"
+          disabled
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
     <!-- LEAFLET MAP JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -1261,6 +1556,8 @@
         setDoc,
         getDocs,
         deleteDoc,
+        serverTimestamp,
+        orderBy,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -1290,9 +1587,12 @@
       window.setDoc = setDoc;
       window.getDocs = getDocs;
       window.deleteDoc = deleteDoc;
+      window.serverTimestamp = serverTimestamp;
+      window.orderBy = orderBy;
+
       window.deleteUser = deleteUser;
       window.signOut = signOut;
-      window.auth = auth; // Standard Firebase implementation matches previous backend logic
+      window.auth = auth;
       window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
       window.signInWithEmailAndPassword = signInWithEmailAndPassword;
 
@@ -1452,6 +1752,25 @@
             : 12.99;
 
         const tipElement = document.getElementById("tipInput");
+
+        // PROFILE GATE ENFORCEMENT
+        try {
+          const userDoc = await window.getDoc(
+            window.doc(window.db, "users", window.appState.userId)
+          );
+          if (
+            !userDoc.exists() ||
+            !userDoc.data().fullName ||
+            !userDoc.data().phoneNumber
+          ) {
+            document.getElementById("profileGateModal").style.display = "flex";
+            return;
+          }
+        } catch (e) {
+          console.error("Profile validation failed:", e);
+          return;
+        }
+
         const tipAmount =
           tipElement && tipElement.value ? parseFloat(tipElement.value) : 0;
         const totalCost = activeStopsFound * perStopRate + tipAmount;
@@ -2261,6 +2580,13 @@
                     // Safe fallback if driver document exists but lacks an image
                     avatar.src =
                       "https://ui-avatars.com/api/?name=Hero&background=ee611c&color=fff";
+                  }
+
+                  // Wire the native phone dialer dynamically
+                  if (driverDoc.exists() && driverDoc.data().phoneNumber) {
+                    document.getElementById("heroPhoneBtn").href = `tel:${
+                      driverDoc.data().phoneNumber
+                    }`;
                   }
                 } catch (error) {
                   console.error("Failed to load driver avatar:", error);
@@ -3597,12 +3923,196 @@
           "flex";
       };
 
-      window.shiftToTomorrow = function () {
-        window.appState.targetTimeline = "tomorrow";
-        document.getElementById("timelineDisplay").innerText = "Tomorrow";
-        document.getElementById("standardTodayGate").style.display = "none";
-        document.getElementById("step2Panel").lastElementChild.style.display =
-          "flex";
+      // --- SETTINGS DROPDOWN & GATE LOGIC ---
+      window.toggleSettingsDropdown = function () {
+        document
+          .getElementById("settingsDropdownMenu")
+          .classList.toggle("active");
+      };
+
+      window.routeToSettingsFromGate = function () {
+        document.getElementById("profileGateModal").style.display = "none";
+        openSettingsModal();
+      };
+
+      // --- CHAT & NOTIFICATION SYSTEM ---
+      window.appState.unreadMessages = 0;
+      window.chatUnsubscribe = null;
+
+      window.openNotificationModal = function () {
+        document.getElementById("notificationModal").classList.add("active");
+      };
+
+      window.closeNotificationModal = function () {
+        document.getElementById("notificationModal").classList.remove("active");
+      };
+
+      window.openChatModal = function () {
+        document.getElementById("chatModal").classList.add("active");
+        window.appState.unreadMessages = 0;
+        document.getElementById("customerNotificationBadge").style.display =
+          "none";
+        document.getElementById("customerNotificationBadge").innerText = "0";
+        closeNotificationModal();
+        setTimeout(() => {
+          const container = document.getElementById("chatMessageContainer");
+          container.scrollTop = container.scrollHeight;
+        }, 100);
+      };
+
+      window.closeChatModal = function () {
+        document.getElementById("chatModal").classList.remove("active");
+      };
+
+      window.lockChatDormantState = function () {
+        document.getElementById("chatTextInput").disabled = true;
+        document.getElementById("chatSendBtn").disabled = true;
+        document.getElementById("chatHeaderSubtitle").innerText =
+          "Waiting for Hero";
+        document.getElementById("chatHeaderSubtitle").style.color =
+          "var(--text-muted)";
+        document.getElementById("chatMessageContainer").innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+            Chat is strictly locked.<br>There is no active delivery route.
+          </div>
+        `;
+        document.getElementById("heroConnectUI").style.display = "none";
+      };
+
+      window.initChatListener = function (orderId) {
+        if (window.chatUnsubscribe) window.chatUnsubscribe();
+
+        document.getElementById("heroConnectUI").style.display = "flex";
+        document.getElementById("chatTextInput").disabled = false;
+        document.getElementById("chatSendBtn").disabled = false;
+        document.getElementById("chatHeaderSubtitle").innerText =
+          "Live Connection";
+        document.getElementById("chatHeaderSubtitle").style.color =
+          "var(--success)";
+
+        const q = window.query(
+          window.collection(window.db, "orders", orderId, "messages"),
+          window.orderBy("timestamp", "asc")
+        );
+
+        window.chatUnsubscribe = window.onSnapshot(q, (snapshot) => {
+          const container = document.getElementById("chatMessageContainer");
+          let html = "";
+          let isNewPayload = false;
+
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              const msg = change.doc.data();
+              const isMe = msg.senderId === window.appState.userId;
+              const bubbleClass = isMe ? "customer" : "hero";
+
+              const timeString = msg.timestamp
+                ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Sending...";
+
+              html += `
+                <div class="chat-bubble ${bubbleClass}">
+                  ${msg.text}
+                  <div class="chat-timestamp">${timeString}</div>
+                </div>
+              `;
+
+              // Trigger alert logic if the driver sent a new message
+              if (!isMe && !msg.read) {
+                isNewPayload = true;
+              }
+            }
+          });
+
+          if (html) {
+            if (container.innerHTML.includes("Chat is strictly locked")) {
+              container.innerHTML = "";
+            }
+            container.innerHTML += html;
+            container.scrollTop = container.scrollHeight;
+          }
+
+          if (isNewPayload) {
+            // Unconditionally play sound on new payload
+            const alertAudio = document.getElementById("customerAlertSound");
+            if (alertAudio)
+              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
+
+            const chatModal = document.getElementById("chatModal");
+            if (!chatModal.classList.contains("active")) {
+              window.appState.unreadMessages++;
+              const badge = document.getElementById(
+                "customerNotificationBadge"
+              );
+              badge.innerText = window.appState.unreadMessages;
+              badge.style.display = "flex";
+
+              document.getElementById("notificationList").innerHTML = `
+                <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer;" onclick="openChatModal()">
+                  <strong style="color: var(--accent);">New Message from Hero</strong>
+                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open chat</p>
+                </div>
+              `;
+            }
+          }
+        });
+      };
+
+      window.sendChatMessage = async function () {
+        const input = document.getElementById("chatTextInput");
+        const text = input.value.trim();
+        if (!text || !window.appState.currentOrderId) return;
+
+        input.value = "";
+
+        try {
+          await window.addDoc(
+            window.collection(
+              window.db,
+              "orders",
+              window.appState.currentOrderId,
+              "messages"
+            ),
+            {
+              senderId: window.appState.userId,
+              text: text,
+              timestamp: window.serverTimestamp(),
+              read: false,
+            }
+          );
+        } catch (e) {
+          console.error("Failed to send message:", e);
+          alert("Failed to send message.");
+        }
+      };
+
+      // INTERCEPT TERMINAL STATES FOR CLEANUP
+      const originalCheckActiveSession = window.checkActiveSession;
+      window.checkActiveSession = function () {
+        originalCheckActiveSession();
+
+        // Add a secondary watcher to lock the chat if the active order terminates
+        if (window.appState.userId && window.appState.currentOrderId) {
+          window.onSnapshot(
+            window.doc(window.db, "orders", window.appState.currentOrderId),
+            (docSnap) => {
+              if (docSnap.exists()) {
+                const status = docSnap.data().status;
+                if (status === "completed" || status === "cancelled") {
+                  if (window.chatUnsubscribe) window.chatUnsubscribe();
+                  window.lockChatDormantState();
+                } else {
+                  if (!window.chatUnsubscribe) {
+                    window.initChatListener(window.appState.currentOrderId);
+                  }
+                }
+              }
+            }
+          );
+        }
       };
     </script>
   </body>
