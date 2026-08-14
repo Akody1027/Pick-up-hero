@@ -20,10 +20,10 @@
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;   
-        --accent: #ee611c;
+        --accent: #ee611c;  
         --accent-hover: #d95314; 
         --text: #ffffff;
-        --text-muted: #94a3b8;
+        --text-muted: #94a3b8; 
         --border: #333333;
         --success: #22c55e;
         --danger: #ef4444;
@@ -1521,6 +1521,17 @@
       </div>
 
       <div class="chat-input-area">
+        
+        <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--surface-elevated); border-radius: 50%; flex-shrink: 0;">
+          <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: var(--text-muted);">
+            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+          </svg>
+          <input type="file" id="chatImageInput" accept="image/*" style="display: none;" onchange="handleChatImageUpload(event)" disabled>
+        </label>
+        
+        
+        
+        
         <input
           type="text"
           id="chatTextInput"
@@ -1570,6 +1581,8 @@
         deleteDoc,
         serverTimestamp,
         orderBy,
+        updateDoc,
+        
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -1601,6 +1614,10 @@
       window.deleteDoc = deleteDoc;
       window.serverTimestamp = serverTimestamp;
       window.orderBy = orderBy;
+      window.deleteDoc = deleteDoc;
+      window.updateDoc = updateDoc;
+      
+      
 
       window.deleteUser = deleteUser;
       window.signOut = signOut;
@@ -3015,6 +3032,55 @@
 
       // --- SESSION & MULTI-STOP LOGIC ---
 
+      
+      
+      
+      
+      window.handleChatImageUpload = function (event) {
+        const file = event.target.files[0];
+        if (!file || !window.appState.currentOrderId) return;
+        
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = async function () {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            
+            const maxW = 600;
+            const scale = img.width > maxW ? maxW / img.width : 1;
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
+            
+            try {
+              await window.addDoc(
+                window.collection(window.db, "orders", window.appState.currentOrderId, "messages"),
+                {
+                  senderId: window.appState.userId,
+                  text: " Image attached",
+                  imageUrl: compressedBase64,
+                  timestamp: window.serverTimestamp(),
+                  read: false,
+                }
+              );
+            } catch (err) {
+              console.error("Failed to send image:", err);
+              alert("Failed to send image.");
+            }
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = ""; // Reset file path to allow repeat identical uploads
+      };
+      
+      
+      
+      
+      
       window.checkActiveSession = function () {
         if (!window.appState.userId) return;
 
@@ -3968,10 +4034,21 @@
       window.openChatModal = function () {
         document.getElementById("chatModal").classList.add("active");
         window.appState.unreadMessages = 0;
+        
         document.getElementById("customerNotificationBadge").style.display =
           "none";
         document.getElementById("customerNotificationBadge").innerText = "0";
+        document.getElementById("notificationList").innerHTML = `
+          <p style="color: var(--text-muted); text-align: center; margin-top: 20px;">
+            No new notifications.
+          </p>
+        `;
         closeNotificationModal();
+        
+
+        
+        
+        
         setTimeout(() => {
           const container = document.getElementById("chatMessageContainer");
           container.scrollTop = container.scrollHeight;
@@ -3985,6 +4062,9 @@
       window.lockChatDormantState = function () {
         document.getElementById("chatTextInput").disabled = true;
         document.getElementById("chatSendBtn").disabled = true;
+        const imgInput = document.getElementById("chatImageInput");
+        if (imgInput) imgInput.disabled = true;
+        
         document.getElementById("chatHeaderSubtitle").innerText =
           "Waiting for Hero";
         document.getElementById("chatHeaderSubtitle").style.color =
@@ -4003,6 +4083,11 @@
         document.getElementById("heroConnectUI").style.display = "flex";
         document.getElementById("chatTextInput").disabled = false;
         document.getElementById("chatSendBtn").disabled = false;
+        const imgInput = document.getElementById("chatImageInput");
+        if (imgInput) imgInput.disabled = false;
+        
+        
+        
         document.getElementById("chatHeaderSubtitle").innerText =
           "Live Connection";
         document.getElementById("chatHeaderSubtitle").style.color =
@@ -4025,9 +4110,11 @@
 // 1. Check for brand new messages to trigger alerts
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
-              const msg = change.doc.data();
-              const isMe = msg.senderId === window.appState.userId;
               
+              
+            const msg = change.doc.data();
+              const isMe = msg.senderId === window.appState.userId;
+
               if (!isMe && !msg.read) {
                 isNewPayload = true;
               }
@@ -4035,8 +4122,8 @@
           });
 
           // 2. Rebuild entire chat to resolve "Sending..." optimistic local writes
-          snapshot.docs.forEach((doc) => {
-            const msg = doc.data();
+          snapshot.docs.forEach((docSnap) => {
+            const msg = docSnap.data();
             const isMe = msg.senderId === window.appState.userId;
             const bubbleClass = isMe ? "customer" : "hero";
 
@@ -4049,10 +4136,16 @@
 
             html += `
               <div class="chat-bubble ${bubbleClass}">
+                ${msg.imageUrl ? `<img src="${msg.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2);"><br>` : ""}
                 ${msg.text}
                 <div class="chat-timestamp">${timeString}</div>
               </div>
             `;
+
+            // Actively mark read payloads to kill the notification ping loop
+            if (!isMe && !msg.read && document.getElementById("chatModal").classList.contains("active")) {
+                window.updateDoc(docSnap.ref, { read: true }).catch(e => console.log(e));
+            }
           });
 
           container.innerHTML = html || `
@@ -4063,31 +4156,41 @@
           container.scrollTop = container.scrollHeight;
 
           if (isNewPayload) {
-            const alertAudio = document.getElementById("customerAlertSound");
-            if (alertAudio)
-              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
-
             const chatModal = document.getElementById("chatModal");
-            if (!chatModal.classList.contains("active")) {
+            const isLookingAtThisChat = chatModal.classList.contains("active");
+
+            // Strict gate: Only fire audio and badge injections if the chat is not actively visible
+            if (!isLookingAtThisChat) {
+              const alertAudio = document.getElementById("customerAlertSound");
+              if (alertAudio)
+                alertAudio.play().catch((e) => console.log("Audio blocked:", e));
+
               window.appState.unreadMessages++;
               const badge = document.getElementById("customerNotificationBadge");
               if (badge) {
-                  badge.innerText = window.appState.unreadMessages;
-                  badge.style.display = "flex";
+                badge.innerText = window.appState.unreadMessages;
+                badge.style.display = "flex";
               }
 
-              document.getElementById("notificationList").innerHTML = `
+              let notifHTML = `
                 <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer;" onclick="openChatModal()">
                   <strong style="color: var(--accent);">New Message from Hero</strong>
                   <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open chat</p>
                 </div>
               `;
+              const notifList = document.getElementById("notificationList");
+              if (notifList.innerHTML.includes("No new notifications")) {
+                notifList.innerHTML = notifHTML;
+              } else {
+                notifList.innerHTML += notifHTML;
+              }
             }
           }
         });
-      };
-      
-      
+      };  
+              
+              
+
       
       
       
