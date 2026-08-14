@@ -13,7 +13,7 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
 
-    <style>
+    <style> 
       :root { 
         --bg: #121212; 
         --surface: #1e1e1e; 
@@ -3532,9 +3532,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             : "Complete Profile to Save";
         }
       };
+      
+      
+      
+      
 
+    
+ 
+      
+      
       // --- CHAT & NOTIFICATION SYSTEM ---
-      window.AppState.unreadMessages = 0;
+      AppState.unreadMessages = 0;
       window.chatUnsubscribe = null;
       window.activeChatOrderId = null;
 
@@ -3551,7 +3559,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         const targetId = orderId || window.activeChatOrderId;
 
         document.getElementById("chatModal").classList.add("active");
-        window.AppState.unreadMessages = 0;
+        AppState.unreadMessages = 0;
         document.getElementById("driverNotificationBadge").style.display =
           "none";
         document.getElementById("driverNotificationBadge").innerText = "0";
@@ -3645,9 +3653,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             const chatModal = document.getElementById("chatModal");
             if (!chatModal.classList.contains("active")) {
-              window.AppState.unreadMessages++;
+              AppState.unreadMessages++;
               const badge = document.getElementById("driverNotificationBadge");
-              badge.innerText = window.AppState.unreadMessages;
+              badge.innerText = AppState.unreadMessages;
               badge.style.display = "flex";
 
               let notifHTML = `
@@ -3719,7 +3727,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           console.error("Failed to fetch customer phone:", e);
         }
       };
- 
+      
+      
+      
+      
+      
+      
+      
       
       
       // INTERCEPT TERMINAL STATE FOR UI CLEANUP
@@ -3740,17 +3754,22 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       // Inject Triage into Notification center if pending orders exist
       const originalListenForPendingOrders = window.listenForPendingOrders;
       window.listenForPendingOrders = function () {
+        
+        
+         
+         
+        
         // Temporarily override the global badge update locally inside the listener
         const originalBadgeStyle = document.getElementById("notificationBadge");
         if (originalBadgeStyle) originalBadgeStyle.id = "oldBadge";
 
         originalListenForPendingOrders();
-  
+
         setTimeout(() => {
           if (AppState.pendingOrders > 0) {
             const badge = document.getElementById("driverNotificationBadge");
             badge.innerText =
-              AppState.pendingOrders + window.AppState.unreadMessages;
+              AppState.pendingOrders + AppState.unreadMessages;
             badge.style.display = "flex";
 
             let triageNotif = `
@@ -3763,6 +3782,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
         }, 500);
       };
+        
+        
+ 
     </script>
   </body>
 </html>
