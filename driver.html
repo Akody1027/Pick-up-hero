@@ -16,7 +16,7 @@
     <style>
       :root {
         --bg: #121212;
-        --surface: #1e1e1e;
+        --surface: #1e1e1e; 
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
@@ -24,7 +24,7 @@
         --text-muted: #94a3b8;
         --border: #333333;
         --success: #22c55e;
-        --danger: #ef4444;
+        --danger: #ef4444; 
         --shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
       }
 
@@ -1450,6 +1450,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         <!-- Messages populate here -->
       </div>
       <div class="chat-input-area">
+        
+        <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--surface-elevated); border-radius: 50%; flex-shrink: 0;">
+          <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: var(--text-muted);">
+            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+          </svg>
+          <input type="file" id="chatImageInput" accept="image/*" style="display: none;" onchange="handleChatImageUpload(event)" disabled>
+        </label>
+        
+        
+        
         <input
           type="text"
           id="chatTextInput"
@@ -3646,6 +3656,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           badge.innerText = AppState.pendingOrders;
         }
         closeNotificationModal();
+        
+        
+        document.getElementById("notificationList").innerHTML = `
+          <p style="color: var(--text-muted); text-align: center; margin-top: 20px;">
+            No new notifications.
+          </p>
+        `;
+        
 
         window.initChatListener(targetId);
 
@@ -3662,6 +3680,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.lockChatDormantState = function () {
         document.getElementById("chatTextInput").disabled = true;
         document.getElementById("chatSendBtn").disabled = true;
+        const imgInput = document.getElementById("chatImageInput");
+        if (imgInput) imgInput.disabled = true;
+        
+        
         document.getElementById("chatHeaderSubtitle").innerText =
           "Waiting for route";
         document.getElementById("chatHeaderSubtitle").style.color =
@@ -3679,6 +3701,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         document.getElementById("chatTextInput").disabled = false;
         document.getElementById("chatSendBtn").disabled = false;
+        
+        const imgInput = document.getElementById("chatImageInput");
+        if (imgInput) imgInput.disabled = false;
+        
+        
+        
+        
         document.getElementById("chatHeaderSubtitle").innerText =
           "Live Connection";
         document.getElementById("chatHeaderSubtitle").style.color =
@@ -3697,6 +3726,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           // 1. Check for brand new messages to trigger alerts
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
+              
               const msg = change.doc.data();
               const isMe = msg.senderId === DRIVER_DOC_ID;
 
@@ -3707,8 +3737,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           });
 
           // 2. Rebuild entire chat to resolve "Sending..." optimistic local writes
-          snapshot.docs.forEach((doc) => {
-            const msg = doc.data();
+          snapshot.docs.forEach((docSnap) => {
+            const msg = docSnap.data();
             const isMe = msg.senderId === DRIVER_DOC_ID;
             const bubbleClass = isMe ? "hero" : "customer";
 
@@ -3721,10 +3751,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             html += `
               <div class="chat-bubble ${bubbleClass}">
+                ${msg.imageUrl ? `<img src="${msg.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2);"><br>` : ""}
                 ${msg.text}
                 <div class="chat-timestamp">${timeString}</div>
               </div>
             `;
+            
+            // Actively mark read payloads to kill the notification ping loop
+            if (!isMe && !msg.read && document.getElementById("chatModal").classList.contains("active")) {
+                window.updateDoc(docSnap.ref, { read: true }).catch(e => console.log(e));
+            }
           });
 
           container.innerHTML =
@@ -3737,17 +3773,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           container.scrollTop = container.scrollHeight;
 
           if (isNewPayload) {
-            const alertAudio = document.getElementById("alertSound");
-            if (alertAudio)
-              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
-
             const chatModal = document.getElementById("chatModal");
-            if (!chatModal.classList.contains("active")) {
+            const isLookingAtThisChat = chatModal.classList.contains("active") && window.activeChatOrderId === orderId;
+
+            // Strict gate: Only fire audio and badge injections if the chat is not actively visible
+            if (!isLookingAtThisChat) {
+              const alertAudio = document.getElementById("alertSound");
+              if (alertAudio)
+                alertAudio.play().catch((e) => console.log("Audio blocked:", e));
+
               AppState.unreadMessages++;
               const badge = document.getElementById("driverNotificationBadge");
               if (badge) {
-                badge.innerText =
-                  AppState.pendingOrders + AppState.unreadMessages;
+                badge.innerText = AppState.pendingOrders + AppState.unreadMessages;
                 badge.style.display = "flex";
               }
 
@@ -3767,7 +3805,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
         });
       };
+              
+              
+              
 
+
+      
+      
+      
+      
+      
+      
       window.sendChatMessage = async function () {
         const input = document.getElementById("chatTextInput");
         const text = input.value.trim();
@@ -3798,6 +3846,50 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       window.callCustomer = async function (userId) {
         if (!userId) return;
+        
+        
+        window.handleChatImageUpload = function (event) {
+        const file = event.target.files[0];
+        if (!file || !window.activeChatOrderId) return;
+        
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = async function () {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d"); 
+            
+            const maxW = 600;
+            const scale = img.width > maxW ? maxW / img.width : 1;
+            canvas.width = img.width * scale;  
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
+            
+            try {
+              await window.addDoc(
+                window.collection(window.db, "orders", window.activeChatOrderId, "messages"),
+                {
+                  senderId: DRIVER_DOC_ID,
+                  text: "📷 Image attached",
+                  imageUrl: compressedBase64,
+                  timestamp: window.serverTimestamp(),
+                  read: false,
+                }
+              );
+            } catch (err) {
+              console.error("Failed to send image:", err);
+              window.showCustomAlert("Error", "Failed to send image.");
+            }
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = ""; // Reset file path to allow repeat identical uploads
+      };
+        
+        
         try {
           const userDoc = await window.getDoc(
             window.doc(window.db, "users", userId)
