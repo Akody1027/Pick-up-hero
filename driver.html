@@ -19,7 +19,7 @@
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
-        --accent-hover: #d95314;
+        --accent-hover: #d95314; 
         --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
@@ -866,7 +866,7 @@
         width: 100vw;
         height: 2px;
         background: rgba(238, 97, 28, 0.2);
-        z-index: 9999;
+        z-index: 9999; 
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.3s ease;
@@ -905,10 +905,10 @@
         opacity: 1 !important;
       }
       
-      
       @keyframes spin {
         to { transform: rotate(360deg); }
       }
+      
       
       
     </style>
@@ -2101,50 +2101,68 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           console.error("Error loading settings:", e);
         }
       };
-
+      
+      
+      
+      
+      
       window.saveDriverSettings = async function () {
         const btn = document.getElementById("saveSettingsBtn");
         const originalText = btn.innerText;
         btn.innerText = "Saving...";
 
-        const payload = {
-          displayName: document.getElementById("driverNameInput").value,
-          phoneNumber: document.getElementById("driverPhoneInput").value.trim(),
-
-          bio: document.getElementById("driverBioInput").value,
-          globalKillSwitch: document
-            .getElementById("killSwitchToggle")
-            .classList.contains("on"),
-          sosEnabled: document
-            .getElementById("sosToggle")
-            .classList.contains("on"),
-          premiumRate:
-            parseFloat(document.getElementById("premiumRateInput").value) ||
-            50.0,
-          baseLat: AppState.homeBase[0],
-          baseLng: AppState.homeBase[1],
-
-          profilePic: document.getElementById("profileImagePreview").src,
-        };
-
         try {
+          const payload = {
+            displayName: document.getElementById("driverNameInput").value,
+            phoneNumber: document.getElementById("driverPhoneInput").value.trim(),
+            bio: document.getElementById("driverBioInput").value,
+            globalKillSwitch: document
+              .getElementById("killSwitchToggle")
+              .classList.contains("on"),
+            sosEnabled: document
+              .getElementById("sosToggle")
+              .classList.contains("on"),
+            premiumRate:
+              parseFloat(document.getElementById("premiumRateInput").value) ||
+              50.0,
+            profilePic: document.getElementById("profileImagePreview").src,
+          };
+
+          // Safely check if a home base exists before appending coordinates
+          if (AppState.homeBase) {
+            payload.baseLat = AppState.homeBase[0];
+            payload.baseLng = AppState.homeBase[1];
+          }
+
           await window.setDoc(
             window.doc(window.db, "driver_settings", DRIVER_DOC_ID),
             payload,
             { merge: true }
           );
+          
           btn.innerText = "Saved!";
           btn.classList.replace("btn-primary", "btn-success");
           setTimeout(() => {
             btn.innerText = originalText;
             btn.classList.replace("btn-success", "btn-primary");
           }, 2000);
+          
         } catch (e) {
           console.error("Error saving settings:", e);
           btn.innerText = "Error Saving";
+          // Ensure the button always resets even if it fails 
+          setTimeout(() => {
+            btn.innerText = originalText;
+          }, 2500);
         }
       };
+      
+      
+      
+      
+      
 
+     
       function initMap() {
         AppState.mapInstance = L.map("map", { zoomControl: false }).setView(
           [39.8283, -98.5795],
