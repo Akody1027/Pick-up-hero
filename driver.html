@@ -16,7 +16,7 @@
     <style>
       :root {
         --bg: #121212;
-        --surface: #1e1e1e;
+        --surface: #1e1e1e; 
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
@@ -3104,13 +3104,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
 
 
-
+                }
+ 
               actions += `
                 <div style="display: flex; gap: 10px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px;">
                   <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${o.userId}')">📞 Call</button>
                   <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${o.dbId}')">💬 Chat</button>
                 </div>
               `;
+                
+                
+                
+                
+
+
             } else {
               actions = `<div style="margin-top: 10px; color: var(--text-muted); font-size: 0.85rem; font-weight: bold;"> Final Delivery Drop-off</div>`;
             }
