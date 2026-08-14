@@ -849,9 +849,76 @@
       .settings-dropdown button:hover {
         background: var(--surface);
       }
+      
+      
+      
+      /* --- GLOBAL ACTIVITY INDICATORS --- */
+      .top-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      
+      .activity-ribbon {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 5px;
+        background: rgba(238, 97, 28, 0.2);
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        overflow: hidden;
+      }
+      
+      .activity-ribbon::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -50%;
+        width: 50%;
+        height: 100%;
+        background: var(--accent);
+        animation: ribbon-slide 1s infinite linear;
+      }
+      
+      @keyframes ribbon-slide {
+        0% { left: -50%; }
+        100% { left: 100%; }
+      }
+      
+      .activity-spinner {
+        width: 22px;
+        height: 22px;
+        border: 3px solid rgba(238, 97, 28, 0.3);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 1s infinite linear;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+      
+      .activity-active {
+        opacity: 1 !important;
+      }
+      
+      
+      
+      
+      
     </style>
   </head>
   <body>
+    
+    <!-- GLOBAL ACTIVITY RIBBON -->
+    <div id="globalActivityRibbon" class="activity-ribbon"></div>
+    
+    
+    
+    
     <!-- AUTHENTICATION OVERLAY -->
     <div id="authOverlay">
       <div class="auth-card">
@@ -1023,6 +1090,11 @@
 
     <!-- TOP COMMAND CENTER -->
     <div class="top-controls">
+      <!-- GLOBAL ACTIVITY SPINNER -->
+      <div id="globalActivitySpinner" class="activity-spinner"></div>
+      
+      
+      
       <button class="bell-btn" onclick="openNotificationModal()">
         <svg viewBox="0 0 24 24">
           <path
@@ -1629,6 +1701,40 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
     <!-- APPLICATION LOGIC -->
     <script>
+      
+      
+      
+      // --- GLOBAL ACTIVITY TRACKER ---
+      let activityTimeout = null;
+
+      window.triggerGlobalActivity = function () {
+        const ribbon = document.getElementById("globalActivityRibbon");
+        const spinner = document.getElementById("globalActivitySpinner");
+        
+        if (ribbon) ribbon.classList.add("activity-active");
+        if (spinner) spinner.classList.add("activity-active");
+
+        if (activityTimeout) {
+          clearTimeout(activityTimeout);
+        }
+
+        activityTimeout = setTimeout(() => {
+          if (ribbon) ribbon.classList.remove("activity-active");
+          if (spinner) spinner.classList.remove("activity-active");
+        }, 1000);
+      };
+
+      ['touchstart', 'touchend', 'mousedown', 'mouseup', 'click'].forEach(evt => {
+        document.addEventListener(evt, window.triggerGlobalActivity, { passive: true });
+      });
+      
+      
+      
+      
+      
+      
+      
+      
       // System State
       const AppState = {
         workflowPhase: "idle", // idle -> triage -> pickup -> delivery
@@ -2070,6 +2176,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.head.appendChild(style);
 
         startTelemetry();
+        
+        // Hook global activity tracker to map interactions
+        AppState.mapInstance.on('zoomstart zoomend dragstart dragend movestart moveend', window.triggerGlobalActivity);
+        
       }
 
       function renderHomeBases() {
