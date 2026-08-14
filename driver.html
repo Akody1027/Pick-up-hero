@@ -12,14 +12,14 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
- 
+
     <style>
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
-        --accent-hover: #d95314;    
+        --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
@@ -716,6 +716,117 @@
         font-size: 1.1rem;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
       }
+
+      /* --- CHAT MODAL --- */
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .chat-bubble {
+        max-width: 80%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        font-size: 0.95rem;
+        line-height: 1.4;
+      }
+      .chat-bubble.hero {
+        background: var(--accent);
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+      }
+      .chat-bubble.customer {
+        background: var(--surface-elevated);
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+      }
+      .chat-timestamp {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+        text-align: right;
+      }
+      .chat-input-area {
+        display: flex;
+        gap: 10px;
+        padding: 15px;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        align-items: center;
+        padding-bottom: calc(15px + env(safe-area-inset-bottom));
+      }
+      .chat-input-area input {
+        flex: 1;
+        padding: 14px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+        outline: none;
+      }
+      .chat-input-area input:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .chat-send-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .chat-send-btn:disabled {
+        background: var(--surface-elevated);
+        cursor: not-allowed;
+      }
+      .chat-send-btn svg {
+        width: 20px;
+        height: 20px;
+        fill: white;
+      }
+
+      /* --- SETTINGS HAMBURGER DROPDOWN --- */
+      .settings-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+        z-index: 2500;
+        width: 200px;
+      }
+      .settings-dropdown.active {
+        display: flex;
+      }
+      .settings-dropdown button {
+        background: none;
+        border: none;
+        padding: 15px;
+        text-align: left;
+        color: var(--text);
+        font-size: 0.95rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border);
+      }
+      .settings-dropdown button:last-child {
+        border-bottom: none;
+      }
+      .settings-dropdown button:hover {
+        background: var(--surface);
+      }
     </style>
   </head>
   <body>
@@ -872,13 +983,13 @@
 
     <!-- TOP COMMAND CENTER -->
     <div class="top-controls">
-      <button class="bell-btn" onclick="startTriageMode()">
+      <button class="bell-btn" onclick="openNotificationModal()">
         <svg viewBox="0 0 24 24">
           <path
             d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
           />
         </svg>
-        <div class="badge" id="notificationBadge">0</div>
+        <div class="badge" id="driverNotificationBadge">0</div>
       </button>
     </div>
 
@@ -1049,9 +1160,40 @@
 
     <!-- MODAL: MASTER SETTINGS -->
     <div id="settingsModal" class="modal">
-      <div class="modal-header">
+      <div class="modal-header" style="position: relative">
         <h2>Driver Settings</h2>
-        <button class="close-btn" onclick="closeAllModals()">✕</button>
+        <div style="display: flex; gap: 15px; align-items: center">
+          <button
+            class="close-btn"
+            style="background: transparent"
+            onclick="toggleSettingsDropdown()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              style="width: 24px; height: 24px; fill: var(--text)"
+            >
+              <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+            </svg>
+          </button>
+          <button class="close-btn" onclick="closeAllModals()">✕</button>
+        </div>
+
+        <div class="settings-dropdown" id="settingsDropdownMenu">
+          <button
+            onclick="window.location.href='mailto:roadwatchero@gmail.com?subject=Driver Support Request'"
+          >
+            Contact Support
+          </button>
+          <button style="color: var(--accent)" onclick="confirmSignOut()">
+            Sign Out
+          </button>
+          <button
+            style="color: var(--danger)"
+            onclick="alert('Contact administration to delete a driver account.')"
+          >
+            Delete Account
+          </button>
+        </div>
       </div>
       <div class="modal-content">
         <!-- Profile Block with Circular Uploader -->
@@ -1077,7 +1219,6 @@
                 background-color: var(--surface);
               "
             />
-
             <div
               style="
                 position: absolute;
@@ -1124,16 +1265,32 @@
         </div>
 
         <div class="form-group">
-          <label>Display Name</label>
-          <input type="text" id="driverNameInput" value="Hero Driver" />
+          <label>Phone Number *</label>
+          <input
+            type="tel"
+            id="driverPhoneInput"
+            placeholder="(555) 555-5555"
+            oninput="validateDriverProfile()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Display Name *</label>
+          <input
+            type="text"
+            id="driverNameInput"
+            value="Hero Driver"
+            oninput="validateDriverProfile()"
+          />
         </div>
 
         <div class="form-group" style="margin-bottom: 35px">
-          <label>Driver Bio (Visible to Customers)</label>
+          <label>Driver Bio (Visible to Customers) *</label>
           <textarea
             id="driverBioInput"
             rows="3"
             placeholder="Write a short bio..."
+            oninput="validateDriverProfile()"
           >
 Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursday mornings.</textarea
           >
@@ -1250,14 +1407,62 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         >
           Save Changes
         </button>
+      </div>
+    </div>
 
-        <button
-          class="btn btn-emergency"
-          id="signOutBtn"
-          onclick="confirmSignOut()"
-          style="margin-top: 15px"
+    <!-- NOTIFICATION CENTER MODAL -->
+    <div id="notificationModal" class="modal">
+      <div class="modal-header">
+        <h2>Notifications</h2>
+        <button class="close-btn" onclick="closeNotificationModal()">✕</button>
+      </div>
+      <div class="modal-content" id="notificationList">
+        <p
+          style="color: var(--text-muted); text-align: center; margin-top: 20px"
         >
-          Sign Out
+          No new notifications.
+        </p>
+      </div>
+    </div>
+
+    <!-- CHAT MODAL -->
+    <div id="chatModal" class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="chatHeaderTitle">Customer Connect</h2>
+          <span
+            id="chatHeaderSubtitle"
+            style="font-size: 0.8rem; color: var(--text-muted)"
+            >Waiting for route</span
+          >
+        </div>
+        <button
+          class="close-btn"
+          style="color: var(--accent)"
+          onclick="closeChatModal()"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="chat-messages" id="chatMessageContainer">
+        <!-- Messages populate here -->
+      </div>
+      <div class="chat-input-area">
+        <input
+          type="text"
+          id="chatTextInput"
+          placeholder="Message your customer..."
+          disabled
+        />
+        <button
+          class="chat-send-btn"
+          id="chatSendBtn"
+          onclick="sendChatMessage()"
+          disabled
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          </svg>
         </button>
       </div>
     </div>
@@ -1301,6 +1506,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         updateDoc,
         setDoc,
         getDoc,
+        serverTimestamp,
+        orderBy,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -1333,6 +1540,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.updateDoc = updateDoc;
       window.setDoc = setDoc;
       window.getDoc = getDoc;
+
+      window.serverTimestamp = serverTimestamp;
+      window.orderBy = orderBy;
 
       // Fire the application boot sequence now that Firebase is guaranteed loaded
       if (window.bootApplication) window.bootApplication();
@@ -1538,6 +1748,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             if (data.displayName)
               document.getElementById("driverNameInput").value =
                 data.displayName;
+
+            if (data.phoneNumber)
+              document.getElementById("driverPhoneInput").value =
+                data.phoneNumber;
+
             if (data.bio)
               document.getElementById("driverBioInput").value = data.bio;
             if (data.premiumRate)
@@ -1586,6 +1801,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
 
           // --- NATIVE GEOLOCATION FALLBACK ---
+
+          if (window.validateDriverProfile) window.validateDriverProfile();
+
           if (!hasSavedLocation) {
             if (navigator.geolocation) {
               navigator.geolocation.getCurrentPosition(
@@ -1626,6 +1844,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         const payload = {
           displayName: document.getElementById("driverNameInput").value,
+          phoneNumber: document.getElementById("driverPhoneInput").value.trim(),
+
           bio: document.getElementById("driverBioInput").value,
           globalKillSwitch: document
             .getElementById("killSwitchToggle")
@@ -1921,6 +2141,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               compressedBase64;
           };
           img.src = e.target.result;
+
+          if (window.validateDriverProfile) window.validateDriverProfile();
         };
         reader.readAsDataURL(file);
       };
@@ -1951,6 +2173,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
                   type: "pickup",
                   tipAmount: data.tipAmount || 0,
+
+                  userId: data.userId,
+
                   totalCost: data.totalCost || 0,
                   bookingType: data.bookingType || "scheduled",
                   stripeSessionId: data.stripeSessionId || null,
@@ -1977,6 +2202,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
                   type: "delivery",
                   tipAmount: data.tipAmount || 0,
+
+                  userId: data.userId,
+
                   totalCost: data.totalCost || 0,
                   bookingType: data.bookingType || "scheduled",
                   stripeSessionId: data.stripeSessionId || null,
@@ -3086,6 +3314,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             ? `<button class="btn btn-secondary" style="margin-top:10px; padding:8px; font-size:0.85rem;" disabled>Picked Up ✓</button>`
             : `<button class="btn btn-primary" style="margin-top:10px; padding:8px; font-size:0.85rem;" onclick="markPickupComplete('${node.id}')">Items Picked Up</button>`;
 
+          let connectHTML = "";
+          if (!isDone && AppState.workflowPhase === "pickup") {
+            connectHTML = `
+              <div style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${node.userId}')">📞 Call</button>
+                <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${node.dbId}')">💬 Chat</button>
+              </div>
+            `;
+          }
+
           // Generate the detailed pickup information UI box
           let extraInfo = `
             <div style="background: var(--surface); padding: 12px; border-radius: 8px; margin-top: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem;">
@@ -3115,6 +3353,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           timeline.innerHTML += `
             <li class="timeline-item ${statusClass}">
               <div class="node-card">
+                ${connectHTML}
                 <div class="node-header">
                   <strong>${node.title}</strong>
                 </div>
@@ -3159,9 +3398,23 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             </button>`;
           }
 
+          let connectHTML = "";
+          if (
+            node.status !== "completed" &&
+            AppState.workflowPhase === "delivery"
+          ) {
+            connectHTML = `
+              <div style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${node.userId}')">📞 Call</button>
+                <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${node.dbId}')">💬 Chat</button>
+              </div>
+            `;
+          }
+
           timeline.innerHTML += `
             <li class="timeline-item ${statusClass}">
               <div class="node-card">
+                ${connectHTML}
                 <div class="node-header">
                   <strong>${node.title}</strong>
                 </div>
@@ -3173,6 +3426,265 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           `;
         });
       }
+
+      // --- SETTINGS DROPDOWN & VALIDATION LOGIC ---
+      window.toggleSettingsDropdown = function () {
+        document
+          .getElementById("settingsDropdownMenu")
+          .classList.toggle("active");
+      };
+
+      window.validateDriverProfile = function () {
+        const name = document.getElementById("driverNameInput").value.trim();
+        const phone = document.getElementById("driverPhoneInput")
+          ? document.getElementById("driverPhoneInput").value.trim()
+          : "";
+        const bio = document.getElementById("driverBioInput").value.trim();
+        const picSrc = document.getElementById("profileImagePreview").src;
+
+        const isValid =
+          name !== "" &&
+          phone !== "" &&
+          bio !== "" &&
+          !picSrc.includes("data:image/svg+xml");
+
+        const saveBtn = document.getElementById("saveSettingsBtn");
+        if (saveBtn) {
+          saveBtn.disabled = !isValid;
+          saveBtn.style.opacity = isValid ? "1" : "0.5";
+          saveBtn.innerText = isValid
+            ? "Save Changes"
+            : "Complete Profile to Save";
+        }
+      };
+
+      // --- CHAT & NOTIFICATION SYSTEM ---
+      window.AppState.unreadMessages = 0;
+      window.chatUnsubscribe = null;
+      window.activeChatOrderId = null;
+
+      window.openNotificationModal = function () {
+        document.getElementById("notificationModal").classList.add("active");
+      };
+
+      window.closeNotificationModal = function () {
+        document.getElementById("notificationModal").classList.remove("active");
+      };
+
+      window.openChatModal = function (orderId) {
+        if (!orderId && !window.activeChatOrderId) return;
+        const targetId = orderId || window.activeChatOrderId;
+
+        document.getElementById("chatModal").classList.add("active");
+        window.AppState.unreadMessages = 0;
+        document.getElementById("driverNotificationBadge").style.display =
+          "none";
+        document.getElementById("driverNotificationBadge").innerText = "0";
+        closeNotificationModal();
+
+        window.initChatListener(targetId);
+
+        setTimeout(() => {
+          const container = document.getElementById("chatMessageContainer");
+          container.scrollTop = container.scrollHeight;
+        }, 100);
+      };
+
+      window.closeChatModal = function () {
+        document.getElementById("chatModal").classList.remove("active");
+      };
+
+      window.lockChatDormantState = function () {
+        document.getElementById("chatTextInput").disabled = true;
+        document.getElementById("chatSendBtn").disabled = true;
+        document.getElementById("chatHeaderSubtitle").innerText =
+          "Waiting for route";
+        document.getElementById("chatHeaderSubtitle").style.color =
+          "var(--text-muted)";
+        document.getElementById("chatMessageContainer").innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+            Chat is strictly locked.<br>There is no active delivery route.
+          </div>
+        `;
+      };
+
+      window.initChatListener = function (orderId) {
+        if (window.chatUnsubscribe) window.chatUnsubscribe();
+        window.activeChatOrderId = orderId;
+
+        document.getElementById("chatTextInput").disabled = false;
+        document.getElementById("chatSendBtn").disabled = false;
+        document.getElementById("chatHeaderSubtitle").innerText =
+          "Live Connection";
+        document.getElementById("chatHeaderSubtitle").style.color =
+          "var(--success)";
+
+        const q = window.query(
+          window.collection(window.db, "orders", orderId, "messages"),
+          window.orderBy("timestamp", "asc")
+        );
+
+        window.chatUnsubscribe = window.onSnapshot(q, (snapshot) => {
+          const container = document.getElementById("chatMessageContainer");
+          let html = "";
+          let isNewPayload = false;
+
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              const msg = change.doc.data();
+              const isMe = msg.senderId === DRIVER_DOC_ID;
+              const bubbleClass = isMe ? "hero" : "customer";
+
+              const timeString = msg.timestamp
+                ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Sending...";
+
+              html += `
+                <div class="chat-bubble ${bubbleClass}">
+                  ${msg.text}
+                  <div class="chat-timestamp">${timeString}</div>
+                </div>
+              `;
+
+              if (!isMe && !msg.read) {
+                isNewPayload = true;
+              }
+            }
+          });
+
+          if (html) {
+            if (container.innerHTML.includes("Chat is strictly locked")) {
+              container.innerHTML = "";
+            }
+            container.innerHTML += html;
+            container.scrollTop = container.scrollHeight;
+          }
+
+          if (isNewPayload) {
+            const alertAudio = document.getElementById("alertSound");
+            if (alertAudio)
+              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
+
+            const chatModal = document.getElementById("chatModal");
+            if (!chatModal.classList.contains("active")) {
+              window.AppState.unreadMessages++;
+              const badge = document.getElementById("driverNotificationBadge");
+              badge.innerText = window.AppState.unreadMessages;
+              badge.style.display = "flex";
+
+              let notifHTML = `
+                <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer; margin-bottom: 10px;" onclick="openChatModal('${orderId}')">
+                  <strong style="color: var(--accent);">New Message from Customer</strong>
+                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open chat</p>
+                </div>
+              `;
+
+              if (
+                document
+                  .getElementById("notificationList")
+                  .innerHTML.includes("No new notifications")
+              ) {
+                document.getElementById("notificationList").innerHTML =
+                  notifHTML;
+              } else {
+                document.getElementById("notificationList").innerHTML +=
+                  notifHTML;
+              }
+            }
+          }
+        });
+      };
+
+      window.sendChatMessage = async function () {
+        const input = document.getElementById("chatTextInput");
+        const text = input.value.trim();
+        if (!text || !window.activeChatOrderId) return;
+
+        input.value = "";
+
+        try {
+          await window.addDoc(
+            window.collection(
+              window.db,
+              "orders",
+              window.activeChatOrderId,
+              "messages"
+            ),
+            {
+              senderId: DRIVER_DOC_ID,
+              text: text,
+              timestamp: window.serverTimestamp(),
+              read: false,
+            }
+          );
+        } catch (e) {
+          console.error("Failed to send message:", e);
+          window.showCustomAlert("Error", "Failed to send message.");
+        }
+      };
+
+      window.callCustomer = async function (userId) {
+        if (!userId) return;
+        try {
+          const userDoc = await window.getDoc(
+            window.doc(window.db, "users", userId)
+          );
+          if (userDoc.exists() && userDoc.data().phoneNumber) {
+            window.location.href = `tel:${userDoc.data().phoneNumber}`;
+          } else {
+            window.showCustomAlert(
+              "Error",
+              "Customer has no verified phone number on file."
+            );
+          }
+        } catch (e) {
+          console.error("Failed to fetch customer phone:", e);
+        }
+      };
+
+      // INTERCEPT TERMINAL STATE FOR UI CLEANUP
+      const originalUpdateDashboardUI = window.updateDashboardUI;
+      window.updateDashboardUI = async function () {
+        originalUpdateDashboardUI();
+        if (
+          AppState.workflowPhase === "idle" ||
+          AppState.workflowPhase === "complete"
+        ) {
+          if (window.chatUnsubscribe) window.chatUnsubscribe();
+          window.lockChatDormantState();
+          window.activeChatOrderId = null;
+        }
+      };
+
+      // Inject Triage into Notification center if pending orders exist
+      const originalListenForPendingOrders = window.listenForPendingOrders;
+      window.listenForPendingOrders = function () {
+        // Temporarily override the global badge update locally inside the listener
+        const originalBadgeStyle = document.getElementById("notificationBadge");
+        if (originalBadgeStyle) originalBadgeStyle.id = "oldBadge";
+
+        originalListenForPendingOrders();
+
+        setTimeout(() => {
+          if (AppState.pendingOrders > 0) {
+            const badge = document.getElementById("driverNotificationBadge");
+            badge.innerText =
+              AppState.pendingOrders + window.AppState.unreadMessages;
+            badge.style.display = "flex";
+
+            let triageNotif = `
+                    <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--danger); cursor: pointer; margin-bottom: 10px;" onclick="window.startTriageMode()">
+                      <strong style="color: var(--danger);">Pending Route Requests (${AppState.pendingOrders})</strong>
+                      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open mapping engine</p>
+                    </div>
+                  `;
+            document.getElementById("notificationList").innerHTML = triageNotif;
+          }
+        }, 500);
+      };
     </script>
   </body>
 </html>
