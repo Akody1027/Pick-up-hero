@@ -21,7 +21,7 @@
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
-        --text-muted: #94a3b8; 
+        --text-muted: #94a3b8;
         --border: #333333;
         --success: #22c55e;
         --danger: #ef4444;
@@ -2919,6 +2919,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                         .catch((e) => console.log("Audio blocked:", e));
 
                     AppState.unreadMessages++;
+
+                    window.latestUnreadOrderId = orderId;
                     if (window.updateNotificationsUI)
                       window.updateNotificationsUI();
                   }
@@ -3649,7 +3651,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById("chatModal").classList.add("active");
         AppState.unreadMessages = 0;
 
+        window.latestUnreadOrderId = null;
+
         if (window.updateNotificationsUI) window.updateNotificationsUI();
+
         closeNotificationModal();
 
         window.initChatListener(targetId);
@@ -3779,6 +3784,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   .catch((e) => console.log("Audio blocked:", e));
 
               AppState.unreadMessages++;
+
+              window.latestUnreadOrderId = orderId;
               if (window.updateNotificationsUI) window.updateNotificationsUI();
             }
           }
@@ -3910,7 +3917,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         if (AppState.unreadMessages > 0) {
           totalCount += AppState.unreadMessages;
-          const targetId = window.activeChatOrderId || "";
+
+          const targetId =
+            window.latestUnreadOrderId || window.activeChatOrderId || "";
           html += `
             <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer; margin-bottom: 10px;" onclick="openChatModal('${targetId}')">
               <strong style="color: var(--accent);">New Message from Customer (${AppState.unreadMessages})</strong>
