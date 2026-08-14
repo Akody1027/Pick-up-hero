@@ -16,7 +16,7 @@
     <style>
       :root {
         --bg: #121212;
-        --surface: #1e1e1e; 
+        --surface: #1e1e1e;  
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
@@ -3804,18 +3804,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
           }
         });
-      };
-              
+      }; 
               
               
 
-
-      
-      
-      
-      
-      
-      
       window.sendChatMessage = async function () {
         const input = document.getElementById("chatTextInput");
         const text = input.value.trim();
@@ -3844,11 +3836,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
-      window.callCustomer = async function (userId) {
-        if (!userId) return;
-        
-        
-        window.handleChatImageUpload = function (event) {
+      
+      
+      
+      window.handleChatImageUpload = function (event) {
         const file = event.target.files[0];
         if (!file || !window.activeChatOrderId) return;
         
@@ -3872,7 +3863,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 window.collection(window.db, "orders", window.activeChatOrderId, "messages"),
                 {
                   senderId: DRIVER_DOC_ID,
-                  text: "Image attached",
+                  text: "📷 Image attached",
                   imageUrl: compressedBase64,
                   timestamp: window.serverTimestamp(),
                   read: false,
@@ -3888,9 +3879,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         reader.readAsDataURL(file);
         event.target.value = ""; // Reset file path to allow repeat identical uploads
       };
-        
+
+      window.callCustomer = async function (userId) {
+        if (!userId) return;
         
         try {
+      
+
           const userDoc = await window.getDoc(
             window.doc(window.db, "users", userId)
           );
