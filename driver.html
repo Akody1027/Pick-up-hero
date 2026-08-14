@@ -18,7 +18,7 @@
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
-        --accent: #ee611c; 
+        --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
@@ -1512,6 +1512,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         serverTimestamp,
         orderBy,
         deleteDoc,
+        addDoc,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -1549,6 +1550,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.orderBy = orderBy;
       window.deleteDoc = deleteDoc;
       window.deleteUser = deleteUser;
+      window.addDoc = addDoc;
 
       // Fire the application boot sequence now that Firebase is guaranteed loaded
       if (window.bootApplication) window.bootApplication();
@@ -2632,8 +2634,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       }
 
+
+
+
+
+
       window.acceptTriageOrder = async function (dbId) {
         try {
+          AppState.triageQueue.forEach(item => {
+            if (item.dbId === dbId) item.status = "accepted";
+          });
+          updateDashboardUI();
           await window.updateDoc(window.doc(window.db, "orders", dbId), {
             status: "accepted",
           });
@@ -2654,6 +2665,33 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           console.error(e);
         }
       };
+
+      window.cancelTriageOrder = async function (dbId) {
+        if (confirm("Are you sure you want to cancel this order? This will abort the order entirely and notify the customer you are unable to get there.")) {
+          try {
+            AppState.triageQueue = AppState.triageQueue.filter(item => item.dbId !== dbId);
+            updateDashboardUI();
+            await window.updateDoc(window.doc(window.db, "orders", dbId), {
+              status: "cancelled",
+              cancelReason: "Driver cancelled before starting route."
+            });
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      };
+
+
+
+
+
+
+
+
+
+
+
+
 
       // --- ROUTING & DISTANCE MATRIX UTILS ---
       let activeRouteLayer = null;
@@ -3057,8 +3095,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                       <button class="btn btn-secondary" style="padding: 8px; font-size: 0.8rem; flex: 1; color: var(--danger); border-color: var(--danger);" onclick="declineTriageOrder('${o.dbId}')">Decline</button>
                   </div>`;
               } else {
-                actions = `<div style="margin-top: 10px; color: var(--success); font-weight: bold; font-size: 0.85rem;">✓ Accepted - Waiting to Start</div>`;
-              }
+
+                actions = `
+                  <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="color: var(--success); font-weight: bold; font-size: 0.85rem; text-align: center;">✓ Accepted - Waiting to Start</div>
+                    <button class="btn btn-emergency" style="padding: 8px; font-size: 0.8rem; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer;" onclick="cancelTriageOrder('${o.dbId}')">Cancel Route</button>
+                  </div>`;
+
+
+
 
               actions += `
                 <div style="display: flex; gap: 10px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px;">
@@ -3447,7 +3492,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               AppState.workflowPhase === "ready_pickup")
           ) {
             connectHTML = `
- 
+
               <div style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
                 <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${node.userId}')">📞 Call</button>
                 <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${node.dbId}')">💬 Chat</button>
