@@ -18,7 +18,7 @@
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
-        --accent: #ee611c;
+        --accent: #ee611c; 
         --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
@@ -2781,8 +2781,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
         window.activeOrderUnsubscribers = [];
 
+        // Combine activeQueue and triageQueue to monitor ALL current orders
         const uniqueOrderIds = [
-          ...new Set(AppState.activeQueue.map((item) => item.dbId)),
+          ...new Set([
+            ...AppState.activeQueue.map((item) => item.dbId),
+            ...AppState.triageQueue.map((item) => item.dbId),
+          ]),
         ];
 
         uniqueOrderIds.forEach((orderId) => {
@@ -2803,8 +2807,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   AppState.activeQueue = AppState.activeQueue.filter(
                     (item) => item.dbId !== orderId
                   );
+                  AppState.triageQueue = AppState.triageQueue.filter(
+                    (item) => item.dbId !== orderId
+                  );
 
-                  if (AppState.activeQueue.length === 0) {
+                  if (
+                    AppState.activeQueue.length === 0 &&
+                    AppState.triageQueue.length === 0
+                  ) {
                     AppState.workflowPhase = "idle";
                   } else if (
                     AppState.workflowPhase === "pickup" ||
@@ -2813,7 +2823,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                     const pendingPickups = AppState.activeQueue.filter(
                       (i) => i.type === "pickup" && i.status !== "completed"
                     );
-                    if (pendingPickups.length === 0) {
+                    if (
+                      pendingPickups.length === 0 &&
+                      AppState.activeQueue.length > 0
+                    ) {
                       AppState.workflowPhase = "ready_delivery";
                     }
                   }
@@ -3046,6 +3059,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               } else {
                 actions = `<div style="margin-top: 10px; color: var(--success); font-weight: bold; font-size: 0.85rem;">✓ Accepted - Waiting to Start</div>`;
               }
+
+              actions += `
+                <div style="display: flex; gap: 10px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px;">
+                  <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${o.userId}')">📞 Call</button>
+                  <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${o.dbId}')">💬 Chat</button>
+                </div>
+              `;
             } else {
               actions = `<div style="margin-top: 10px; color: var(--text-muted); font-size: 0.85rem; font-weight: bold;"> Final Delivery Drop-off</div>`;
             }
@@ -3421,8 +3441,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             : `<button class="btn btn-primary" style="margin-top:10px; padding:8px; font-size:0.85rem;" onclick="markPickupComplete('${node.id}')">Items Picked Up</button>`;
 
           let connectHTML = "";
-          if (!isDone && AppState.workflowPhase === "pickup") {
+          if (
+            !isDone &&
+            (AppState.workflowPhase === "pickup" ||
+              AppState.workflowPhase === "ready_pickup")
+          ) {
             connectHTML = `
+ 
               <div style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
                 <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${node.userId}')">📞 Call</button>
                 <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${node.dbId}')">💬 Chat</button>
@@ -3507,7 +3532,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           let connectHTML = "";
           if (
             node.status !== "completed" &&
-            AppState.workflowPhase === "delivery"
+            (AppState.workflowPhase === "delivery" ||
+              AppState.workflowPhase === "ready_delivery")
           ) {
             connectHTML = `
               <div style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
@@ -3583,9 +3609,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         document.getElementById("chatModal").classList.add("active");
         AppState.unreadMessages = 0;
-        document.getElementById("driverNotificationBadge").style.display =
-          "none";
-        document.getElementById("driverNotificationBadge").innerText = "0";
+        const badge = document.getElementById("driverNotificationBadge");
+        if (badge) {
+          badge.style.display = AppState.pendingOrders > 0 ? "flex" : "none";
+          badge.innerText = AppState.pendingOrders;
+        }
         closeNotificationModal();
 
         window.initChatListener(targetId);
@@ -3668,39 +3696,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             container.innerHTML += html;
             container.scrollTop = container.scrollHeight;
           }
-
-          if (isNewPayload) {
-            const alertAudio = document.getElementById("alertSound");
-            if (alertAudio)
-              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
-
-            const chatModal = document.getElementById("chatModal");
-            if (!chatModal.classList.contains("active")) {
-              AppState.unreadMessages++;
-              const badge = document.getElementById("driverNotificationBadge");
-              badge.innerText = AppState.unreadMessages;
-              badge.style.display = "flex";
-
-              let notifHTML = `
-                <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer; margin-bottom: 10px;" onclick="openChatModal('${orderId}')">
-                  <strong style="color: var(--accent);">New Message from Customer</strong>
-                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open chat</p>
-                </div>
-              `;
-
-              if (
-                document
-                  .getElementById("notificationList")
-                  .innerHTML.includes("No new notifications")
-              ) {
-                document.getElementById("notificationList").innerHTML =
-                  notifHTML;
-              } else {
-                document.getElementById("notificationList").innerHTML +=
-                  notifHTML;
-              }
-            }
-          }
         });
       };
 
@@ -3768,34 +3763,36 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       // Inject Triage into Notification center if pending orders exist
       const originalListenForPendingOrders = window.listenForPendingOrders;
       window.listenForPendingOrders = function () {
-        // Temporarily override the global badge update locally inside the listener
-        const originalBadgeStyle = document.getElementById(
-          "driverNotificationBadge"
-        );
-        if (originalBadgeStyle) originalBadgeStyle.id = "oldBadge";
-
         originalListenForPendingOrders();
 
         setTimeout(() => {
-          if (AppState.pendingOrders > 0) {
-            const badge =
-              document.getElementById("oldBadge") ||
-              document.getElementById("driverNotificationBadge");
-            if (badge) {
-              badge.innerText =
-                AppState.pendingOrders + AppState.unreadMessages;
-              badge.style.display = "flex";
-              if (badge.id === "oldBadge") badge.id = "driverNotificationBadge";
-            }
+          const badge = document.getElementById("driverNotificationBadge");
+          if (badge) {
+            const totalAlerts =
+              AppState.pendingOrders + AppState.unreadMessages;
+            badge.innerText = totalAlerts;
+            badge.style.display = totalAlerts > 0 ? "flex" : "none";
+          }
 
+          if (AppState.pendingOrders > 0) {
             let triageNotif = `
                     <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--danger); cursor: pointer; margin-bottom: 10px;" onclick="window.startTriageMode()">
                       <strong style="color: var(--danger);">Pending Route Requests (${AppState.pendingOrders})</strong>
                       <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open mapping engine</p>
                     </div>
                   `;
-            document.getElementById("notificationList").innerHTML = triageNotif;
+            const notifList = document.getElementById("notificationList");
+            if (notifList.innerHTML.includes("No new notifications")) {
+              notifList.innerHTML = triageNotif;
+            } else if (
+              !notifList.innerHTML.includes("Pending Route Requests")
+            ) {
+              notifList.innerHTML = triageNotif + notifList.innerHTML;
+            }
           }
+
+          // Ensure background chat listeners attach to incoming Triage orders
+          if (window.monitorActiveRoute) window.monitorActiveRoute();
         }, 500);
       };
     </script>
