@@ -16,15 +16,15 @@
     <style>
       :root {
         --bg: #121212;
-        --surface: #1e1e1e;  
+        --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
-        --text-muted: #94a3b8;
+        --text-muted: #94a3b8; 
         --border: #333333;
         --success: #22c55e;
-        --danger: #ef4444; 
+        --danger: #ef4444;
         --shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
       }
 
@@ -1450,16 +1450,37 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         <!-- Messages populate here -->
       </div>
       <div class="chat-input-area">
-        
-        <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--surface-elevated); border-radius: 50%; flex-shrink: 0;">
-          <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: var(--text-muted);">
-            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+        <label
+          style="
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: var(--surface-elevated);
+            border-radius: 50%;
+            flex-shrink: 0;
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 22px; height: 22px; fill: var(--text-muted)"
+          >
+            <path
+              d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+            />
           </svg>
-          <input type="file" id="chatImageInput" accept="image/*" style="display: none;" onchange="handleChatImageUpload(event)" disabled>
+          <input
+            type="file"
+            id="chatImageInput"
+            accept="image/*"
+            style="display: none"
+            onchange="handleChatImageUpload(event)"
+            disabled
+          />
         </label>
-        
-        
-        
+
         <input
           type="text"
           id="chatTextInput"
@@ -2332,11 +2353,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             updateDashboardUI();
           }
 
-          const badge = document.getElementById("driverNotificationBadge");
-          if (badge) {
-            badge.innerText = AppState.pendingOrders;
-            badge.style.display = AppState.pendingOrders > 0 ? "flex" : "none";
-          }
+          if (window.updateNotificationsUI) window.updateNotificationsUI();
         });
       }
 
@@ -2494,6 +2511,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         const badge = document.getElementById("driverNotificationBadge");
         if (badge) badge.style.display = "none";
 
+        closeNotificationModal();
         closeAllModals();
         AppState.workflowPhase = "triage";
         updateDashboardUI();
@@ -2901,28 +2919,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                         .catch((e) => console.log("Audio blocked:", e));
 
                     AppState.unreadMessages++;
-                    const badge = document.getElementById(
-                      "driverNotificationBadge"
-                    );
-                    if (badge) {
-                      badge.innerText =
-                        AppState.pendingOrders + AppState.unreadMessages;
-                      badge.style.display = "flex";
-                    }
-
-                    let notifHTML = `
-                      <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer; margin-bottom: 10px;" onclick="openChatModal('${orderId}')">
-                        <strong style="color: var(--accent);">New Message from Customer</strong>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open chat</p>
-                      </div>
-                    `;
-                    const notifList =
-                      document.getElementById("notificationList");
-                    if (notifList.innerHTML.includes("No new notifications")) {
-                      notifList.innerHTML = notifHTML;
-                    } else {
-                      notifList.innerHTML += notifHTML;
-                    }
+                    if (window.updateNotificationsUI)
+                      window.updateNotificationsUI();
                   }
                 }
               }
@@ -3650,20 +3648,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         document.getElementById("chatModal").classList.add("active");
         AppState.unreadMessages = 0;
-        const badge = document.getElementById("driverNotificationBadge");
-        if (badge) {
-          badge.style.display = AppState.pendingOrders > 0 ? "flex" : "none";
-          badge.innerText = AppState.pendingOrders;
-        }
+
+        if (window.updateNotificationsUI) window.updateNotificationsUI();
         closeNotificationModal();
-        
-        
-        document.getElementById("notificationList").innerHTML = `
-          <p style="color: var(--text-muted); text-align: center; margin-top: 20px;">
-            No new notifications.
-          </p>
-        `;
-        
 
         window.initChatListener(targetId);
 
@@ -3682,8 +3669,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById("chatSendBtn").disabled = true;
         const imgInput = document.getElementById("chatImageInput");
         if (imgInput) imgInput.disabled = true;
-        
-        
+
         document.getElementById("chatHeaderSubtitle").innerText =
           "Waiting for route";
         document.getElementById("chatHeaderSubtitle").style.color =
@@ -3701,13 +3687,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         document.getElementById("chatTextInput").disabled = false;
         document.getElementById("chatSendBtn").disabled = false;
-        
+
         const imgInput = document.getElementById("chatImageInput");
         if (imgInput) imgInput.disabled = false;
-        
-        
-        
-        
+
         document.getElementById("chatHeaderSubtitle").innerText =
           "Live Connection";
         document.getElementById("chatHeaderSubtitle").style.color =
@@ -3726,7 +3709,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           // 1. Check for brand new messages to trigger alerts
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
-              
               const msg = change.doc.data();
               const isMe = msg.senderId === DRIVER_DOC_ID;
 
@@ -3751,15 +3733,25 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             html += `
               <div class="chat-bubble ${bubbleClass}">
-                ${msg.imageUrl ? `<img src="${msg.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2);"><br>` : ""}
+                ${
+                  msg.imageUrl
+                    ? `<img src="${msg.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2);"><br>`
+                    : ""
+                }
                 ${msg.text}
                 <div class="chat-timestamp">${timeString}</div>
               </div>
             `;
-            
+
             // Actively mark read payloads to kill the notification ping loop
-            if (!isMe && !msg.read && document.getElementById("chatModal").classList.contains("active")) {
-                window.updateDoc(docSnap.ref, { read: true }).catch(e => console.log(e));
+            if (
+              !isMe &&
+              !msg.read &&
+              document.getElementById("chatModal").classList.contains("active")
+            ) {
+              window
+                .updateDoc(docSnap.ref, { read: true })
+                .catch((e) => console.log(e));
             }
           });
 
@@ -3774,39 +3766,24 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           if (isNewPayload) {
             const chatModal = document.getElementById("chatModal");
-            const isLookingAtThisChat = chatModal.classList.contains("active") && window.activeChatOrderId === orderId;
+            const isLookingAtThisChat =
+              chatModal.classList.contains("active") &&
+              window.activeChatOrderId === orderId;
 
             // Strict gate: Only fire audio and badge injections if the chat is not actively visible
             if (!isLookingAtThisChat) {
               const alertAudio = document.getElementById("alertSound");
               if (alertAudio)
-                alertAudio.play().catch((e) => console.log("Audio blocked:", e));
+                alertAudio
+                  .play()
+                  .catch((e) => console.log("Audio blocked:", e));
 
               AppState.unreadMessages++;
-              const badge = document.getElementById("driverNotificationBadge");
-              if (badge) {
-                badge.innerText = AppState.pendingOrders + AppState.unreadMessages;
-                badge.style.display = "flex";
-              }
-
-              let notifHTML = `
-                <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer; margin-bottom: 10px;" onclick="openChatModal('${orderId}')">
-                  <strong style="color: var(--accent);">New Message from Customer</strong>
-                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open chat</p>
-                </div>
-              `;
-              const notifList = document.getElementById("notificationList");
-              if (notifList.innerHTML.includes("No new notifications")) {
-                notifList.innerHTML = notifHTML;
-              } else {
-                notifList.innerHTML += notifHTML;
-              }
+              if (window.updateNotificationsUI) window.updateNotificationsUI();
             }
           }
         });
-      }; 
-              
-              
+      };
 
       window.sendChatMessage = async function () {
         const input = document.getElementById("chatTextInput");
@@ -3836,31 +3813,33 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
-      
-      
-      
       window.handleChatImageUpload = function (event) {
         const file = event.target.files[0];
         if (!file || !window.activeChatOrderId) return;
-        
+
         const reader = new FileReader();
         reader.onload = function (e) {
           const img = new Image();
           img.onload = async function () {
             const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d"); 
-            
+            const ctx = canvas.getContext("2d");
+
             const maxW = 600;
             const scale = img.width > maxW ? maxW / img.width : 1;
-            canvas.width = img.width * scale;  
+            canvas.width = img.width * scale;
             canvas.height = img.height * scale;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            
+
             const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
-            
+
             try {
               await window.addDoc(
-                window.collection(window.db, "orders", window.activeChatOrderId, "messages"),
+                window.collection(
+                  window.db,
+                  "orders",
+                  window.activeChatOrderId,
+                  "messages"
+                ),
                 {
                   senderId: DRIVER_DOC_ID,
                   text: "📷 Image attached",
@@ -3882,10 +3861,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       window.callCustomer = async function (userId) {
         if (!userId) return;
-        
-        try {
-      
 
+        try {
           const userDoc = await window.getDoc(
             window.doc(window.db, "users", userId)
           );
@@ -3916,38 +3893,51 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
+      window.updateNotificationsUI = function () {
+        const notifList = document.getElementById("notificationList");
+        let html = "";
+        let totalCount = 0;
+
+        if (AppState.pendingOrders > 0) {
+          totalCount += AppState.pendingOrders;
+          html += `
+            <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--danger); cursor: pointer; margin-bottom: 10px;" onclick="window.startTriageMode()">
+              <strong style="color: var(--danger);">Pending Route Requests (${AppState.pendingOrders})</strong>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open mapping engine</p>
+            </div>
+          `;
+        }
+
+        if (AppState.unreadMessages > 0) {
+          totalCount += AppState.unreadMessages;
+          const targetId = window.activeChatOrderId || "";
+          html += `
+            <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer; margin-bottom: 10px;" onclick="openChatModal('${targetId}')">
+              <strong style="color: var(--accent);">New Message from Customer (${AppState.unreadMessages})</strong>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open chat</p>
+            </div>
+          `;
+        }
+
+        if (html === "") {
+          html = `<p style="color: var(--text-muted); text-align: center; margin-top: 20px;">No new notifications.</p>`;
+        }
+
+        if (notifList) notifList.innerHTML = html;
+
+        const badge = document.getElementById("driverNotificationBadge");
+        if (badge) {
+          badge.innerText = totalCount;
+          badge.style.display = totalCount > 0 ? "flex" : "none";
+        }
+      };
+
       // Inject Triage into Notification center if pending orders exist
       const originalListenForPendingOrders = window.listenForPendingOrders;
       window.listenForPendingOrders = function () {
         originalListenForPendingOrders();
-
         setTimeout(() => {
-          const badge = document.getElementById("driverNotificationBadge");
-          if (badge) {
-            const totalAlerts =
-              AppState.pendingOrders + AppState.unreadMessages;
-            badge.innerText = totalAlerts;
-            badge.style.display = totalAlerts > 0 ? "flex" : "none";
-          }
-
-          if (AppState.pendingOrders > 0) {
-            let triageNotif = `
-                    <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--danger); cursor: pointer; margin-bottom: 10px;" onclick="window.startTriageMode()">
-                      <strong style="color: var(--danger);">Pending Route Requests (${AppState.pendingOrders})</strong>
-                      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open mapping engine</p>
-                    </div>
-                  `;
-            const notifList = document.getElementById("notificationList");
-            if (notifList.innerHTML.includes("No new notifications")) {
-              notifList.innerHTML = triageNotif;
-            } else if (
-              !notifList.innerHTML.includes("Pending Route Requests")
-            ) {
-              notifList.innerHTML = triageNotif + notifList.innerHTML;
-            }
-          }
-
-          // Ensure background chat listeners attach to incoming Triage orders
+          if (window.updateNotificationsUI) window.updateNotificationsUI();
           if (window.monitorActiveRoute) window.monitorActiveRoute();
         }, 500);
       };
