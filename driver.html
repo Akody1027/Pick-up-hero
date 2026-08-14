@@ -13,14 +13,14 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
 
-    <style> 
-      :root { 
-        --bg: #121212; 
-        --surface: #1e1e1e; 
+    <style>
+      :root {
+        --bg: #121212;
+        --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
-        --text: #ffffff; 
+        --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
         --success: #22c55e;
@@ -1184,7 +1184,7 @@
           >
             Contact Support
           </button>
-          
+
           <button
             id="signOutBtn"
             style="color: var(--accent)"
@@ -1192,17 +1192,9 @@
           >
             Sign Out
           </button>
-          <button
-            style="color: var(--danger)"
-            onclick="confirmDeleteAccount()"
-          >
+          <button style="color: var(--danger)" onclick="confirmDeleteAccount()">
             Delete Account
           </button>
-
-          
-          
-          
-          
         </div>
       </div>
       <div class="modal-content">
@@ -1504,8 +1496,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         signOut,
         setPersistence,
         browserSessionPersistence,
-        deleteUser
-        
+        deleteUser,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
       import {
@@ -1520,7 +1511,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         getDoc,
         serverTimestamp,
         orderBy,
-        deleteDoc
+        deleteDoc,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -1558,8 +1549,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.orderBy = orderBy;
       window.deleteDoc = deleteDoc;
       window.deleteUser = deleteUser;
-      
-      
 
       // Fire the application boot sequence now that Firebase is guaranteed loaded
       if (window.bootApplication) window.bootApplication();
@@ -1688,48 +1677,49 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.signOutState = false;
 
       window.confirmSignOut = async function () {
-        
-        
-        
-        
-        
         window.confirmDeleteAccount = async function () {
-        const confirmMsg = "Are you absolutely sure you want to delete your driver account? This will permanently erase your profile and active route data.";
-        if (!confirm(confirmMsg)) return;
+          const confirmMsg =
+            "Are you absolutely sure you want to delete your driver account? This will permanently erase your profile and active route data.";
+          if (!confirm(confirmMsg)) return;
 
-        if (!DRIVER_DOC_ID) return;
+          if (!DRIVER_DOC_ID) return;
 
-        try {
-          // 1. Delete driver's profile, location, and state documents
-          await window.deleteDoc(window.doc(window.db, "driver_settings", DRIVER_DOC_ID));
-          await window.deleteDoc(window.doc(window.db, "driver_locations", DRIVER_DOC_ID));
-          await window.deleteDoc(window.doc(window.db, "driver_state", DRIVER_DOC_ID));
+          try {
+            // 1. Delete driver's profile, location, and state documents
+            await window.deleteDoc(
+              window.doc(window.db, "driver_settings", DRIVER_DOC_ID)
+            );
+            await window.deleteDoc(
+              window.doc(window.db, "driver_locations", DRIVER_DOC_ID)
+            );
+            await window.deleteDoc(
+              window.doc(window.db, "driver_state", DRIVER_DOC_ID)
+            );
 
-          // 2. Delete the Firebase Auth User
-          if (window.auth.currentUser) {
-            try {
-              await window.deleteUser(window.auth.currentUser);
-            } catch (authError) {
-              console.warn("Auth deletion blocked by Firebase, forcing session clear instead.", authError);
-              await window.signOut(window.auth);
+            // 2. Delete the Firebase Auth User
+            if (window.auth.currentUser) {
+              try {
+                await window.deleteUser(window.auth.currentUser);
+              } catch (authError) {
+                console.warn(
+                  "Auth deletion blocked by Firebase, forcing session clear instead.",
+                  authError
+                );
+                await window.signOut(window.auth);
+              }
             }
-          }
 
-          alert("Driver account successfully deleted.");
-          window.location.reload();
-        } catch (error) {
-          console.error("Error deleting account:", error);
-          window.showCustomAlert("Error", "Failed to delete account: " + error.message);
-        }
-      };
-        
-        
-        
-        
-        
-        
-        
-        
+            alert("Driver account successfully deleted.");
+            window.location.reload();
+          } catch (error) {
+            console.error("Error deleting account:", error);
+            window.showCustomAlert(
+              "Error",
+              "Failed to delete account: " + error.message
+            );
+          }
+        };
+
         const btn = document.getElementById("signOutBtn");
 
         if (!window.signOutState) {
@@ -1739,7 +1729,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           setTimeout(() => {
             window.signOutState = false;
-            btn.innerText = "Sign Out"; 
+            btn.innerText = "Sign Out";
           }, 3000);
         } else {
           // Second tap: execute logout
@@ -2330,9 +2320,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             updateDashboardUI();
           }
 
-          const badge = document.getElementById("notificationBadge");
-          badge.innerText = AppState.pendingOrders;
-          badge.style.display = AppState.pendingOrders > 0 ? "flex" : "none";
+          const badge = document.getElementById("driverNotificationBadge");
+          if (badge) {
+            badge.innerText = AppState.pendingOrders;
+            badge.style.display = AppState.pendingOrders > 0 ? "flex" : "none";
+          }
         });
       }
 
@@ -2486,7 +2478,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
 
         if (AppState.pendingOrders === 0) return;
-        document.getElementById("notificationBadge").style.display = "none";
+
+        const badge = document.getElementById("driverNotificationBadge");
+        if (badge) badge.style.display = "none";
+
         closeAllModals();
         AppState.workflowPhase = "triage";
         updateDashboardUI();
@@ -2781,19 +2776,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.activeOrderUnsubscribers = [];
 
       window.monitorActiveRoute = function () {
-        // Clean up old database listeners to prevent duplicates
         if (window.activeOrderUnsubscribers) {
           window.activeOrderUnsubscribers.forEach((unsub) => unsub());
         }
         window.activeOrderUnsubscribers = [];
 
-        // Extract the unique database IDs for the orders currently in the driver's vehicle
         const uniqueOrderIds = [
           ...new Set(AppState.activeQueue.map((item) => item.dbId)),
         ];
 
         uniqueOrderIds.forEach((orderId) => {
           if (!orderId) return;
+
+          // 1. Monitor Order Status for Cancellations
           const unsub = window.onSnapshot(
             window.doc(window.db, "orders", orderId),
             (docSnap) => {
@@ -2805,12 +2800,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                     "🚨 A customer cancelled their order! Actively rerouting your remaining stops now."
                   );
 
-                  // Violently purge this exact order from the driver's active route array
                   AppState.activeQueue = AppState.activeQueue.filter(
                     (item) => item.dbId !== orderId
                   );
 
-                  // Fallback Logic: Shift the workflow dynamically based on what remains
                   if (AppState.activeQueue.length === 0) {
                     AppState.workflowPhase = "idle";
                   } else if (
@@ -2820,18 +2813,72 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                     const pendingPickups = AppState.activeQueue.filter(
                       (i) => i.type === "pickup" && i.status !== "completed"
                     );
-                    // If the only pickup left was cancelled, instantly skip to deliveries
                     if (pendingPickups.length === 0) {
                       AppState.workflowPhase = "ready_delivery";
                     }
                   }
 
-                  updateDashboardUI(); // Force the map and bottom sheet to seamlessly redraw
+                  updateDashboardUI();
                 }
               }
             }
           );
           window.activeOrderUnsubscribers.push(unsub);
+
+          // 2. Background Chat Listener for Notifications
+          const chatQ = window.query(
+            window.collection(window.db, "orders", orderId, "messages"),
+            window.orderBy("timestamp", "asc")
+          );
+
+          const chatUnsub = window.onSnapshot(chatQ, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+              if (change.type === "added") {
+                const msg = change.doc.data();
+
+                // Alert if message is from the customer and is unread
+                if (msg.senderId !== DRIVER_DOC_ID && !msg.read) {
+                  const chatModal = document.getElementById("chatModal");
+                  const isLookingAtThisChat =
+                    chatModal.classList.contains("active") &&
+                    window.activeChatOrderId === orderId;
+
+                  if (!isLookingAtThisChat) {
+                    const alertAudio = document.getElementById("alertSound");
+                    if (alertAudio)
+                      alertAudio
+                        .play()
+                        .catch((e) => console.log("Audio blocked:", e));
+
+                    AppState.unreadMessages++;
+                    const badge = document.getElementById(
+                      "driverNotificationBadge"
+                    );
+                    if (badge) {
+                      badge.innerText =
+                        AppState.pendingOrders + AppState.unreadMessages;
+                      badge.style.display = "flex";
+                    }
+
+                    let notifHTML = `
+                      <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer; margin-bottom: 10px;" onclick="openChatModal('${orderId}')">
+                        <strong style="color: var(--accent);">New Message from Customer</strong>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open chat</p>
+                      </div>
+                    `;
+                    const notifList =
+                      document.getElementById("notificationList");
+                    if (notifList.innerHTML.includes("No new notifications")) {
+                      notifList.innerHTML = notifHTML;
+                    } else {
+                      notifList.innerHTML += notifHTML;
+                    }
+                  }
+                }
+              }
+            });
+          });
+          window.activeOrderUnsubscribers.push(chatUnsub);
         });
       };
 
@@ -3306,12 +3353,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         window.saveShiftState();
       }
-      
-      
-      
-      
-      
-      
 
       // --- CUSTOM TIMELINES & ACTIONS ---
       window.markPickupComplete = async function (uniqueId) {
@@ -3348,15 +3389,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         window.saveShiftState();
       };
 
-      
-      
-      
-      
-      
-      
-      
-      
-      
       function drawPickupTimeline() {
         const timeline = document.getElementById("timelineList");
         timeline.innerHTML = "";
@@ -3473,7 +3505,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
 
           let connectHTML = "";
-          if (node.status !== "completed" && AppState.workflowPhase === "delivery") {
+          if (
+            node.status !== "completed" &&
+            AppState.workflowPhase === "delivery"
+          ) {
             connectHTML = `
               <div style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
                 <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${node.userId}')">📞 Call</button>
@@ -3497,13 +3532,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           `;
         });
       }
-      
-      
- 
-      
-      
+
       // --- SETTINGS DROPDOWN & VALIDATION LOGIC ---
-      window.toggleSettingsDropdown = function () { 
+      window.toggleSettingsDropdown = function () {
         document
           .getElementById("settingsDropdownMenu")
           .classList.toggle("active");
@@ -3532,15 +3563,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             : "Complete Profile to Save";
         }
       };
-      
-      
-      
-      
 
-    
- 
-      
-      
       // --- CHAT & NOTIFICATION SYSTEM ---
       AppState.unreadMessages = 0;
       window.chatUnsubscribe = null;
@@ -3727,15 +3750,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           console.error("Failed to fetch customer phone:", e);
         }
       };
-      
-      
-      
-      
-      
-      
-      
-      
-      
+
       // INTERCEPT TERMINAL STATE FOR UI CLEANUP
       const originalUpdateDashboardUI = updateDashboardUI;
       updateDashboardUI = async function () {
@@ -3749,28 +3764,29 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           window.activeChatOrderId = null;
         }
       };
-      
 
       // Inject Triage into Notification center if pending orders exist
       const originalListenForPendingOrders = window.listenForPendingOrders;
       window.listenForPendingOrders = function () {
-        
-        
-         
-         
-        
         // Temporarily override the global badge update locally inside the listener
-        const originalBadgeStyle = document.getElementById("notificationBadge");
+        const originalBadgeStyle = document.getElementById(
+          "driverNotificationBadge"
+        );
         if (originalBadgeStyle) originalBadgeStyle.id = "oldBadge";
 
         originalListenForPendingOrders();
 
         setTimeout(() => {
           if (AppState.pendingOrders > 0) {
-            const badge = document.getElementById("driverNotificationBadge");
-            badge.innerText =
-              AppState.pendingOrders + AppState.unreadMessages;
-            badge.style.display = "flex";
+            const badge =
+              document.getElementById("oldBadge") ||
+              document.getElementById("driverNotificationBadge");
+            if (badge) {
+              badge.innerText =
+                AppState.pendingOrders + AppState.unreadMessages;
+              badge.style.display = "flex";
+              if (badge.id === "oldBadge") badge.id = "driverNotificationBadge";
+            }
 
             let triageNotif = `
                     <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--danger); cursor: pointer; margin-bottom: 10px;" onclick="window.startTriageMode()">
@@ -3782,9 +3798,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
         }, 500);
       };
-        
-        
- 
     </script>
   </body>
 </html>
