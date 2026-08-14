@@ -21,9 +21,9 @@
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
-        --text-muted: #94a3b8; 
+        --text-muted: #94a3b8;
         --border: #333333;
-        --success: #22c55e;
+        --success: #22c55e; 
         --danger: #ef4444;
         --shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
       }
@@ -419,9 +419,7 @@
       .form-group textarea:focus {
         border-color: var(--accent);
       }
-      
-      
-      
+
       .password-toggle-btn {
         position: absolute;
         right: 15px;
@@ -443,9 +441,6 @@
       .password-toggle-btn:hover svg {
         fill: var(--accent);
       }
-      
-      
-      
 
       .btn {
         width: 100%;
@@ -867,18 +862,28 @@
           <label>Email Address</label>
           <input type="email" id="authEmail" placeholder="hero@example.com" />
         </div>
-        
-        
-        <div class="form-group" style="margin-bottom: 30px; position: relative;">
+
+        <div class="form-group" style="margin-bottom: 30px; position: relative">
           <label>Password</label>
-          <input type="password" id="authPassword" placeholder="••••••••" style="padding-right: 45px;" />
-          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility">
+          <input
+            type="password"
+            id="authPassword"
+            placeholder="••••••••"
+            style="padding-right: 45px"
+          />
+          <button
+            type="button"
+            class="password-toggle-btn"
+            onclick="togglePasswordVisibility()"
+            aria-label="Toggle password visibility"
+          >
             <svg id="eyeIcon" viewBox="0 0 24 24">
-              <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+              <path
+                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+              />
             </svg>
           </button>
         </div>
-        
 
         <button
           class="btn btn-primary"
@@ -1656,12 +1661,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       // --- AUTHENTICATION LOGIC ---
       window.authMode = "signin";
-      
-      
+
+
       window.togglePasswordVisibility = function () {
         const passwordInput = document.getElementById("authPassword");
-        const eyeIcon = document.getElementById("eyeIcon"); 
-        
+        const eyeIcon = document.getElementById("eyeIcon");
+
         if (passwordInput.type === "password") {
           passwordInput.type = "text";
           eyeIcon.innerHTML = '<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2.01 3.87l2.68 2.68C3.06 7.83 1.77 9.53 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l4.2 4.2 1.41-1.41L3.42 2.45 2.01 3.87zm7.5 7.5l2.61 2.61c-.04.01-.08.02-.12.02-1.66 0-3-1.34-3-3 0-.04.01-.08.02-.12zm0 0"/>';
@@ -1670,8 +1675,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           eyeIcon.innerHTML = '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
         }
       };
-      
-      
+
+
 
       window.toggleAuthMode = function () {
         const title = document.getElementById("authTitle");
@@ -1693,7 +1698,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           toggleText.innerText = "Need an account? Sign Up";
         }
       };
-
+      
+      
+      
+      
+      
+      
+      
       window.handleAuthAction = async function () {
         const email = document.getElementById("authEmail").value.trim();
         const password = document.getElementById("authPassword").value.trim();
@@ -1735,19 +1746,24 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           btn.innerText = originalText;
           btn.disabled = false;
           document.getElementById("authPassword").value = "";
+
         } catch (error) {
           console.error("Auth Error:", error);
           btn.innerText = originalText;
           btn.disabled = false;
 
+          // Suppress the error if the background listener successfully recovered an existing session
+          if (window.auth.currentUser) return;
+
           // Format common Firebase Auth errors into clear messages
           let msg = error.message.replace("Firebase:", "").trim();
           if (
             error.code === "auth/invalid-credential" ||
-            error.code === "auth/wrong-password"
+            error.code === "auth/wrong-password" || 
+            error.code === "auth/invalid-login-credentials"
           ) {
             msg = "Invalid email or password. Please try again.";
-          } else if (error.code === "auth/email-already-in-use") {
+          } else if (error.code === "auth/email-already-in-use") { 
             msg =
               "An account with this email already exists. Try signing in instead.";
           } else if (error.code === "auth/weak-password") {
@@ -1758,6 +1774,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
+      
+      
+      
+      
+      
+      
+      
+      
       window.signOutState = false;
 
       window.confirmSignOut = async function () {
