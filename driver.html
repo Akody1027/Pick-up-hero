@@ -14,13 +14,13 @@
     />
 
     <style>
-      :root {
-        --bg: #121212;
-        --surface: #1e1e1e;
+      :root { 
+        --bg: #121212; 
+        --surface: #1e1e1e; 
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
-        --text: #ffffff;
+        --text: #ffffff; 
         --text-muted: #94a3b8;
         --border: #333333;
         --success: #22c55e;
@@ -1184,15 +1184,25 @@
           >
             Contact Support
           </button>
-          <button style="color: var(--accent)" onclick="confirmSignOut()">
+          
+          <button
+            id="signOutBtn"
+            style="color: var(--accent)"
+            onclick="confirmSignOut()"
+          >
             Sign Out
           </button>
           <button
             style="color: var(--danger)"
-            onclick="alert('Contact administration to delete a driver account.')"
+            onclick="confirmDeleteAccount()"
           >
             Delete Account
           </button>
+
+          
+          
+          
+          
         </div>
       </div>
       <div class="modal-content">
@@ -1494,6 +1504,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         signOut,
         setPersistence,
         browserSessionPersistence,
+        deleteUser
+        
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
       import {
@@ -1508,6 +1520,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         getDoc,
         serverTimestamp,
         orderBy,
+        deleteDoc
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -1543,6 +1556,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       window.serverTimestamp = serverTimestamp;
       window.orderBy = orderBy;
+      window.deleteDoc = deleteDoc;
+      window.deleteUser = deleteUser;
+      
+      
 
       // Fire the application boot sequence now that Firebase is guaranteed loaded
       if (window.bootApplication) window.bootApplication();
@@ -1671,6 +1688,48 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.signOutState = false;
 
       window.confirmSignOut = async function () {
+        
+        
+        
+        
+        
+        window.confirmDeleteAccount = async function () {
+        const confirmMsg = "Are you absolutely sure you want to delete your driver account? This will permanently erase your profile and active route data.";
+        if (!confirm(confirmMsg)) return;
+
+        if (!DRIVER_DOC_ID) return;
+
+        try {
+          // 1. Delete driver's profile, location, and state documents
+          await window.deleteDoc(window.doc(window.db, "driver_settings", DRIVER_DOC_ID));
+          await window.deleteDoc(window.doc(window.db, "driver_locations", DRIVER_DOC_ID));
+          await window.deleteDoc(window.doc(window.db, "driver_state", DRIVER_DOC_ID));
+
+          // 2. Delete the Firebase Auth User
+          if (window.auth.currentUser) {
+            try {
+              await window.deleteUser(window.auth.currentUser);
+            } catch (authError) {
+              console.warn("Auth deletion blocked by Firebase, forcing session clear instead.", authError);
+              await window.signOut(window.auth);
+            }
+          }
+
+          alert("Driver account successfully deleted.");
+          window.location.reload();
+        } catch (error) {
+          console.error("Error deleting account:", error);
+          window.showCustomAlert("Error", "Failed to delete account: " + error.message);
+        }
+      };
+        
+        
+        
+        
+        
+        
+        
+        
         const btn = document.getElementById("signOutBtn");
 
         if (!window.signOutState) {
@@ -1680,7 +1739,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           setTimeout(() => {
             window.signOutState = false;
-            btn.innerText = "Sign Out";
+            btn.innerText = "Sign Out"; 
           }, 3000);
         } else {
           // Second tap: execute logout
@@ -3247,6 +3306,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         window.saveShiftState();
       }
+      
+      
+      
+      
+      
+      
 
       // --- CUSTOM TIMELINES & ACTIONS ---
       window.markPickupComplete = async function (uniqueId) {
@@ -3283,6 +3348,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         window.saveShiftState();
       };
 
+      
+      
+      
+      
+      
+      
+      
+      
+      
       function drawPickupTimeline() {
         const timeline = document.getElementById("timelineList");
         timeline.innerHTML = "";
@@ -3399,10 +3473,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
 
           let connectHTML = "";
-          if (
-            node.status !== "completed" &&
-            AppState.workflowPhase === "delivery"
-          ) {
+          if (node.status !== "completed" && AppState.workflowPhase === "delivery") {
             connectHTML = `
               <div style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
                 <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${node.userId}')">📞 Call</button>
@@ -3426,9 +3497,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           `;
         });
       }
-
+      
+      
+ 
+      
+      
       // --- SETTINGS DROPDOWN & VALIDATION LOGIC ---
-      window.toggleSettingsDropdown = function () {
+      window.toggleSettingsDropdown = function () { 
         document
           .getElementById("settingsDropdownMenu")
           .classList.toggle("active");
@@ -3644,11 +3719,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           console.error("Failed to fetch customer phone:", e);
         }
       };
-
+ 
+      
+      
       // INTERCEPT TERMINAL STATE FOR UI CLEANUP
-      const originalUpdateDashboardUI = window.updateDashboardUI;
-      window.updateDashboardUI = async function () {
-        originalUpdateDashboardUI();
+      const originalUpdateDashboardUI = updateDashboardUI;
+      updateDashboardUI = async function () {
+        await originalUpdateDashboardUI();
         if (
           AppState.workflowPhase === "idle" ||
           AppState.workflowPhase === "complete"
@@ -3658,6 +3735,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           window.activeChatOrderId = null;
         }
       };
+      
 
       // Inject Triage into Notification center if pending orders exist
       const originalListenForPendingOrders = window.listenForPendingOrders;
@@ -3667,7 +3745,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         if (originalBadgeStyle) originalBadgeStyle.id = "oldBadge";
 
         originalListenForPendingOrders();
-
+  
         setTimeout(() => {
           if (AppState.pendingOrders > 0) {
             const badge = document.getElementById("driverNotificationBadge");
