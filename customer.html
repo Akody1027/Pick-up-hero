@@ -15,11 +15,11 @@
 
     <script src="https://js.stripe.com/v3/"></script>
 
-    <style>
+    <style> 
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
-        --surface-elevated: #2c2c2c; 
+        --surface-elevated: #2c2c2c;   
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
@@ -453,11 +453,19 @@
         background: rgba(0, 0, 0, 0.6);
         z-index: 3000;
         display: none;
-        align-items: center;
+        align-items: center; 
         justify-content: center;
         backdrop-filter: blur(5px);
         -webkit-backdrop-filter: blur(5px);
+        pointer-events: none; /* Add this line */ 
       }
+      
+      .soft-prompt-overlay[style*="display: flex"] {
+          pointer-events: auto; /* Add this line to restore clicks when visible */
+      }
+        
+        
+
 
       .soft-prompt-box {
         background: var(--surface);
@@ -540,7 +548,7 @@
       #card-element {
         padding: 16px;
         background: var(--surface);
-        border: 1px solid var(--border);
+        border: 1px solid var(--border); 
         border-radius: 12px;
         margin-bottom: 15px;
       }
@@ -553,7 +561,8 @@
         position: absolute;
         top: env(safe-area-inset-top, 20px);
         right: 20px;
-        z-index: 1000;
+        z-index: 1500;
+        
       }
       .bell-btn {
         background: var(--surface);
@@ -746,6 +755,9 @@
 
     <!-- TOP NOTIFICATION BELL -->
     <div class="top-controls">
+      
+      
+      
       <button class="bell-btn" onclick="openNotificationModal()">
         <svg viewBox="0 0 24 24">
           <path
