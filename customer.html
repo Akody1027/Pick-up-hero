@@ -3078,6 +3078,10 @@
               window.listenToMyActiveOrder(activeId);
               window.currentlyListeningTo = activeId;
 
+              // Initialize Chat securely tied to the active order
+              window.initChatListener(activeId);
+              
+              
               if (window.renderRecoveredOrder) {
                 window.renderRecoveredOrder(window.appState.activeOrder);
               }
@@ -4014,43 +4018,51 @@
           let html = "";
           let isNewPayload = false;
 
+          
+          
+          
+          
+// 1. Check for brand new messages to trigger alerts
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
               const msg = change.doc.data();
               const isMe = msg.senderId === window.appState.userId;
-              const bubbleClass = isMe ? "customer" : "hero";
-
-              const timeString = msg.timestamp
-                ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "Sending...";
-
-              html += `
-                <div class="chat-bubble ${bubbleClass}">
-                  ${msg.text}
-                  <div class="chat-timestamp">${timeString}</div>
-                </div>
-              `;
-
-              // Trigger alert logic if the driver sent a new message
+              
               if (!isMe && !msg.read) {
                 isNewPayload = true;
               }
             }
           });
 
-          if (html) {
-            if (container.innerHTML.includes("Chat is strictly locked")) {
-              container.innerHTML = "";
-            }
-            container.innerHTML += html;
-            container.scrollTop = container.scrollHeight;
-          }
+          // 2. Rebuild entire chat to resolve "Sending..." optimistic local writes
+          snapshot.docs.forEach((doc) => {
+            const msg = doc.data();
+            const isMe = msg.senderId === window.appState.userId;
+            const bubbleClass = isMe ? "customer" : "hero";
+
+            const timeString = msg.timestamp
+              ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "Sending...";
+
+            html += `
+              <div class="chat-bubble ${bubbleClass}">
+                ${msg.text}
+                <div class="chat-timestamp">${timeString}</div>
+              </div>
+            `;
+          });
+
+          container.innerHTML = html || `
+            <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+              Send a message to your Hero.
+            </div>
+          `;
+          container.scrollTop = container.scrollHeight;
 
           if (isNewPayload) {
-            // Unconditionally play sound on new payload
             const alertAudio = document.getElementById("customerAlertSound");
             if (alertAudio)
               alertAudio.play().catch((e) => console.log("Audio blocked:", e));
@@ -4058,11 +4070,11 @@
             const chatModal = document.getElementById("chatModal");
             if (!chatModal.classList.contains("active")) {
               window.appState.unreadMessages++;
-              const badge = document.getElementById(
-                "customerNotificationBadge"
-              );
-              badge.innerText = window.appState.unreadMessages;
-              badge.style.display = "flex";
+              const badge = document.getElementById("customerNotificationBadge");
+              if (badge) {
+                  badge.innerText = window.appState.unreadMessages;
+                  badge.style.display = "flex";
+              }
 
               document.getElementById("notificationList").innerHTML = `
                 <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer;" onclick="openChatModal()">
@@ -4074,6 +4086,11 @@
           }
         });
       };
+      
+      
+      
+      
+      
 
       window.sendChatMessage = async function () {
         const input = document.getElementById("chatTextInput");
@@ -4103,31 +4120,7 @@
         }
       };
 
-      // INTERCEPT TERMINAL STATES FOR CLEANUP
-      const originalCheckActiveSession = window.checkActiveSession;
-      window.checkActiveSession = function () {
-        originalCheckActiveSession();
 
-        // Add a secondary watcher to lock the chat if the active order terminates
-        if (window.appState.userId && window.appState.currentOrderId) {
-          window.onSnapshot(
-            window.doc(window.db, "orders", window.appState.currentOrderId),
-            (docSnap) => {
-              if (docSnap.exists()) {
-                const status = docSnap.data().status;
-                if (status === "completed" || status === "cancelled") {
-                  if (window.chatUnsubscribe) window.chatUnsubscribe();
-                  window.lockChatDormantState();
-                } else {
-                  if (!window.chatUnsubscribe) {
-                    window.initChatListener(window.appState.currentOrderId);
-                  }
-                }
-              }
-            }
-          );
-        }
-      };
     </script>
   </body>
 </html>
