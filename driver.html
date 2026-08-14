@@ -16,7 +16,7 @@
     <style>
       :root {
         --bg: #121212;
-        --surface: #1e1e1e; 
+        --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
@@ -2634,14 +2634,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       }
 
-
-
-
-
-
       window.acceptTriageOrder = async function (dbId) {
         try {
-          AppState.triageQueue.forEach(item => {
+          AppState.triageQueue.forEach((item) => {
             if (item.dbId === dbId) item.status = "accepted";
           });
           updateDashboardUI();
@@ -2667,31 +2662,25 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       };
 
       window.cancelTriageOrder = async function (dbId) {
-        if (confirm("Are you sure you want to cancel this order? This will abort the order entirely and notify the customer you are unable to get there.")) {
+        if (
+          confirm(
+            "Are you sure you want to cancel this order? This will abort the order entirely and notify the customer you are unable to get there."
+          )
+        ) {
           try {
-            AppState.triageQueue = AppState.triageQueue.filter(item => item.dbId !== dbId);
+            AppState.triageQueue = AppState.triageQueue.filter(
+              (item) => item.dbId !== dbId
+            );
             updateDashboardUI();
             await window.updateDoc(window.doc(window.db, "orders", dbId), {
               status: "cancelled",
-              cancelReason: "Driver cancelled before starting route."
+              cancelReason: "Driver cancelled before starting route.",
             });
           } catch (e) {
             console.error(e);
           }
         }
       };
-
-
-
-
-
-
-
-
-
-
-
-
 
       // --- ROUTING & DISTANCE MATRIX UTILS ---
       let activeRouteLayer = null;
@@ -3095,29 +3084,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                       <button class="btn btn-secondary" style="padding: 8px; font-size: 0.8rem; flex: 1; color: var(--danger); border-color: var(--danger);" onclick="declineTriageOrder('${o.dbId}')">Decline</button>
                   </div>`;
               } else {
-
                 actions = `
                   <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
                     <div style="color: var(--success); font-weight: bold; font-size: 0.85rem; text-align: center;">✓ Accepted - Waiting to Start</div>
                     <button class="btn btn-emergency" style="padding: 8px; font-size: 0.8rem; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer;" onclick="cancelTriageOrder('${o.dbId}')">Cancel Route</button>
                   </div>`;
+              }
 
-
-
-                }
- 
               actions += `
                 <div style="display: flex; gap: 10px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px;">
                   <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${o.userId}')">📞 Call</button>
                   <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${o.dbId}')">💬 Chat</button>
                 </div>
               `;
-                
-                
-                
-                
-
-
             } else {
               actions = `<div style="margin-top: 10px; color: var(--text-muted); font-size: 0.85rem; font-weight: bold;"> Final Delivery Drop-off</div>`;
             }
@@ -3715,25 +3694,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           let html = "";
           let isNewPayload = false;
 
+          // 1. Check for brand new messages to trigger alerts
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
               const msg = change.doc.data();
               const isMe = msg.senderId === DRIVER_DOC_ID;
-              const bubbleClass = isMe ? "hero" : "customer";
-
-              const timeString = msg.timestamp
-                ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "Sending...";
-
-              html += `
-                <div class="chat-bubble ${bubbleClass}">
-                  ${msg.text}
-                  <div class="chat-timestamp">${timeString}</div>
-                </div>
-              `;
 
               if (!isMe && !msg.read) {
                 isNewPayload = true;
@@ -3741,12 +3706,64 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
           });
 
-          if (html) {
-            if (container.innerHTML.includes("Chat is strictly locked")) {
-              container.innerHTML = "";
+          // 2. Rebuild entire chat to resolve "Sending..." optimistic local writes
+          snapshot.docs.forEach((doc) => {
+            const msg = doc.data();
+            const isMe = msg.senderId === DRIVER_DOC_ID;
+            const bubbleClass = isMe ? "hero" : "customer";
+
+            const timeString = msg.timestamp
+              ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "Sending...";
+
+            html += `
+              <div class="chat-bubble ${bubbleClass}">
+                ${msg.text}
+                <div class="chat-timestamp">${timeString}</div>
+              </div>
+            `;
+          });
+
+          container.innerHTML =
+            html ||
+            `
+            <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+              Send a message to your Customer.
+            </div>
+          `;
+          container.scrollTop = container.scrollHeight;
+
+          if (isNewPayload) {
+            const alertAudio = document.getElementById("alertSound");
+            if (alertAudio)
+              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
+
+            const chatModal = document.getElementById("chatModal");
+            if (!chatModal.classList.contains("active")) {
+              AppState.unreadMessages++;
+              const badge = document.getElementById("driverNotificationBadge");
+              if (badge) {
+                badge.innerText =
+                  AppState.pendingOrders + AppState.unreadMessages;
+                badge.style.display = "flex";
+              }
+
+              let notifHTML = `
+                <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer; margin-bottom: 10px;" onclick="openChatModal('${orderId}')">
+                  <strong style="color: var(--accent);">New Message from Customer</strong>
+                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open chat</p>
+                </div>
+              `;
+              const notifList = document.getElementById("notificationList");
+              if (notifList.innerHTML.includes("No new notifications")) {
+                notifList.innerHTML = notifHTML;
+              } else {
+                notifList.innerHTML += notifHTML;
+              }
             }
-            container.innerHTML += html;
-            container.scrollTop = container.scrollHeight;
           }
         });
       };
