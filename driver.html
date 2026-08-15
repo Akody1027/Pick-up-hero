@@ -19,11 +19,11 @@
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
-        --accent-hover: #d95314; 
+        --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
-        --success: #22c55e; 
+        --success: #22c55e;
         --danger: #ef4444;
         --shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
       }
@@ -849,16 +849,14 @@
       .settings-dropdown button:hover {
         background: var(--surface);
       }
-      
-      
-      
+
       /* --- GLOBAL ACTIVITY INDICATORS --- */
       .top-controls {
         display: flex;
         align-items: center;
         gap: 15px;
       }
-      
+
       .activity-ribbon {
         position: fixed;
         top: 0;
@@ -866,15 +864,15 @@
         width: 100vw;
         height: 2px;
         background: rgba(238, 97, 28, 0.2);
-        z-index: 9999; 
+        z-index: 9999;
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.3s ease;
         overflow: hidden;
       }
-      
+
       .activity-ribbon::after {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: -50%;
@@ -883,12 +881,16 @@
         background: var(--accent);
         animation: ribbon-slide 1s infinite linear;
       }
-      
+
       @keyframes ribbon-slide {
-        0% { left: -50%; }
-        100% { left: 100%; }
+        0% {
+          left: -50%;
+        }
+        100% {
+          left: 100%;
+        }
       }
-      
+
       .activity-spinner {
         width: 22px;
         height: 22px;
@@ -900,27 +902,22 @@
         transition: opacity 0.3s ease;
         pointer-events: none;
       }
-      
+
       .activity-active {
         opacity: 1 !important;
       }
-      
+
       @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+          transform: rotate(360deg);
+        }
       }
-      
-      
-      
     </style>
   </head>
   <body>
-    
     <!-- GLOBAL ACTIVITY RIBBON -->
     <div id="globalActivityRibbon" class="activity-ribbon"></div>
-    
-    
-    
-    
+
     <!-- AUTHENTICATION OVERLAY -->
     <div id="authOverlay">
       <div class="auth-card">
@@ -1094,9 +1091,7 @@
     <div class="top-controls">
       <!-- GLOBAL ACTIVITY SPINNER -->
       <div id="globalActivitySpinner" class="activity-spinner"></div>
-      
-      
-      
+
       <button class="bell-btn" onclick="openNotificationModal()">
         <svg viewBox="0 0 24 24">
           <path
@@ -1386,7 +1381,7 @@
             type="tel"
             id="driverPhoneInput"
             placeholder="(555) 555-5555"
-            oninput="validateDriverProfile()"
+            oninput="markProfileDirty()"
           />
         </div>
 
@@ -1396,7 +1391,7 @@
             type="text"
             id="driverNameInput"
             value="Hero Driver"
-            oninput="validateDriverProfile()"
+            oninput="markProfileDirty()"
           />
         </div>
 
@@ -1406,7 +1401,7 @@
             id="driverBioInput"
             rows="3"
             placeholder="Write a short bio..."
-            oninput="validateDriverProfile()"
+            oninput="markProfileDirty()"
           >
 Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursday mornings.</textarea
           >
@@ -1449,7 +1444,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           <div
             class="toggle-switch"
             id="killSwitchToggle"
-            onclick="this.classList.toggle('on')"
+            onclick="this.classList.toggle('on'); markProfileDirty();"
           >
             <div class="toggle-knob"></div>
           </div>
@@ -1481,14 +1476,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             <div
               class="toggle-switch on"
               id="sosToggle"
-              onclick="this.classList.toggle('on')"
+              onclick="this.classList.toggle('on'); markProfileDirty();"
             >
               <div class="toggle-knob"></div>
             </div>
           </div>
           <div class="form-group" style="margin-bottom: 0">
             <label>Current Premium Rate ($)</label>
-            <input type="number" id="premiumRateInput" value="50.00" />
+            <input
+              type="number"
+              id="premiumRateInput"
+              value="50.00"
+              oninput="markProfileDirty()"
+            />
           </div>
         </div>
 
@@ -1703,16 +1703,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
     <!-- APPLICATION LOGIC -->
     <script>
-      
-      
-      
       // --- GLOBAL ACTIVITY TRACKER ---
       let activityTimeout = null;
 
       window.triggerGlobalActivity = function () {
         const ribbon = document.getElementById("globalActivityRibbon");
         const spinner = document.getElementById("globalActivitySpinner");
-        
+
         if (ribbon) ribbon.classList.add("activity-active");
         if (spinner) spinner.classList.add("activity-active");
 
@@ -1726,17 +1723,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }, 1000);
       };
 
-      ['touchstart', 'touchend', 'mousedown', 'mouseup', 'click'].forEach(evt => {
-        document.addEventListener(evt, window.triggerGlobalActivity, { passive: true });
-      });
-      
-      
-      
-      
-      
-      
-      
-      
+      ["touchstart", "touchend", "mousedown", "mouseup", "click"].forEach(
+        (evt) => {
+          document.addEventListener(evt, window.triggerGlobalActivity, {
+            passive: true,
+          });
+        }
+      );
+
       // System State
       const AppState = {
         workflowPhase: "idle", // idle -> triage -> pickup -> delivery
@@ -1770,21 +1764,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       // --- AUTHENTICATION LOGIC ---
       window.authMode = "signin";
 
-
       window.togglePasswordVisibility = function () {
         const passwordInput = document.getElementById("authPassword");
         const eyeIcon = document.getElementById("eyeIcon");
 
         if (passwordInput.type === "password") {
           passwordInput.type = "text";
-          eyeIcon.innerHTML = '<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2.01 3.87l2.68 2.68C3.06 7.83 1.77 9.53 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l4.2 4.2 1.41-1.41L3.42 2.45 2.01 3.87zm7.5 7.5l2.61 2.61c-.04.01-.08.02-.12.02-1.66 0-3-1.34-3-3 0-.04.01-.08.02-.12zm0 0"/>';
+          eyeIcon.innerHTML =
+            '<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2.01 3.87l2.68 2.68C3.06 7.83 1.77 9.53 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l4.2 4.2 1.41-1.41L3.42 2.45 2.01 3.87zm7.5 7.5l2.61 2.61c-.04.01-.08.02-.12.02-1.66 0-3-1.34-3-3 0-.04.01-.08.02-.12zm0 0"/>';
         } else {
           passwordInput.type = "password";
-          eyeIcon.innerHTML = '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
+          eyeIcon.innerHTML =
+            '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
         }
       };
-
-
 
       window.toggleAuthMode = function () {
         const title = document.getElementById("authTitle");
@@ -1806,13 +1799,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           toggleText.innerText = "Need an account? Sign Up";
         }
       };
-      
-      
-      
-      
-      
-      
-      
+
       window.handleAuthAction = async function () {
         const email = document.getElementById("authEmail").value.trim();
         const password = document.getElementById("authPassword").value.trim();
@@ -1854,7 +1841,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           btn.innerText = originalText;
           btn.disabled = false;
           document.getElementById("authPassword").value = "";
-
         } catch (error) {
           console.error("Auth Error:", error);
           btn.innerText = originalText;
@@ -1867,11 +1853,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           let msg = error.message.replace("Firebase:", "").trim();
           if (
             error.code === "auth/invalid-credential" ||
-            error.code === "auth/wrong-password" || 
+            error.code === "auth/wrong-password" ||
             error.code === "auth/invalid-login-credentials"
           ) {
             msg = "Invalid email or password. Please try again.";
-          } else if (error.code === "auth/email-already-in-use") { 
+          } else if (error.code === "auth/email-already-in-use") {
             msg =
               "An account with this email already exists. Try signing in instead.";
           } else if (error.code === "auth/weak-password") {
@@ -1882,14 +1868,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
-      
-      
-      
-      
-      
-      
-      
-      
       window.signOutState = false;
 
       window.confirmSignOut = async function () {
@@ -2067,7 +2045,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           // --- NATIVE GEOLOCATION FALLBACK ---
 
-          if (window.validateDriverProfile) window.validateDriverProfile();
+          window.checkProfileDirty();
 
           if (!hasSavedLocation) {
             if (navigator.geolocation) {
@@ -2101,11 +2079,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           console.error("Error loading settings:", e);
         }
       };
-      
-      
-      
-      
-      
+
       window.saveDriverSettings = async function () {
         const btn = document.getElementById("saveSettingsBtn");
         const originalText = btn.innerText;
@@ -2114,7 +2088,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         try {
           const payload = {
             displayName: document.getElementById("driverNameInput").value,
-            phoneNumber: document.getElementById("driverPhoneInput").value.trim(),
+            phoneNumber: document
+              .getElementById("driverPhoneInput")
+              .value.trim(),
             bio: document.getElementById("driverBioInput").value,
             globalKillSwitch: document
               .getElementById("killSwitchToggle")
@@ -2139,30 +2115,26 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             payload,
             { merge: true }
           );
-          
+
+          localStorage.removeItem("unsavedDriverProfile");
+          window.checkProfileDirty();
+
           btn.innerText = "Saved!";
           btn.classList.replace("btn-primary", "btn-success");
           setTimeout(() => {
-            btn.innerText = originalText;
+            window.checkProfileDirty();
             btn.classList.replace("btn-success", "btn-primary");
           }, 2000);
-          
         } catch (e) {
           console.error("Error saving settings:", e);
           btn.innerText = "Error Saving";
-          // Ensure the button always resets even if it fails 
+          // Ensure the button always resets even if it fails
           setTimeout(() => {
-            btn.innerText = originalText;
+            window.checkProfileDirty();
           }, 2500);
         }
       };
-      
-      
-      
-      
-      
 
-     
       function initMap() {
         AppState.mapInstance = L.map("map", { zoomControl: false }).setView(
           [39.8283, -98.5795],
@@ -2196,10 +2168,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.head.appendChild(style);
 
         startTelemetry();
-        
+
         // Hook global activity tracker to map interactions
-        AppState.mapInstance.on('zoomstart zoomend dragstart dragend movestart moveend', window.triggerGlobalActivity);
-        
+        AppState.mapInstance.on(
+          "zoomstart zoomend dragstart dragend movestart moveend",
+          window.triggerGlobalActivity
+        );
       }
 
       function renderHomeBases() {
@@ -2391,10 +2365,23 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById(id).classList.add("active");
       }
       function closeAllModals() {
+        const wasModalOpen =
+          document.querySelectorAll(".modal.active").length > 0;
+
         document
           .querySelectorAll(".modal")
           .forEach((m) => m.classList.remove("active"));
+
+        const sheet = document.getElementById("activeQueueSheet");
+        if (sheet) {
+          if (wasModalOpen) {
+            sheet.classList.add("expanded");
+          } else {
+            sheet.classList.toggle("expanded");
+          }
+        }
       }
+
       function toggleBottomSheet() {
         document
           .getElementById("activeQueueSheet")
@@ -2429,7 +2416,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           };
           img.src = e.target.result;
 
-          if (window.validateDriverProfile) window.validateDriverProfile();
+          if (window.markProfileDirty) window.markProfileDirty();
         };
         reader.readAsDataURL(file);
       };
@@ -3812,27 +3799,42 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           .classList.toggle("active");
       };
 
-      window.validateDriverProfile = function () {
-        const name = document.getElementById("driverNameInput").value.trim();
-        const phone = document.getElementById("driverPhoneInput")
+      window.markProfileDirty = function () {
+        localStorage.setItem("unsavedDriverProfile", "true");
+        window.checkProfileDirty();
+      };
+
+      window.checkProfileDirty = function () {
+        const saveBtn = document.getElementById("saveSettingsBtn");
+        if (!saveBtn) return;
+
+        const nameInput = document
+          .getElementById("driverNameInput")
+          .value.trim();
+        const phoneInput = document.getElementById("driverPhoneInput")
           ? document.getElementById("driverPhoneInput").value.trim()
           : "";
-        const bio = document.getElementById("driverBioInput").value.trim();
+        const bioInput = document.getElementById("driverBioInput").value.trim();
         const picSrc = document.getElementById("profileImagePreview").src;
 
         const isValid =
-          name !== "" &&
-          phone !== "" &&
-          bio !== "" &&
+          nameInput !== "" &&
+          phoneInput !== "" &&
+          bioInput !== "" &&
           !picSrc.includes("data:image/svg+xml");
 
-        const saveBtn = document.getElementById("saveSettingsBtn");
-        if (saveBtn) {
-          saveBtn.disabled = !isValid;
-          saveBtn.style.opacity = isValid ? "1" : "0.5";
-          saveBtn.innerText = isValid
-            ? "Save Changes"
-            : "Complete Profile to Save";
+        if (!isValid) {
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = "0.5";
+          saveBtn.innerText = "Complete Profile";
+        } else if (localStorage.getItem("unsavedDriverProfile") === "true") {
+          saveBtn.disabled = false;
+          saveBtn.style.opacity = "1";
+          saveBtn.innerText = "Save Changes";
+        } else {
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = "0.5";
+          saveBtn.innerText = "No Changes Made";
         }
       };
 
