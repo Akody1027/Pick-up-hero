@@ -15,19 +15,19 @@
 
     <script src="https://js.stripe.com/v3/"></script>
 
-    <style> 
-      :root { 
-        --bg: #121212; 
-        --surface: #1e1e1e;
-        --surface-elevated: #2c2c2c;   
-        --accent: #ee611c;  
-        --accent-hover: #d95314; 
+    <style>
+      :root {
+        --bg: #121212;
+        --surface: #1e1e1e; 
+        --surface-elevated: #2c2c2c;
+        --accent: #ee611c;
+        --accent-hover: #d95314;
         --text: #ffffff; 
-        --text-muted: #94a3b8;  
+        --text-muted: #94a3b8;
         --border: #333333;
         --success: #22c55e;
         --danger: #ef4444;
-        --shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       }
 
       * {
@@ -139,12 +139,12 @@
         opacity: 0.5;
       }
       .fab-btn.locked svg {
-        fill: var(--text-muted); 
+        fill: var(--text-muted);
       }
 
       /* --- BOTTOM SHEET (Z-Index 900) --- */
       .bottom-sheet {
-        opacity:90%;
+        opacity: 80%;
         position: fixed;
         bottom: 80px;
         left: 0px;
@@ -184,7 +184,6 @@
         font-size: 0.85rem;
         color: var(--text-muted);
       }
-
 
       /* --- TRACKER SHEET DRAG & TIMELINE --- */
       .drag-handle {
@@ -453,19 +452,16 @@
         background: rgba(0, 0, 0, 0.6);
         z-index: 3000;
         display: none;
-        align-items: center; 
+        align-items: center;
         justify-content: center;
         backdrop-filter: blur(5px);
         -webkit-backdrop-filter: blur(5px);
-        pointer-events: none; /* Add this line */ 
+        pointer-events: none; /* Add this line */
       }
-      
-      .soft-prompt-overlay[style*="display: flex"] {
-          pointer-events: auto; /* Add this line to restore clicks when visible */
-      }
-        
-        
 
+      .soft-prompt-overlay[style*="display: flex"] {
+        pointer-events: auto; /* Add this line to restore clicks when visible */
+      }
 
       .soft-prompt-box {
         background: var(--surface);
@@ -548,7 +544,7 @@
       #card-element {
         padding: 16px;
         background: var(--surface);
-        border: 1px solid var(--border); 
+        border: 1px solid var(--border);
         border-radius: 12px;
         margin-bottom: 15px;
       }
@@ -562,7 +558,6 @@
         top: env(safe-area-inset-top, 20px);
         right: 20px;
         z-index: 1500;
-        
       }
       .bell-btn {
         background: var(--surface);
@@ -741,17 +736,14 @@
       .settings-dropdown button:hover {
         background: var(--surface);
       }
-      
-      
-      
-      
+
       /* --- GLOBAL ACTIVITY INDICATORS --- */
       .top-controls {
         display: flex;
         align-items: center;
         gap: 15px;
       }
-      
+
       .activity-ribbon {
         position: fixed;
         top: 0;
@@ -765,9 +757,9 @@
         transition: opacity 0.3s ease;
         overflow: hidden;
       }
-      
+
       .activity-ribbon::after {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: -50%;
@@ -776,12 +768,16 @@
         background: var(--accent);
         animation: ribbon-slide 1s infinite linear;
       }
-      
+
       @keyframes ribbon-slide {
-        0% { left: -50%; }
-        100% { left: 100%; }
+        0% {
+          left: -50%;
+        }
+        100% {
+          left: 100%;
+        }
       }
-      
+
       .activity-spinner {
         width: 22px;
         height: 22px;
@@ -793,23 +789,16 @@
         transition: opacity 0.3s ease;
         pointer-events: none;
       }
-      
+
       .activity-active {
         opacity: 1 !important;
       }
-      
     </style>
   </head>
   <body>
-    
     <!-- GLOBAL ACTIVITY RIBBON -->
     <div id="globalActivityRibbon" class="activity-ribbon"></div>
-    
-    
-    
-    
-    
-    
+
     <audio
       id="customerAlertSound"
       src="Roadwatchero.mp3"
@@ -821,14 +810,9 @@
 
     <!-- TOP NOTIFICATION BELL -->
     <div class="top-controls">
-      
-      
-      
       <!-- GLOBAL ACTIVITY SPINNER -->
       <div id="globalActivitySpinner" class="activity-spinner"></div>
-      
-      
-      
+
       <button class="bell-btn" onclick="openNotificationModal()">
         <svg viewBox="0 0 24 24">
           <path
@@ -1358,8 +1342,7 @@
               "
             />
           </div>
-          
-          
+
           <div class="form-group">
             <label>Full Name</label>
             <input type="text" id="customerNameInput" placeholder="Your Name" />
@@ -1608,17 +1591,37 @@
       </div>
 
       <div class="chat-input-area">
-        
-        <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--surface-elevated); border-radius: 50%; flex-shrink: 0;">
-          <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: var(--text-muted);">
-            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+        <label
+          style="
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: var(--surface-elevated);
+            border-radius: 50%;
+            flex-shrink: 0;
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 22px; height: 22px; fill: var(--text-muted)"
+          >
+            <path
+              d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+            />
           </svg>
-          <input type="file" id="chatImageInput" accept="image/*" style="display: none;" onchange="handleChatImageUpload(event)" disabled>
+          <input
+            type="file"
+            id="chatImageInput"
+            accept="image/*"
+            style="display: none"
+            onchange="handleChatImageUpload(event)"
+            disabled
+          />
         </label>
-        
-        
-        
-        
+
         <input
           type="text"
           id="chatTextInput"
@@ -1669,7 +1672,6 @@
         serverTimestamp,
         orderBy,
         updateDoc,
-        
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -1703,8 +1705,6 @@
       window.orderBy = orderBy;
       window.deleteDoc = deleteDoc;
       window.updateDoc = updateDoc;
-      
-      
 
       window.deleteUser = deleteUser;
       window.signOut = signOut;
@@ -1725,11 +1725,9 @@
         if (user) {
           window.appState.user = user;
           window.appState.userId = user.uid;
-          
+
           const emailDisplay = document.getElementById("customerEmailDisplay");
           if (emailDisplay) emailDisplay.value = user.email || "";
-          
-          
 
           // Auto-advance the UI if the user logs in while the auth gate is visible
           const authPanel = document.getElementById("authPanel");
@@ -2089,14 +2087,13 @@
     <!-- UI & MAP SCRIPT -->
 
     <script>
-      
       // --- GLOBAL ACTIVITY TRACKER ---
       let activityTimeout = null;
 
       window.triggerGlobalActivity = function () {
         const ribbon = document.getElementById("globalActivityRibbon");
         const spinner = document.getElementById("globalActivitySpinner");
-        
+
         if (ribbon) ribbon.classList.add("activity-active");
         if (spinner) spinner.classList.add("activity-active");
 
@@ -2110,16 +2107,14 @@
         }, 1000);
       };
 
-      ['touchstart', 'touchend', 'mousedown', 'mouseup', 'click'].forEach(evt => {
-        document.addEventListener(evt, window.triggerGlobalActivity, { passive: true });
-      });
-      
-      
-      
-      
-      
-      
-      
+      ["touchstart", "touchend", "mousedown", "mouseup", "click"].forEach(
+        (evt) => {
+          document.addEventListener(evt, window.triggerGlobalActivity, {
+            passive: true,
+          });
+        }
+      );
+
       let map, driverMarker, storeMarker;
 
       let userMarker;
@@ -2300,10 +2295,12 @@
         });
 
         driverMarker.setOpacity(0); // Hide base marker initially
-        
-        
+
         // Hook global activity tracker to map interactions
-        map.on('zoomstart zoomend dragstart dragend movestart moveend', window.triggerGlobalActivity);
+        map.on(
+          "zoomstart zoomend dragstart dragend movestart moveend",
+          window.triggerGlobalActivity
+        );
       }
 
       // Modal Controls
@@ -2422,13 +2419,10 @@
         }
       }
 
-      
-      
-      
-      
       function closeAllModals() {
         // Check if any full-screen modals are currently open
-        const wasModalOpen = document.querySelectorAll('.modal.active').length > 0;
+        const wasModalOpen =
+          document.querySelectorAll(".modal.active").length > 0;
 
         document.getElementById("addModal").classList.remove("active");
         document.getElementById("settingsModal").classList.remove("active");
@@ -2437,23 +2431,29 @@
         if (findHeroModal) findHeroModal.classList.remove("active");
 
         const recoModal = document.getElementById("recoveryModule");
-        if (recoModal) recoModal.classList.remove("active"); 
+        if (recoModal) recoModal.classList.remove("active");
 
         const sheet = document.getElementById("trackerSheet");
 
         // Intelligently restore or toggle the tracker sheet
-        if (window.appState && (window.appState.selectedDriverId || window.isTrackingActiveOrder)) {
+        if (
+          window.appState &&
+          (window.appState.selectedDriverId || window.isTrackingActiveOrder)
+        ) {
           if (wasModalOpen) {
             // Restore sheet to full view when returning from settings or booking
             sheet.style.transform = "translateY(0)";
           } else {
             // If already on the map, use the Home button as a toggle switch
-            if (sheet.style.transform === "translateY(0px)" || sheet.style.transform === "translateY(0)") {
+            if (
+              sheet.style.transform === "translateY(0px)" ||
+              sheet.style.transform === "translateY(0)"
+            ) {
               sheet.style.transform = "translateY(85%)"; // Peek mode
             } else {
               sheet.style.transform = "translateY(0)"; // Full view
             }
-          } 
+          }
         } else {
           // Keep strictly hidden if no hero is selected and no active order
           sheet.style.transform = "translateY(150%)";
@@ -2461,12 +2461,7 @@
 
         updateNavState("navHome");
       }
-      
 
-      
-      
-      
-      
       function updateNavState(activeId) {
         document
           .querySelectorAll(".nav-btn")
@@ -2834,22 +2829,35 @@
                   window.location.reload();
                 }, 2000);
               } else if (data.status === "cancelled") {
-                title.innerText = "Order Declined";
-                subtitle.innerText = "Your Hero had to decline this request.";
+                if (data.cancelReason === "Cancelled by customer.") {
+                  title.innerText = "Order Cancelled";
+                  subtitle.innerText =
+                    "You have aborted this delivery request.";
 
-                const timeline = document.getElementById("activeStopsTimeline");
-                if (timeline) {
-                  timeline.style.display = "flex";
-                  timeline.innerHTML = `
-                      <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); padding: 15px; border-radius: 12px; margin-top: 10px;">
-                          <strong style="color: var(--danger); font-size: 0.9rem;">Driver's Note:</strong>
-                          <p style="color: var(--text); font-size: 0.85rem; margin-top: 5px;">"${
-                            data.cancelReason || "Route declined by driver."
-                          }"</p>
-                      </div>
-                      <button class="btn btn-primary" style="margin-top: 15px; padding: 14px;" onclick="recoverEditDelivery()">Edit Delivery & Resubmit</button>
-                      <button class="btn btn-secondary" style="margin-top: 5px; padding: 14px;" onclick="window.location.reload()">Cancel Order Entirely</button>
-                   `;
+                  const timeline = document.getElementById(
+                    "activeStopsTimeline"
+                  );
+                  if (timeline) timeline.style.display = "none";
+                } else {
+                  title.innerText = "Order Declined";
+                  subtitle.innerText = "Your Hero had to decline this request.";
+
+                  const timeline = document.getElementById(
+                    "activeStopsTimeline"
+                  );
+                  if (timeline) {
+                    timeline.style.display = "flex";
+                    timeline.innerHTML = `
+                        <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); padding: 15px; border-radius: 12px; margin-top: 10px;">
+                            <strong style="color: var(--danger); font-size: 0.9rem;">Driver's Note:</strong>
+                            <p style="color: var(--text); font-size: 0.85rem; margin-top: 5px;">"${
+                              data.cancelReason || "Route declined by driver."
+                            }"</p>
+                        </div>
+                        <button class="btn btn-primary" style="margin-top: 15px; padding: 14px;" onclick="recoverEditDelivery()">Edit Delivery & Resubmit</button>
+                        <button class="btn btn-secondary" style="margin-top: 5px; padding: 14px;" onclick="window.location.reload()">Cancel Order Entirely</button>
+                     `;
+                  }
                 }
               }
             }
@@ -3188,32 +3196,33 @@
 
       // --- SESSION & MULTI-STOP LOGIC ---
 
-      
-      
-      
-      
       window.handleChatImageUpload = function (event) {
         const file = event.target.files[0];
         if (!file || !window.appState.currentOrderId) return;
-        
+
         const reader = new FileReader();
         reader.onload = function (e) {
           const img = new Image();
           img.onload = async function () {
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
-            
+
             const maxW = 600;
             const scale = img.width > maxW ? maxW / img.width : 1;
             canvas.width = img.width * scale;
             canvas.height = img.height * scale;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            
+
             const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
-            
+
             try {
               await window.addDoc(
-                window.collection(window.db, "orders", window.appState.currentOrderId, "messages"),
+                window.collection(
+                  window.db,
+                  "orders",
+                  window.appState.currentOrderId,
+                  "messages"
+                ),
                 {
                   senderId: window.appState.userId,
                   text: " Image attached",
@@ -3232,11 +3241,7 @@
         reader.readAsDataURL(file);
         event.target.value = ""; // Reset file path to allow repeat identical uploads
       };
-      
-      
-      
-      
-      
+
       window.checkActiveSession = function () {
         if (!window.appState.userId) return;
 
@@ -3302,8 +3307,7 @@
 
               // Initialize Chat securely tied to the active order
               window.initChatListener(activeId);
-              
-              
+
               if (window.renderRecoveredOrder) {
                 window.renderRecoveredOrder(window.appState.activeOrder);
               }
@@ -3597,7 +3601,7 @@
           try {
             await window.setDoc(
               window.doc(window.db, "orders", orderId),
-              { status: "cancelled" },
+              { status: "cancelled", cancelReason: "Cancelled by customer." },
               { merge: true }
             );
 
@@ -4173,10 +4177,9 @@
         document.getElementById("profileGateModal").style.display = "none";
         openSettingsModal();
       };
- 
+
       // --- CHAT & NOTIFICATION SYSTEM ---
-      
-      
+
       window.chatUnsubscribe = null;
 
       window.openNotificationModal = function () {
@@ -4190,7 +4193,7 @@
       window.openChatModal = function () {
         document.getElementById("chatModal").classList.add("active");
         window.appState.unreadMessages = 0;
-        
+
         document.getElementById("customerNotificationBadge").style.display =
           "none";
         document.getElementById("customerNotificationBadge").innerText = "0";
@@ -4200,11 +4203,7 @@
           </p>
         `;
         closeNotificationModal();
-        
 
-        
-        
-        
         setTimeout(() => {
           const container = document.getElementById("chatMessageContainer");
           container.scrollTop = container.scrollHeight;
@@ -4220,7 +4219,7 @@
         document.getElementById("chatSendBtn").disabled = true;
         const imgInput = document.getElementById("chatImageInput");
         if (imgInput) imgInput.disabled = true;
-        
+
         document.getElementById("chatHeaderSubtitle").innerText =
           "Waiting for Hero";
         document.getElementById("chatHeaderSubtitle").style.color =
@@ -4241,9 +4240,7 @@
         document.getElementById("chatSendBtn").disabled = false;
         const imgInput = document.getElementById("chatImageInput");
         if (imgInput) imgInput.disabled = false;
-        
-        
-        
+
         document.getElementById("chatHeaderSubtitle").innerText =
           "Live Connection";
         document.getElementById("chatHeaderSubtitle").style.color =
@@ -4259,16 +4256,10 @@
           let html = "";
           let isNewPayload = false;
 
-          
-          
-          
-          
-// 1. Check for brand new messages to trigger alerts
+          // 1. Check for brand new messages to trigger alerts
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
-              
-              
-            const msg = change.doc.data();
+              const msg = change.doc.data();
               const isMe = msg.senderId === window.appState.userId;
 
               if (!isMe && !msg.read) {
@@ -4292,19 +4283,31 @@
 
             html += `
               <div class="chat-bubble ${bubbleClass}">
-                ${msg.imageUrl ? `<img src="${msg.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2);"><br>` : ""}
+                ${
+                  msg.imageUrl
+                    ? `<img src="${msg.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2);"><br>`
+                    : ""
+                }
                 ${msg.text}
                 <div class="chat-timestamp">${timeString}</div>
               </div>
             `;
 
             // Actively mark read payloads to kill the notification ping loop
-            if (!isMe && !msg.read && document.getElementById("chatModal").classList.contains("active")) {
-                window.updateDoc(docSnap.ref, { read: true }).catch(e => console.log(e));
+            if (
+              !isMe &&
+              !msg.read &&
+              document.getElementById("chatModal").classList.contains("active")
+            ) {
+              window
+                .updateDoc(docSnap.ref, { read: true })
+                .catch((e) => console.log(e));
             }
           });
 
-          container.innerHTML = html || `
+          container.innerHTML =
+            html ||
+            `
             <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
               Send a message to your Hero.
             </div>
@@ -4319,10 +4322,14 @@
             if (!isLookingAtThisChat) {
               const alertAudio = document.getElementById("customerAlertSound");
               if (alertAudio)
-                alertAudio.play().catch((e) => console.log("Audio blocked:", e));
+                alertAudio
+                  .play()
+                  .catch((e) => console.log("Audio blocked:", e));
 
               window.appState.unreadMessages++;
-              const badge = document.getElementById("customerNotificationBadge");
+              const badge = document.getElementById(
+                "customerNotificationBadge"
+              );
               if (badge) {
                 badge.innerText = window.appState.unreadMessages;
                 badge.style.display = "flex";
@@ -4343,13 +4350,7 @@
             }
           }
         });
-      };  
-              
-              
-
-      
-      
-      
+      };
 
       window.sendChatMessage = async function () {
         const input = document.getElementById("chatTextInput");
@@ -4378,8 +4379,6 @@
           alert("Failed to send message.");
         }
       };
-
-
     </script>
   </body>
 </html>
