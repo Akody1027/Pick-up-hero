@@ -2993,6 +2993,18 @@
                   const driverId = docSnap.id;
                   const settingsData = docSnap.data();
 
+                  // --- GLOBAL KILL SWITCH GATE ---
+                  // If the driver triggered the kill switch, wipe their home bases off the customer map and ignore them
+                  if (settingsData.globalKillSwitch) {
+                    if (window.baseMarkers[driverId]) {
+                      window.baseMarkers[driverId].forEach((m) =>
+                        map.removeLayer(m)
+                      );
+                    }
+                    window.baseMarkers[driverId] = [];
+                    return;
+                  }
+
                   let locations = [];
                   if (
                     Array.isArray(settingsData.baseLocations) &&
@@ -3079,6 +3091,19 @@
                             activeDriverId
                           )
                         );
+
+                        // --- GLOBAL KILL SWITCH GATE ---
+                        // If the kill switch is on, instantly hide their live telemetry pin
+                        if (
+                          settingsSnap.exists() &&
+                          settingsSnap.data().globalKillSwitch
+                        ) {
+                          if (window.liveMarkers[activeDriverId]) {
+                            window.liveMarkers[activeDriverId].setOpacity(0);
+                          }
+                          return;
+                        }
+
                         let faceHtml = "";
                         let faceIconClass = "live-pin-override";
 
