@@ -3237,7 +3237,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
 
-          wfBtn.onclick = async function () {
+          wfBtn.onclick = async function (e) {
+            e.stopPropagation();
             const acceptedOrders = AppState.triageQueue.filter(
               (t) => t.status === "accepted"
             );
@@ -3317,7 +3318,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           gSub.innerText = `${groupedPickups.length} Grouped Pickup Locations`;
           wfBtn.innerText = "Start Pickups";
           wfBtn.className = "btn btn-primary";
-          wfBtn.onclick = () => {
+
+          wfBtn.onclick = (e) => {
+            e.stopPropagation();
             AppState.workflowPhase = "pickup";
             updateDashboardUI();
           };
@@ -3418,8 +3421,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           wfBtn.innerText = "Begin Deliveries";
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
-          wfBtn.onclick = async () => {
+
+          wfBtn.onclick = async (e) => {
+            e.stopPropagation();
             // 1. Extract only the delivery stops to establish their exact order in line
+
             const deliveryStops = AppState.activeQueue.filter(
               (q) => q.type === "delivery"
             );
@@ -3495,7 +3501,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           wfBtn.className = "btn btn-success";
           wfBtn.style.display = "block";
 
-          wfBtn.onclick = async () => {
+          wfBtn.onclick = async (e) => {
+            e.stopPropagation();
             const cleanId = (nextDelivery.dbId || nextDelivery.id).replace(
               "_del",
               ""
@@ -3549,9 +3556,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
 
-          wfBtn.onclick = async () => {
+          wfBtn.onclick = async (e) => {
+            e.stopPropagation();
             const originalText = wfBtn.innerText;
             wfBtn.innerText = "Capturing Funds...";
+
             wfBtn.disabled = true;
 
             const uniqueOrders = [
