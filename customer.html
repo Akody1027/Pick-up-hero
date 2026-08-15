@@ -18,11 +18,11 @@
     <style>
       :root {
         --bg: #121212;
-        --surface: #1e1e1e; 
+        --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
-        --text: #ffffff; 
+        --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
         --success: #22c55e;
@@ -1345,7 +1345,12 @@
 
           <div class="form-group">
             <label>Full Name</label>
-            <input type="text" id="customerNameInput" placeholder="Your Name" />
+            <input
+              type="text"
+              id="customerNameInput"
+              placeholder="Your Name"
+              oninput="markProfileDirty()"
+            />
           </div>
           <div class="form-group">
             <label>Phone Number</label>
@@ -1353,6 +1358,7 @@
               type="tel"
               id="customerPhoneInput"
               placeholder="(555) 555-5555"
+              oninput="markProfileDirty()"
             />
           </div>
 
@@ -2059,7 +2065,9 @@
           .value.trim();
 
         const saveBtn = document.getElementById("saveCustomerBtn");
+
         const originalText = saveBtn.innerText;
+
         saveBtn.innerText = "Saving...";
         saveBtn.disabled = true;
 
@@ -2073,13 +2081,46 @@
             },
             { merge: true }
           );
+
+          localStorage.removeItem("unsavedCustomerProfile");
+          window.checkProfileDirty();
           alert("Profile successfully saved!");
         } catch (error) {
           console.error("Error saving profile:", error);
           alert("Failed to save profile. Please check your connection.");
-        } finally {
-          saveBtn.innerText = originalText;
+          window.checkProfileDirty();
+        }
+      };
+
+      window.markProfileDirty = function () {
+        localStorage.setItem("unsavedCustomerProfile", "true");
+        window.checkProfileDirty();
+      };
+
+      window.checkProfileDirty = function () {
+        const saveBtn = document.getElementById("saveCustomerBtn");
+        if (!saveBtn) return;
+
+        const nameInput = document
+          .getElementById("customerNameInput")
+          .value.trim();
+        const phoneInput = document
+          .getElementById("customerPhoneInput")
+          .value.trim();
+        const isValid = nameInput !== "" && phoneInput !== "";
+
+        if (!isValid) {
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = "0.5";
+          saveBtn.innerText = "Complete Profile";
+        } else if (localStorage.getItem("unsavedCustomerProfile") === "true") {
           saveBtn.disabled = false;
+          saveBtn.style.opacity = "1";
+          saveBtn.innerText = "Save Profile";
+        } else {
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = "0.5";
+          saveBtn.innerText = "No Changes Made";
         }
       };
     </script>
@@ -2416,6 +2457,8 @@
           } catch (error) {
             console.error("Error fetching profile data:", error);
           }
+
+          window.checkProfileDirty();
         }
       }
 
