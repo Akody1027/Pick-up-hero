@@ -1787,6 +1787,8 @@
                 document.title,
                 window.location.pathname
               );
+            
+            window.location.reload();
             })
             .catch((e) => console.error("Error updating payment status:", e));
         }
