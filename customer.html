@@ -139,7 +139,7 @@
         opacity: 0.5;
       }
       .fab-btn.locked svg {
-        fill: var(--text-muted);
+        fill: var(--text-muted); 
       }
 
       /* --- BOTTOM SHEET (Z-Index 900) --- */
@@ -1345,6 +1345,22 @@
         <!-- PROFILE CONTENT -->
         <div id="profileSettingsPanel" class="step-panel">
           <div class="form-group">
+            <label>Account Email</label>
+            <input
+              type="text"
+              id="customerEmailDisplay"
+              disabled
+              style="
+                background: var(--surface-elevated);
+                color: var(--text-muted);
+                cursor: not-allowed;
+                border-style: dashed;
+              "
+            />
+          </div>
+          
+          
+          <div class="form-group">
             <label>Full Name</label>
             <input type="text" id="customerNameInput" placeholder="Your Name" />
           </div>
@@ -1709,6 +1725,11 @@
         if (user) {
           window.appState.user = user;
           window.appState.userId = user.uid;
+          
+          const emailDisplay = document.getElementById("customerEmailDisplay");
+          if (emailDisplay) emailDisplay.value = user.email || "";
+          
+          
 
           // Auto-advance the UI if the user logs in while the auth gate is visible
           const authPanel = document.getElementById("authPanel");
