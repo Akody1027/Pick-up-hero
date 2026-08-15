@@ -2546,9 +2546,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
 
           if (window.updateNotificationsUI) window.updateNotificationsUI();
-
+          
+          
           if (window.monitorActiveRoute) window.monitorActiveRoute();
+          
+          
         });
+        
+        
       }
 
       window.saveShiftState = async function () {
@@ -2702,8 +2707,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         if (AppState.pendingOrders === 0) return;
 
-        const badge = document.getElementById("driverNotificationBadge");
-        if (badge) badge.style.display = "none";
+       
+        
+        AppState.acknowledgedOrders = AppState.pendingOrders;
+          if (window.updateNotificationsUI) window.updateNotificationsUI();
+        
 
         closeNotificationModal();
         closeAllModals();
@@ -4123,15 +4131,31 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         let html = "";
         let totalCount = 0;
 
-        if (AppState.pendingOrders > 0) {
-          totalCount += AppState.pendingOrders;
+    
+        
+        
+        
+        let newPending = AppState.pendingOrders - (AppState.acknowledgedOrders || 0);
+        if (newPending < 0) {
+          AppState.acknowledgedOrders = AppState.pendingOrders;
+          newPending = 0;
+        }
+
+        if (newPending > 0) {
+          totalCount += newPending;
           html += `
             <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--danger); cursor: pointer; margin-bottom: 10px;" onclick="window.startTriageMode()">
-              <strong style="color: var(--danger);">Pending Route Requests (${AppState.pendingOrders})</strong>
+              <strong style="color: var(--danger);">Pending Route Requests (${newPending})</strong>
               <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open mapping engine</p>
             </div>
           `;
         }
+        
+        
+        
+        
+        
+        
 
         if (AppState.unreadMessages > 0) {
           totalCount += AppState.unreadMessages;
