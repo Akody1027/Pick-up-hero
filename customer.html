@@ -16,14 +16,14 @@
     <script src="https://js.stripe.com/v3/"></script>
 
     <style> 
-      :root {
-        --bg: #121212;
+      :root { 
+        --bg: #121212; 
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;   
         --accent: #ee611c;  
         --accent-hover: #d95314; 
         --text: #ffffff; 
-        --text-muted: #94a3b8; 
+        --text-muted: #94a3b8;  
         --border: #333333;
         --success: #22c55e;
         --danger: #ef4444;
@@ -144,6 +144,7 @@
 
       /* --- BOTTOM SHEET (Z-Index 900) --- */
       .bottom-sheet {
+        opacity:80%;
         position: fixed;
         bottom: 100px;
         left: 15px;
@@ -184,7 +185,6 @@
         color: var(--text-muted);
       }
 
-      /* --- MODAL SYSTEM (Z-Index 2000) --- */
 
       /* --- TRACKER SHEET DRAG & TIMELINE --- */
       .drag-handle {
@@ -845,8 +845,8 @@
       class="bottom-sheet"
       id="trackerSheet"
       style="
-        transform: translateY(150%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(85%);
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       "
     >
       <div class="drag-handle"></div>
@@ -2422,7 +2422,14 @@
         }
       }
 
+      
+      
+      
+      
       function closeAllModals() {
+        // Check if any full-screen modals are currently open
+        const wasModalOpen = document.querySelectorAll('.modal.active').length > 0;
+
         document.getElementById("addModal").classList.remove("active");
         document.getElementById("settingsModal").classList.remove("active");
 
@@ -2430,14 +2437,36 @@
         if (findHeroModal) findHeroModal.classList.remove("active");
 
         const recoModal = document.getElementById("recoveryModule");
-        if (recoModal) recoModal.classList.remove("active");
+        if (recoModal) recoModal.classList.remove("active"); 
 
-        document.getElementById("trackerSheet").style.transform =
-          "translateY(150%)";
+        const sheet = document.getElementById("trackerSheet");
+
+        // Intelligently restore or toggle the tracker sheet
+        if (window.appState && (window.appState.selectedDriverId || window.isTrackingActiveOrder)) {
+          if (wasModalOpen) {
+            // Restore sheet to full view when returning from settings or booking
+            sheet.style.transform = "translateY(0)";
+          } else {
+            // If already on the map, use the Home button as a toggle switch
+            if (sheet.style.transform === "translateY(0px)" || sheet.style.transform === "translateY(0)") {
+              sheet.style.transform = "translateY(85%)"; // Peek mode
+            } else {
+              sheet.style.transform = "translateY(0)"; // Full view
+            }
+          } 
+        } else {
+          // Keep strictly hidden if no hero is selected and no active order
+          sheet.style.transform = "translateY(150%)";
+        }
 
         updateNavState("navHome");
       }
+      
 
+      
+      
+      
+      
       function updateNavState(activeId) {
         document
           .querySelectorAll(".nav-btn")
