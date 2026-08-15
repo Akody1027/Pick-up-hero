@@ -2546,14 +2546,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
 
           if (window.updateNotificationsUI) window.updateNotificationsUI();
-          
-          
+
           if (window.monitorActiveRoute) window.monitorActiveRoute();
-          
-          
         });
-        
-        
       }
 
       window.saveShiftState = async function () {
@@ -2707,11 +2702,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         if (AppState.pendingOrders === 0) return;
 
-       
-        
         AppState.acknowledgedOrders = AppState.pendingOrders;
-          if (window.updateNotificationsUI) window.updateNotificationsUI();
-        
+        if (window.updateNotificationsUI) window.updateNotificationsUI();
 
         closeNotificationModal();
         closeAllModals();
@@ -3113,13 +3105,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                     chatModal.classList.contains("active") &&
                     window.activeChatOrderId === orderId;
 
-                  if (!isLookingAtThisChat) {
-                    const alertAudio = document.getElementById("alertSound");
-                    if (alertAudio)
-                      alertAudio
-                        .play()
-                        .catch((e) => console.log("Audio blocked:", e));
+                  const alertAudio = document.getElementById("alertSound");
+                  if (alertAudio) {
+                    alertAudio
+                      .play()
+                      .catch((e) => console.log("Audio blocked:", e));
+                  }
 
+                  // Strict gate: Only fire badge injections if the chat is not actively visible
+                  if (!isLookingAtThisChat) {
                     AppState.unreadMessages++;
 
                     window.latestUnreadOrderId = orderId;
@@ -4001,14 +3995,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               chatModal.classList.contains("active") &&
               window.activeChatOrderId === orderId;
 
-            // Strict gate: Only fire audio and badge injections if the chat is not actively visible
-            if (!isLookingAtThisChat) {
-              const alertAudio = document.getElementById("alertSound");
-              if (alertAudio)
-                alertAudio
-                  .play()
-                  .catch((e) => console.log("Audio blocked:", e));
+            const alertAudio = document.getElementById("alertSound");
+            if (alertAudio) {
+              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
+            }
 
+            if (!isLookingAtThisChat) {
               AppState.unreadMessages++;
 
               window.latestUnreadOrderId = orderId;
@@ -4131,11 +4123,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         let html = "";
         let totalCount = 0;
 
-    
-        
-        
-        
-        let newPending = AppState.pendingOrders - (AppState.acknowledgedOrders || 0);
+        let newPending =
+          AppState.pendingOrders - (AppState.acknowledgedOrders || 0);
         if (newPending < 0) {
           AppState.acknowledgedOrders = AppState.pendingOrders;
           newPending = 0;
@@ -4150,12 +4139,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             </div>
           `;
         }
-        
-        
-        
-        
-        
-        
 
         if (AppState.unreadMessages > 0) {
           totalCount += AppState.unreadMessages;
