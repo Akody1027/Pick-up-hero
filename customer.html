@@ -3120,13 +3120,21 @@
                           loc.lng
                         );
                       });
-                      window.baseMarkers[driverId].push(marker);
+                      
+                      
+                      
+
+              window.baseMarkers[driverId].push(marker);
                     });
                   }
                 });
+
+                // Immediately enforce visibility if a new driver drops a base while the customer is tracking
+                if (window.applyDriverVisibilityFilter) window.applyDriverVisibilityFilter();
               }
 
               // 2. CHAINING: Only attach live telemetry AFTER bases are loaded in memory
+
               if (!initialSettingsLoaded) {
                 initialSettingsLoaded = true;
 
@@ -3240,12 +3248,17 @@
                           );
                         }
                       }
-                    }
+                      
+                      
+                      }
                   );
 
                   await Promise.all(mapPromises);
 
+                  if (window.applyDriverVisibilityFilter) window.applyDriverVisibilityFilter();
+
                   // 3. FINISH BOOT: Map is armed, fire the session checker
+
                   if (!window.initialDriversLoaded) {
                     window.initialDriversLoaded = true;
                     if (window.checkActiveSession) window.checkActiveSession();
@@ -3384,6 +3397,42 @@
 
       window.checkActiveSession = function () {
         if (!window.appState.userId) return;
+        
+        
+        
+        window.applyDriverVisibilityFilter = function () {
+        if (!map) return;
+        const tracking = window.isTrackingActiveOrder;
+        const assignedId = window.appState.selectedDriverId;
+
+        // 1. Toggle Base Pins
+        if (window.baseMarkers) {
+          for (const [dId, markers] of Object.entries(window.baseMarkers)) {
+            markers.forEach((m) => {
+              if (tracking && dId !== assignedId) {
+                if (map.hasLayer(m)) map.removeLayer(m);
+              } else {
+                if (!map.hasLayer(m)) m.addTo(map);
+              }
+            });
+          }
+        }
+
+        // 2. Toggle Live Telemetry Pins
+        if (window.liveMarkers) {
+          for (const [dId, m] of Object.entries(window.liveMarkers)) {
+            if (tracking && dId !== assignedId) {
+              m.setOpacity(0);
+            } else {
+              m.setOpacity(1);
+            }
+          }
+        }
+      };
+        
+        
+        
+        
 
         if (window.activeSessionListener) {
           window.activeSessionListener();
@@ -3432,11 +3481,19 @@
           if (hasActive) {
             fab.classList.add("locked");
 
+ 
+            
             if (!window.isTrackingActiveOrder) {
               document.getElementById("activeDeliveryPrompt").style.display =
                 "flex";
               window.isTrackingActiveOrder = true;
+              if (window.applyDriverVisibilityFilter) window.applyDriverVisibilityFilter();
             }
+            
+            
+            
+            
+            
 
             if (defaultActions) defaultActions.style.display = "none";
             if (timeline) timeline.style.display = "flex";
@@ -3452,10 +3509,20 @@
                 window.renderRecoveredOrder(window.appState.activeOrder);
               }
             }
-          } else {
+            
+            } else {
             fab.classList.remove("locked");
-            window.isTrackingActiveOrder = false;
+            
+            if (window.isTrackingActiveOrder) {
+              window.isTrackingActiveOrder = false;
+              if (window.applyDriverVisibilityFilter) window.applyDriverVisibilityFilter();
+            }
+
             window.currentlyListeningTo = null;
+
+            
+            
+            
 
             if (defaultActions) defaultActions.style.display = "flex";
             if (timeline) {
