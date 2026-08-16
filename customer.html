@@ -2778,9 +2778,6 @@
           "$" + total.toFixed(2);
       }
 
-      
-      
-      
       function handleImageCompress(event, index) {
         const file = event.target.files[0];
         if (!file) return;
@@ -2803,9 +2800,13 @@
             window.appState.compressedImages[index] = compressedData;
 
             // Render the thumbnail to the UI
-            const thumbnail = document.getElementById(`screenshotThumbnail_${index}`);
-            const labelText = document.getElementById(`screenshotLabelText_${index}`);
-            
+            const thumbnail = document.getElementById(
+              `screenshotThumbnail_${index}`
+            );
+            const labelText = document.getElementById(
+              `screenshotLabelText_${index}`
+            );
+
             if (thumbnail) {
               thumbnail.src = compressedData;
               thumbnail.style.display = "block";
@@ -2818,13 +2819,6 @@
         };
         reader.readAsDataURL(file);
       }
-      
-      
-
-      
-      
-      
-      
 
       window.listenToMyActiveOrder = function (orderId) {
         const title = document.getElementById("sheetTitle");
@@ -4397,18 +4391,11 @@
         document.getElementById("chatModal").classList.add("active");
         window.appState.unreadMessages = 0;
 
-        document.getElementById("customerNotificationBadge").style.display =
-          "none";
-        document.getElementById("customerNotificationBadge").innerText = "0";
-        document.getElementById("notificationList").innerHTML = `
-          <p style="color: var(--text-muted); text-align: center; margin-top: 20px;">
-            No new notifications.
-          </p>
-        `;
-        closeNotificationModal();
+        if (window.updateNotificationsUI) window.updateNotificationsUI();
 
         setTimeout(() => {
           const container = document.getElementById("chatMessageContainer");
+
           container.scrollTop = container.scrollHeight;
         }, 100);
       };
@@ -4521,37 +4508,81 @@
             const chatModal = document.getElementById("chatModal");
             const isLookingAtThisChat = chatModal.classList.contains("active");
 
-            const alertAudio = document.getElementById("customerAlertSound");
-            if (alertAudio) {
-              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
-            }
-
-            // Strict gate: Only fire badge injections if the chat is not actively visible
             if (!isLookingAtThisChat) {
+              const alertAudio = document.getElementById("customerAlertSound");
+              if (alertAudio) {
+                alertAudio
+                  .play()
+                  .catch((e) => console.log("Audio blocked:", e));
+              }
               window.appState.unreadMessages++;
-              const badge = document.getElementById(
-                "customerNotificationBadge"
-              );
-              if (badge) {
-                badge.innerText = window.appState.unreadMessages;
-                badge.style.display = "flex";
-              }
-
-              let notifHTML = `
-                <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer;" onclick="openChatModal()">
-                  <strong style="color: var(--accent);">New Message from Hero</strong>
-                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open chat</p>
-                </div>
-              `;
-              const notifList = document.getElementById("notificationList");
-              if (notifList.innerHTML.includes("No new notifications")) {
-                notifList.innerHTML = notifHTML;
-              } else {
-                notifList.innerHTML += notifHTML;
-              }
             }
           }
+
+          if (window.updateNotificationsUI) window.updateNotificationsUI();
         });
+      };
+
+      window.updateNotificationsUI = async function () {
+        const notifList = document.getElementById("notificationList");
+        let html = "";
+        let unread = window.appState.unreadMessages || 0;
+
+        if (
+          window.appState.currentOrderId &&
+          window.appState.selectedDriverId
+        ) {
+          // Pull driver's name from Firebase if we don't have it cached
+          if (!window.appState.driverNameCache) {
+            try {
+              const dDoc = await window.getDoc(
+                window.doc(
+                  window.db,
+                  "driver_settings",
+                  window.appState.selectedDriverId
+                )
+              );
+              window.appState.driverNameCache =
+                dDoc.exists() && dDoc.data().displayName
+                  ? dDoc.data().displayName
+                  : "Hero";
+            } catch (e) {
+              window.appState.driverNameCache = "Hero";
+            }
+          }
+
+          const driverName = window.appState.driverNameCache;
+
+          html += `
+            <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid ${
+              unread > 0 ? "var(--accent)" : "var(--border)"
+            }; cursor: pointer; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;" onclick="openChatModal()">
+              <div>
+                <strong style="color: ${
+                  unread > 0 ? "var(--accent)" : "var(--text)"
+                };">💬 Chat with ${driverName}</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Active Delivery</p>
+              </div>
+              ${
+                unread > 0
+                  ? `<div style="background: var(--accent); color: white; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold;">${unread}</div>`
+                  : ""
+              }
+            </div>
+          `;
+        }
+
+        if (html === "") {
+          html = `<p style="color: var(--text-muted); text-align: center; margin-top: 20px;">No active chats or notifications.</p>`;
+        }
+
+        if (notifList) notifList.innerHTML = html;
+
+        const badge = document.getElementById("customerNotificationBadge");
+        if (badge) {
+          badge.innerText = unread;
+          badge.style.display = unread > 0 ? "flex" : "none";
+        }
       };
 
       window.sendChatMessage = async function () {
