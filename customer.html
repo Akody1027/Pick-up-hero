@@ -1098,12 +1098,55 @@
 
                 <div class="form-group">
                   <label>Order Screenshot (Optional)</label>
-                  <input
-                    type="file"
-                    id="screenshotInput_1"
-                    accept="image/*"
-                    onchange="handleImageCompress(event, 1)"
-                    style="padding: 10px"
+
+                  <label
+                    for="screenshotInput_1"
+                    style="
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      gap: 10px;
+                      padding: 16px;
+                      border: 2px dashed var(--border);
+                      border-radius: 12px;
+                      background: var(--surface);
+                      cursor: pointer;
+                      color: var(--text-muted);
+                      transition: all 0.2s ease;
+                    "
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      style="width: 24px; height: 24px; fill: currentColor"
+                    >
+                      <path
+                        d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"
+                      />
+                    </svg>
+                    <span
+                      id="screenshotLabelText_1"
+                      style="font-size: 0.95rem; font-weight: 600"
+                      >Tap to Upload Image</span
+                    >
+                    <input
+                      type="file"
+                      id="screenshotInput_1"
+                      accept="image/*"
+                      onchange="handleImageCompress(event, 1)"
+                      style="display: none"
+                    />
+                  </label>
+                  <img
+                    id="screenshotThumbnail_1"
+                    style="
+                      display: none;
+                      width: 100%;
+                      max-height: 200px;
+                      object-fit: contain;
+                      border-radius: 8px;
+                      margin-top: 10px;
+                      border: 1px solid var(--border);
+                    "
                   />
                 </div>
 
@@ -1787,8 +1830,8 @@
                 document.title,
                 window.location.pathname
               );
-            
-            window.location.reload();
+
+              window.location.reload();
             })
             .catch((e) => console.error("Error updating payment status:", e));
         }
@@ -2906,15 +2949,15 @@
                 }
               }
               // KEEP LOCAL STATE CACHE IN PERFECT PARITY WITH DB
-              window.appState.activeOrder = { ...window.appState.activeOrder, ...data };
-              
+              window.appState.activeOrder = {
+                ...window.appState.activeOrder,
+                ...data,
+              };
+
               // FIRE LIVE UI REBUILD ENGINE
               if (window.renderLiveTimeline) {
-                  window.renderLiveTimeline(window.appState.activeOrder);
+                window.renderLiveTimeline(window.appState.activeOrder);
               }
-              
-              
-              
             }
           }
         );
@@ -3293,29 +3336,28 @@
             canvas.height = img.height * scale;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
+            const compressedData = canvas.toDataURL("image/jpeg", 0.6);
 
-            try {
-              await window.addDoc(
-                window.collection(
-                  window.db,
-                  "orders",
-                  window.appState.currentOrderId,
-                  "messages"
-                ),
-                {
-                  senderId: window.appState.userId,
-                  text: " Image attached",
-                  imageUrl: compressedBase64,
-                  timestamp: window.serverTimestamp(),
-                  read: false,
-                }
-              );
-            } catch (err) {
-              console.error("Failed to send image:", err);
-              alert("Failed to send image.");
+            if (!window.appState.compressedImages)
+              window.appState.compressedImages = {};
+            window.appState.compressedImages[index] = compressedData;
+
+            const thumbnail = document.getElementById(
+              `screenshotThumbnail_${index}`
+            );
+            const labelText = document.getElementById(
+              `screenshotLabelText_${index}`
+            );
+
+            if (thumbnail) {
+              thumbnail.src = compressedData;
+              thumbnail.style.display = "block";
+            }
+            if (labelText) {
+              labelText.innerText = "Replace Image";
             }
           };
+
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
@@ -3970,29 +4012,31 @@
           }
         }, 100);
       };
-      
-      
-      
-      
-      
-      window.renderLiveTimeline = function(order) {
+
+      window.renderLiveTimeline = function (order) {
         if (!order) return;
         const timeline = document.getElementById("activeStopsTimeline");
         if (!timeline) return;
 
         let heroStatusStr = "Starting delivery run";
-        if (order.status === "pending") heroStatusStr = "Waiting for Hero approval...";
-        if (order.status === "accepted") heroStatusStr = "Route secured and scheduled.";
-        if (order.status === "approved" || order.status === "pickup") heroStatusStr = "Hero is navigating to pickups.";
-        if (order.status === "picked_up" || order.status === "ready_delivery") heroStatusStr = "All items secured. Routing delivery.";
+        if (order.status === "pending")
+          heroStatusStr = "Waiting for Hero approval...";
+        if (order.status === "accepted")
+          heroStatusStr = "Route secured and scheduled.";
+        if (order.status === "approved" || order.status === "pickup")
+          heroStatusStr = "Hero is navigating to pickups.";
+        if (order.status === "picked_up" || order.status === "ready_delivery")
+          heroStatusStr = "All items secured. Routing delivery.";
         if (order.status === "in_transit") {
-            if (order.queuePosition === 1) {
-                heroStatusStr = "You are next in line! Hero is en route.";
-            } else if (order.queuePosition > 1) {
-                heroStatusStr = `Hero is dropping off ${order.queuePosition - 1} order(s) before you.`;
-            } else {
-                heroStatusStr = "Hero is on the way to you!";
-            }
+          if (order.queuePosition === 1) {
+            heroStatusStr = "You are next in line! Hero is en route.";
+          } else if (order.queuePosition > 1) {
+            heroStatusStr = `Hero is dropping off ${
+              order.queuePosition - 1
+            } order(s) before you.`;
+          } else {
+            heroStatusStr = "Hero is on the way to you!";
+          }
         }
         if (order.status === "completed") heroStatusStr = "Delivery Complete!";
 
@@ -4005,11 +4049,22 @@
 
         if (order.stops && Array.isArray(order.stops)) {
           order.stops.forEach((stop, index) => {
-            const isDone = ["picked_up", "ready_delivery", "in_transit", "completed"].includes(order.status);
+            const isDone = [
+              "picked_up",
+              "ready_delivery",
+              "in_transit",
+              "completed",
+            ].includes(order.status);
             timelineHTML += `
               <div class="timeline-item">
-                <div class="timeline-title">Pickup Stop ${index + 1} ${isDone ? '✓' : ''}</div>
-                <div class="timeline-subtitle" style="${isDone ? 'color: var(--success); font-weight: bold;' : 'color: var(--text-muted);'}">${stop.storeName}</div>
+                <div class="timeline-title">Pickup Stop ${index + 1} ${
+              isDone ? "✓" : ""
+            }</div>
+                <div class="timeline-subtitle" style="${
+                  isDone
+                    ? "color: var(--success); font-weight: bold;"
+                    : "color: var(--text-muted);"
+                }">${stop.storeName}</div>
               </div>
             `;
           });
@@ -4018,13 +4073,24 @@
         const isDelivered = order.status === "completed";
         timelineHTML += `
           <div class="timeline-item">
-            <div class="timeline-title">Final Delivery ${isDelivered ? '✓' : ''}</div>
-            <div class="timeline-subtitle" style="${isDelivered ? 'color: var(--success); font-weight: bold;' : 'color: var(--text-muted);'}">${order.deliveryAddress || "Your Location"}</div>
+            <div class="timeline-title">Final Delivery ${
+              isDelivered ? "✓" : ""
+            }</div>
+            <div class="timeline-subtitle" style="${
+              isDelivered
+                ? "color: var(--success); font-weight: bold;"
+                : "color: var(--text-muted);"
+            }">${order.deliveryAddress || "Your Location"}</div>
           </div>
         `;
 
-        if (order.status !== "picked_up" && order.status !== "in_transit" && order.status !== "completed" && order.status !== "cancelled") {
-            timelineHTML += `<button id="cancelDeliveryActionBtn" class="btn btn-emergency" style="margin-top: 25px; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;" onclick="cancelActiveOrder()">Cancel Delivery</button>`;
+        if (
+          order.status !== "picked_up" &&
+          order.status !== "in_transit" &&
+          order.status !== "completed" &&
+          order.status !== "cancelled"
+        ) {
+          timelineHTML += `<button id="cancelDeliveryActionBtn" class="btn btn-emergency" style="margin-top: 25px; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;" onclick="cancelActiveOrder()">Cancel Delivery</button>`;
         }
 
         timeline.innerHTML = timelineHTML;
@@ -4032,25 +4098,14 @@
 
       function dismissActiveDeliveryPrompt() {
         document.getElementById("activeDeliveryPrompt").style.display = "none";
-        document.getElementById("trackerSheet").style.transform = "translateY(0)";
+        document.getElementById("trackerSheet").style.transform =
+          "translateY(0)";
 
         const order = window.appState.activeOrder;
         if (!order) return;
 
         window.renderLiveTimeline(order);
       }
-
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
 
       function bindStoreAutocomplete(index) {
         const input = document.getElementById(`storeSearchInput_${index}`);
@@ -4140,8 +4195,17 @@
 
             <div class="form-group">
               <label>Order Screenshot (Optional)</label>
-              <input type="file" id="screenshotInput_${newIndex}" accept="image/*" onchange="handleImageCompress(event, ${newIndex})" style="padding: 10px" />
+              
+              
+<label for="screenshotInput_${newIndex}" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; border: 2px dashed var(--border); border-radius: 12px; background: var(--surface); cursor: pointer; color: var(--text-muted); transition: all 0.2s ease;">
+                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: currentColor;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg>
+                <span id="screenshotLabelText_${newIndex}" style="font-size: 0.95rem; font-weight: 600;">Tap to Upload Image</span>
+                <input type="file" id="screenshotInput_${newIndex}" accept="image/*" onchange="handleImageCompress(event, ${newIndex})" style="display: none;" />
+              </label>
+              <img id="screenshotThumbnail_${newIndex}" style="display: none; width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border);" />
             </div>
+
+
 
             <div class="form-group">
               <label>Curbside Instructions (Optional)</label>
@@ -4435,8 +4499,6 @@
             const chatModal = document.getElementById("chatModal");
             const isLookingAtThisChat = chatModal.classList.contains("active");
 
- 
-            
             const alertAudio = document.getElementById("customerAlertSound");
             if (alertAudio) {
               alertAudio.play().catch((e) => console.log("Audio blocked:", e));
@@ -4444,11 +4506,6 @@
 
             // Strict gate: Only fire badge injections if the chat is not actively visible
             if (!isLookingAtThisChat) {
-            
-            
-            
-            
-
               window.appState.unreadMessages++;
               const badge = document.getElementById(
                 "customerNotificationBadge"
