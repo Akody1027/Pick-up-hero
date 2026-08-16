@@ -3352,25 +3352,27 @@
             canvas.height = img.height * scale;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            const compressedData = canvas.toDataURL("image/jpeg", 0.6);
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
 
-            if (!window.appState.compressedImages)
-              window.appState.compressedImages = {};
-            window.appState.compressedImages[index] = compressedData;
-
-            const thumbnail = document.getElementById(
-              `screenshotThumbnail_${index}`
-            );
-            const labelText = document.getElementById(
-              `screenshotLabelText_${index}`
-            );
-
-            if (thumbnail) {
-              thumbnail.src = compressedData;
-              thumbnail.style.display = "block";
-            }
-            if (labelText) {
-              labelText.innerText = "Replace Image";
+            try {
+              await window.addDoc(
+                window.collection(
+                  window.db,
+                  "orders",
+                  window.appState.currentOrderId,
+                  "messages"
+                ),
+                {
+                  senderId: window.appState.userId,
+                  text: "📷 Image attached",
+                  imageUrl: compressedBase64,
+                  timestamp: window.serverTimestamp(),
+                  read: false,
+                }
+              );
+            } catch (err) {
+              console.error("Failed to send image:", err);
+              alert("Failed to send image.");
             }
           };
 
