@@ -2905,6 +2905,16 @@
                   }
                 }
               }
+              // KEEP LOCAL STATE CACHE IN PERFECT PARITY WITH DB
+              window.appState.activeOrder = { ...window.appState.activeOrder, ...data };
+              
+              // FIRE LIVE UI REBUILD ENGINE
+              if (window.renderLiveTimeline) {
+                  window.renderLiveTimeline(window.appState.activeOrder);
+              }
+              
+              
+              
             }
           }
         );
@@ -3960,50 +3970,87 @@
           }
         }, 100);
       };
+      
+      
+      
+      
+      
+      window.renderLiveTimeline = function(order) {
+        if (!order) return;
+        const timeline = document.getElementById("activeStopsTimeline");
+        if (!timeline) return;
+
+        let heroStatusStr = "Starting delivery run";
+        if (order.status === "pending") heroStatusStr = "Waiting for Hero approval...";
+        if (order.status === "accepted") heroStatusStr = "Route secured and scheduled.";
+        if (order.status === "approved" || order.status === "pickup") heroStatusStr = "Hero is navigating to pickups.";
+        if (order.status === "picked_up" || order.status === "ready_delivery") heroStatusStr = "All items secured. Routing delivery.";
+        if (order.status === "in_transit") {
+            if (order.queuePosition === 1) {
+                heroStatusStr = "You are next in line! Hero is en route.";
+            } else if (order.queuePosition > 1) {
+                heroStatusStr = `Hero is dropping off ${order.queuePosition - 1} order(s) before you.`;
+            } else {
+                heroStatusStr = "Hero is on the way to you!";
+            }
+        }
+        if (order.status === "completed") heroStatusStr = "Delivery Complete!";
+
+        let timelineHTML = `
+          <div class="timeline-item">
+            <div class="timeline-title">Hero Status</div>
+            <div class="timeline-subtitle" style="color: var(--accent); font-weight: bold;">${heroStatusStr}</div>
+          </div>
+        `;
+
+        if (order.stops && Array.isArray(order.stops)) {
+          order.stops.forEach((stop, index) => {
+            const isDone = ["picked_up", "ready_delivery", "in_transit", "completed"].includes(order.status);
+            timelineHTML += `
+              <div class="timeline-item">
+                <div class="timeline-title">Pickup Stop ${index + 1} ${isDone ? '✓' : ''}</div>
+                <div class="timeline-subtitle" style="${isDone ? 'color: var(--success); font-weight: bold;' : 'color: var(--text-muted);'}">${stop.storeName}</div>
+              </div>
+            `;
+          });
+        }
+
+        const isDelivered = order.status === "completed";
+        timelineHTML += `
+          <div class="timeline-item">
+            <div class="timeline-title">Final Delivery ${isDelivered ? '✓' : ''}</div>
+            <div class="timeline-subtitle" style="${isDelivered ? 'color: var(--success); font-weight: bold;' : 'color: var(--text-muted);'}">${order.deliveryAddress || "Your Location"}</div>
+          </div>
+        `;
+
+        if (order.status !== "picked_up" && order.status !== "in_transit" && order.status !== "completed" && order.status !== "cancelled") {
+            timelineHTML += `<button id="cancelDeliveryActionBtn" class="btn btn-emergency" style="margin-top: 25px; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;" onclick="cancelActiveOrder()">Cancel Delivery</button>`;
+        }
+
+        timeline.innerHTML = timelineHTML;
+      };
 
       function dismissActiveDeliveryPrompt() {
         document.getElementById("activeDeliveryPrompt").style.display = "none";
-        document.getElementById("trackerSheet").style.transform =
-          "translateY(0)";
+        document.getElementById("trackerSheet").style.transform = "translateY(0)";
 
         const order = window.appState.activeOrder;
         if (!order) return;
 
-        const timeline = document.getElementById("activeStopsTimeline");
-        let timelineHTML = `
-          <div class="timeline-item">
-            <div class="timeline-title">Hero En Route</div>
-            <div class="timeline-subtitle">Starting delivery run</div>
-          </div>
-        `;
-
-        order.stops.forEach((stop, index) => {
-          timelineHTML += `
-            <div class="timeline-item">
-              <div class="timeline-title">Pickup Stop ${index + 1}</div>
-              <div class="timeline-subtitle">${stop.storeName}</div>
-            </div>
-           `;
-        });
-
-        timelineHTML += `
-          <div class="timeline-item">
-            <div class="timeline-title">Final Delivery</div>
-            <div class="timeline-subtitle">${order.deliveryAddress}</div>
-                  </div>
-
-
-
-                <button id="cancelDeliveryActionBtn" class="btn btn-emergency" style="margin-top: 25px; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;" onclick="cancelActiveOrder()">Cancel Delivery</button>
-        `;
-        timeline.innerHTML = timelineHTML;
-
-        // Failsafe: Hide button immediately if the customer opens the prompt after items are secured
-        if (order.status === "picked_up" || order.status === "in_transit") {
-          const cancelBtn = document.getElementById("cancelDeliveryActionBtn");
-          if (cancelBtn) cancelBtn.style.display = "none";
-        }
+        window.renderLiveTimeline(order);
       }
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
 
       function bindStoreAutocomplete(index) {
         const input = document.getElementById(`storeSearchInput_${index}`);
