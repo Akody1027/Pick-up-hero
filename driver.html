@@ -3878,11 +3878,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById("notificationModal").classList.add("active");
       };
 
-
       window.closeNotificationModal = function () {
         document.getElementById("notificationModal").classList.remove("active");
       };
-
 
       window.openChatModal = function (orderId) {
         if (!orderId && !window.activeChatOrderId) return;
@@ -3895,8 +3893,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         AppState.unreadCounts[targetId] = 0;
 
         if (window.updateNotificationsUI) window.updateNotificationsUI();
-
-        closeNotificationModal();
 
         window.initChatListener(targetId);
 
