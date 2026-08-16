@@ -3878,6 +3878,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById("notificationModal").classList.add("active");
       };
 
+
+      window.closeNotificationModal = function () {
+        document.getElementById("notificationModal").classList.remove("active");
+      };
+
+
       window.openChatModal = function (orderId) {
         if (!orderId && !window.activeChatOrderId) return;
         const targetId = orderId || window.activeChatOrderId;
