@@ -2505,10 +2505,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               window.pendingSOSOrderIds.add(order.dbId);
             }
           });
-          
-          
-          
-          
+
           const previousTriageLength = AppState.triageQueue.length;
 
           if (hasNewSOS && !AppState.isInitialLoad) {
@@ -2545,13 +2542,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           if (window.monitorActiveRoute) window.monitorActiveRoute();
         });
       }
-  
-      
-      
-      
-      
-      
-      
 
       window.saveShiftState = async function () {
         try {
@@ -2981,7 +2971,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         let groups = {};
         queue
 
-        .filter((q) => q.type === "pickup" && q.status !== "completed")
+          .filter((q) => q.type === "pickup" && q.status !== "completed")
           .forEach((p) => {
             let key = `${p.lat}_${p.lng}`;
 
@@ -3091,42 +3081,55 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           );
           window.activeOrderUnsubscribers.push(unsub);
 
-          // 2. Background Chat Listener for Notifications
+          // 2. Background Chat Listener for Notifications (Filing Cabinet System)
           const chatQ = window.query(
             window.collection(window.db, "orders", orderId, "messages"),
             window.orderBy("timestamp", "asc")
           );
 
           const chatUnsub = window.onSnapshot(chatQ, (snapshot) => {
+            let unreadForThisOrder = 0;
+            let hasNewAlert = false;
+
+            // Recalculate exact unread count to prevent state drift
+            snapshot.docs.forEach((docSnap) => {
+              const msg = docSnap.data();
+              if (msg.senderId !== DRIVER_DOC_ID && !msg.read) {
+                unreadForThisOrder++;
+              }
+            });
+
+            // Trigger audio only on actual new message additions
             snapshot.docChanges().forEach((change) => {
               if (change.type === "added") {
                 const msg = change.doc.data();
-
-                // Alert if message is from the customer and is unread
                 if (msg.senderId !== DRIVER_DOC_ID && !msg.read) {
-                  const chatModal = document.getElementById("chatModal");
-                  const isLookingAtThisChat =
-                    chatModal.classList.contains("active") &&
-                    window.activeChatOrderId === orderId;
-
-                  const alertAudio = document.getElementById("alertSound");
-                  if (alertAudio) {
-                    alertAudio
-                      .play()
-                      .catch((e) => console.log("Audio blocked:", e));
-                  }
-
-                  // Strict gate: Only fire badge injections if the chat is not actively visible
-                  if (!isLookingAtThisChat) {
-                    AppState.unreadMessages++;
-
-                    window.latestUnreadOrderId = orderId;
-                    if (window.updateNotificationsUI)
-                      window.updateNotificationsUI();
-                  }
+                  hasNewAlert = true;
                 }
               }
             });
+
+            // Save to the global dictionary (Filing Cabinet)
+            AppState.unreadCounts = AppState.unreadCounts || {};
+            AppState.unreadCounts[orderId] = unreadForThisOrder;
+
+            if (hasNewAlert) {
+              const chatModal = document.getElementById("chatModal");
+              const isLookingAtThisChat =
+                chatModal.classList.contains("active") &&
+                window.activeChatOrderId === orderId;
+
+              if (!isLookingAtThisChat) {
+                const alertAudio = document.getElementById("alertSound");
+                if (alertAudio) {
+                  alertAudio
+                    .play()
+                    .catch((e) => console.log("Audio blocked:", e));
+                }
+              }
+            }
+
+            if (window.updateNotificationsUI) window.updateNotificationsUI();
           });
           window.activeOrderUnsubscribers.push(chatUnsub);
         });
@@ -3257,8 +3260,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               );
               return;
             }
-            
-            
+
             const newApproved = acceptedOrders.map((t) => ({
               ...t,
               status: "approved",
@@ -3266,22 +3268,25 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             // Safely merge new runs into the existing route without losing progress
             const existingActive = AppState.activeQueue || [];
-            const existingIds = new Set(existingActive.map(x => x.id));
-            const distinctNew = newApproved.filter(x => !existingIds.has(x.id));
+            const existingIds = new Set(existingActive.map((x) => x.id));
+            const distinctNew = newApproved.filter(
+              (x) => !existingIds.has(x.id)
+            );
 
             AppState.activeQueue = [...existingActive, ...distinctNew];
 
             AppState.workflowPhase = "ready_pickup";
             AppState.pendingOrders = 0;
-            
 
             if (window.monitorActiveRoute) window.monitorActiveRoute();
             updateDashboardUI();
 
-            const uniqueOrderIds = [
-              ...new Set(AppState.activeQueue.map((item) => item.dbId)),
+            // ONLY push the "approved" status update to the distinct new orders
+            // so we don't accidentally overwrite in_transit or picked_up statuses
+            const uniqueNewOrderIds = [
+              ...new Set(distinctNew.map((item) => item.dbId)),
             ];
-            for (const orderId of uniqueOrderIds) {
+            for (const orderId of uniqueNewOrderIds) {
               if (orderId) {
                 window
                   .updateDoc(window.doc(window.db, "orders", orderId), {
@@ -3873,18 +3878,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById("notificationModal").classList.add("active");
       };
 
-      window.closeNotificationModal = function () {
-        document.getElementById("notificationModal").classList.remove("active");
-      };
-
       window.openChatModal = function (orderId) {
         if (!orderId && !window.activeChatOrderId) return;
         const targetId = orderId || window.activeChatOrderId;
 
         document.getElementById("chatModal").classList.add("active");
-        AppState.unreadMessages = 0;
 
-        window.latestUnreadOrderId = null;
+        // Zero out the unread count for this specific thread when opened
+        AppState.unreadCounts = AppState.unreadCounts || {};
+        AppState.unreadCounts[targetId] = 0;
 
         if (window.updateNotificationsUI) window.updateNotificationsUI();
 
@@ -4008,16 +4010,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               chatModal.classList.contains("active") &&
               window.activeChatOrderId === orderId;
 
-            const alertAudio = document.getElementById("alertSound");
-            if (alertAudio) {
-              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
-            }
-
             if (!isLookingAtThisChat) {
-              AppState.unreadMessages++;
-
-              window.latestUnreadOrderId = orderId;
-              if (window.updateNotificationsUI) window.updateNotificationsUI();
+              const alertAudio = document.getElementById("alertSound");
+              if (alertAudio) {
+                alertAudio
+                  .play()
+                  .catch((e) => console.log("Audio blocked:", e));
+              }
             }
           }
         });
@@ -4131,7 +4130,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
-      window.updateNotificationsUI = function () {
+      window.updateNotificationsUI = async function () {
         const notifList = document.getElementById("notificationList");
         let html = "";
         let totalCount = 0;
@@ -4146,28 +4145,72 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         if (newPending > 0) {
           totalCount += newPending;
           html += `
-            <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--danger); cursor: pointer; margin-bottom: 10px;" onclick="window.startTriageMode()">
+            <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--danger); cursor: pointer; margin-bottom: 15px;" onclick="window.startTriageMode()">
               <strong style="color: var(--danger);">Pending Route Requests (${newPending})</strong>
               <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open mapping engine</p>
             </div>
           `;
         }
 
-        if (AppState.unreadMessages > 0) {
-          totalCount += AppState.unreadMessages;
+        // --- THE FILING CABINET: Build persistent threads for every active customer ---
+        const allOrders = [
+          ...(AppState.activeQueue || []),
+          ...(AppState.triageQueue || []),
+        ];
+        const uniqueOrdersMap = new Map();
 
-          const targetId =
-            window.latestUnreadOrderId || window.activeChatOrderId || "";
+        allOrders.forEach((o) => {
+          if (o.dbId) uniqueOrdersMap.set(o.dbId, o);
+        });
+
+        AppState.unreadCounts = AppState.unreadCounts || {};
+        AppState.customerNames = AppState.customerNames || {};
+
+        for (const [orderId, order] of uniqueOrdersMap.entries()) {
+          const unread = AppState.unreadCounts[orderId] || 0;
+          totalCount += unread;
+
+          // Reach into Firebase to pull the customer's real name if we haven't cached it yet
+          if (!AppState.customerNames[order.userId]) {
+            try {
+              const uDoc = await window.getDoc(
+                window.doc(window.db, "users", order.userId)
+              );
+              AppState.customerNames[order.userId] =
+                uDoc.exists() && uDoc.data().fullName
+                  ? uDoc.data().fullName
+                  : "Customer";
+            } catch (e) {
+              AppState.customerNames[order.userId] = "Customer";
+            }
+          }
+
+          const customerName = AppState.customerNames[order.userId];
+
+          // Build individual thread card
           html += `
-            <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); cursor: pointer; margin-bottom: 10px;" onclick="openChatModal('${targetId}')">
-              <strong style="color: var(--accent);">New Message from Customer (${AppState.unreadMessages})</strong>
-              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open chat</p>
-            </div>
-          `;
+              <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid ${
+                unread > 0 ? "var(--accent)" : "var(--border)"
+              }; cursor: pointer; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;" onclick="openChatModal('${orderId}')">
+                <div>
+                  <strong style="color: ${
+                    unread > 0 ? "var(--accent)" : "var(--text)"
+                  };">💬 Chat with ${customerName}</strong>
+                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Order ID: ${orderId
+                    .substring(0, 8)
+                    .toUpperCase()}</p>
+                </div>
+                ${
+                  unread > 0
+                    ? `<div style="background: var(--accent); color: white; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold;">${unread}</div>`
+                    : ""
+                }
+              </div>
+            `;
         }
 
         if (html === "") {
-          html = `<p style="color: var(--text-muted); text-align: center; margin-top: 20px;">No new notifications.</p>`;
+          html = `<p style="color: var(--text-muted); text-align: center; margin-top: 20px;">No active chats or notifications.</p>`;
         }
 
         if (notifList) notifList.innerHTML = html;
