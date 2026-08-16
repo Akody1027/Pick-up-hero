@@ -2505,6 +2505,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               window.pendingSOSOrderIds.add(order.dbId);
             }
           });
+          
+          
+          
+          
+          const previousTriageLength = AppState.triageQueue.length;
 
           if (hasNewSOS && !AppState.isInitialLoad) {
             document.getElementById("sosAlertModal").style.display = "flex";
@@ -2517,8 +2522,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
           } else if (
             !AppState.isInitialLoad &&
-            newOrders.length > AppState.triageQueue.length &&
-            AppState.workflowPhase === "idle"
+            newOrders.length > previousTriageLength
           ) {
             document
               .getElementById("alertSound")
@@ -2526,22 +2530,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               .catch(() => console.log("Audio blocked."));
           }
 
-          const previousTriageLength = AppState.triageQueue.length;
           AppState.isInitialLoad = false;
 
           AppState.triageQueue = newOrders;
           AppState.pendingOrders = snapshot.docs.length;
 
-          // Force the map to recalculate if a customer cancels while the driver is planning the route
-          if (
-            AppState.workflowPhase === "triage" &&
-            previousTriageLength > newOrders.length
-          ) {
-            window.showCustomAlert(
-              "Route Updated",
-              "A pending order was cancelled. Recalculating proposed route..."
-            );
-
+          // Force the dashboard to redraw dynamically if they are actively looking at the triage screen
+          if (AppState.workflowPhase === "triage") {
             updateDashboardUI();
           }
 
@@ -2550,6 +2545,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           if (window.monitorActiveRoute) window.monitorActiveRoute();
         });
       }
+  
+      
+      
+      
+      
+      
+      
 
       window.saveShiftState = async function () {
         try {
@@ -2978,9 +2980,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       function groupPickups(queue) {
         let groups = {};
         queue
-          .filter((q) => q.type === "pickup")
+
+        .filter((q) => q.type === "pickup" && q.status !== "completed")
           .forEach((p) => {
             let key = `${p.lat}_${p.lng}`;
+
             if (!groups[key]) groups[key] = [];
             groups[key].push(p);
           });
@@ -3253,14 +3257,23 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               );
               return;
             }
-
-            AppState.activeQueue = acceptedOrders.map((t) => ({
+            
+            
+            const newApproved = acceptedOrders.map((t) => ({
               ...t,
               status: "approved",
             }));
 
+            // Safely merge new runs into the existing route without losing progress
+            const existingActive = AppState.activeQueue || [];
+            const existingIds = new Set(existingActive.map(x => x.id));
+            const distinctNew = newApproved.filter(x => !existingIds.has(x.id));
+
+            AppState.activeQueue = [...existingActive, ...distinctNew];
+
             AppState.workflowPhase = "ready_pickup";
             AppState.pendingOrders = 0;
+            
 
             if (window.monitorActiveRoute) window.monitorActiveRoute();
             updateDashboardUI();
