@@ -2459,11 +2459,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       };
 
       function listenForPendingOrders() {
+        // Time-Boundary Security: Prevent runaway read costs by ignoring stuck orders older than 48 hours
+        const timeBoundary = new Date();
+        timeBoundary.setHours(timeBoundary.getHours() - 48);
+
         const q = window.query(
           window.collection(window.db, "orders"),
+          window.where("assignedDriverId", "==", DRIVER_DOC_ID),
           window.where("status", "in", ["pending", "accepted"]),
-
-          window.where("assignedDriverId", "==", DRIVER_DOC_ID)
+          window.where("createdAt", ">=", timeBoundary)
         );
 
         window.onSnapshot(q, (snapshot) => {
@@ -3644,40 +3648,51 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               ""
             );
 
-            // 1. Mark the current delivery as completed
+            const originalText = wfBtn.innerText;
+            wfBtn.innerText = "Updating Database...";
+            wfBtn.disabled = true;
+
             try {
+              // 1. Mark the current delivery as completed in Firebase FIRST
               await window.updateDoc(window.doc(window.db, "orders", cleanId), {
                 status: "completed",
               });
-            } catch (e) {
-              console.error("Failed to complete order:", e);
-            }
 
-            nextDelivery.status = "completed";
+              // 2. Only advance the local UI state if the network call succeeds
+              nextDelivery.status = "completed";
 
-            // 2. Find all remaining deliveries and decrement their queuePosition
-            const remainingDeliveries = AppState.activeQueue.filter(
-              (q) => q.type === "delivery" && q.status !== "completed"
-            );
+              // 3. Find all remaining deliveries and decrement their queuePosition
+              const remainingDeliveries = AppState.activeQueue.filter(
+                (q) => q.type === "delivery" && q.status !== "completed"
+              );
 
-            for (let i = 0; i < remainingDeliveries.length; i++) {
-              const remainingId = remainingDeliveries[i].dbId;
-              if (remainingId) {
-                try {
-                  // Force the database integer to precisely match their new index + 1
-                  await window.updateDoc(
-                    window.doc(window.db, "orders", remainingId),
-                    {
-                      queuePosition: i + 1,
-                    }
-                  );
-                } catch (e) {
-                  console.error("Failed to update queue position:", e);
+              for (let i = 0; i < remainingDeliveries.length; i++) {
+                const remainingId = remainingDeliveries[i].dbId;
+                if (remainingId) {
+                  try {
+                    await window.updateDoc(
+                      window.doc(window.db, "orders", remainingId),
+                      {
+                        queuePosition: i + 1,
+                      }
+                    );
+                  } catch (queueErr) {
+                    console.error("Failed to update queue position:", queueErr);
+                  }
                 }
               }
-            }
 
-            updateDashboardUI();
+              wfBtn.disabled = false;
+              updateDashboardUI();
+            } catch (error) {
+              console.error("Failed to complete order:", error);
+              wfBtn.innerText = originalText;
+              wfBtn.disabled = false;
+              window.showCustomAlert(
+                "Network Error",
+                "Failed to mark delivery as complete in the database. Please check your connection and try again."
+              );
+            }
           };
 
           drawDeliveryTimeline();
@@ -3755,47 +3770,52 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       // --- CUSTOM TIMELINES & ACTIONS ---
 
       window.markPickupComplete = async function (uniqueId) {
-        // Find the exact stop using its unique internal ID
         const item = AppState.activeQueue.find(
           (i) => i.id === uniqueId && i.type === "pickup"
         );
         if (!item) return;
 
-        // 1. Mark this specific stop as completed locally first
-        item.status = "completed";
         const cleanId = item.dbId;
 
-        // 2. Check if there are any MORE pickups left for THIS specific customer
+        // Check if there are any MORE pickups left for THIS specific customer (excluding the current one)
         const remainingCustomerPickups = AppState.activeQueue.filter(
           (i) =>
             i.dbId === cleanId &&
             i.type === "pickup" &&
+            i.id !== uniqueId &&
             i.status !== "completed"
         );
 
         try {
           if (remainingCustomerPickups.length === 0) {
-            // All items for this customer are secured, flip the master switch
+            // All items for this customer are secured, flip the master switch FIRST
             await window.updateDoc(window.doc(window.db, "orders", cleanId), {
               status: "picked_up",
             });
           }
-        } catch (e) {
-          console.error("Firebase update failed", e);
-        }
 
-        // 3. Transition to delivery phase ONLY if ALL pickups for ALL customers are complete
-        const pendingPickups = AppState.activeQueue.filter(
-          (i) => i.type === "pickup" && i.status !== "completed"
-        );
-        if (pendingPickups.length === 0) {
-          AppState.workflowPhase = "ready_delivery";
-          updateDashboardUI();
-        } else {
-          drawPickupTimeline();
-        }
+          // Network call succeeded, NOW update the local state
+          item.status = "completed";
 
-        window.saveShiftState();
+          const pendingPickups = AppState.activeQueue.filter(
+            (i) => i.type === "pickup" && i.status !== "completed"
+          );
+
+          if (pendingPickups.length === 0) {
+            AppState.workflowPhase = "ready_delivery";
+            updateDashboardUI();
+          } else {
+            drawPickupTimeline();
+          }
+
+          window.saveShiftState();
+        } catch (error) {
+          console.error("Firebase update failed", error);
+          window.showCustomAlert(
+            "Network Error",
+            "Failed to confirm pickup. Please check your connection and try again."
+          );
+        }
       };
 
       function drawPickupTimeline() {
