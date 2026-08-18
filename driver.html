@@ -3712,6 +3712,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           if (!isDone && !activeFound) {
             statusClass = "active";
             activeFound = true;
+
             // Native OS deep link to Google Maps
             const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${node.lat},${node.lng}&travelmode=driving`;
             navBtnHTML = `<button class="btn" style="margin-top:10px; margin-bottom:5px; padding:12px; font-size:0.95rem; background:#22c55e; color:white; border:none; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="window.open('${mapsUrl}', '_blank')">
