@@ -1493,6 +1493,43 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         </div>
 
         <!-- Financials -->
+
+        <div
+          class="node-card"
+          style="margin-bottom: 30px; border-color: var(--danger)"
+        >
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <div>
+              <strong style="color: var(--danger)"
+                >Emergency Route Abort</strong
+              >
+              <p
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  margin-top: 4px;
+                "
+              >
+                Vehicle breakdown or emergency.
+              </p>
+            </div>
+            <button
+              id="emergencyAbortBtn"
+              class="btn btn-emergency"
+              style="width: auto; padding: 10px 16px; font-size: 0.85rem"
+              onclick="emergencyAbortActiveRoute()"
+            >
+              Abort Run
+            </button>
+          </div>
+        </div>
+
         <h4
           style="
             color: var(--accent);
@@ -2905,6 +2942,71 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           )
         ) {
           window.declineTriageOrder(item.dbId);
+        }
+      };
+
+      window.emergencyAbortActiveRoute = async function () {
+        if (
+          AppState.workflowPhase === "idle" ||
+          AppState.workflowPhase === "complete"
+        ) {
+          window.showCustomAlert(
+            "Action Invalid",
+            "You do not currently have an active route to abort."
+          );
+          return;
+        }
+
+        if (
+          !confirm(
+            "EMERGENCY ABORT: Are you absolutely sure? This will drop all remaining pickups and deliveries, returning them to the network for another driver. You cannot undo this."
+          )
+        )
+          return;
+
+        const btn = document.getElementById("emergencyAbortBtn");
+        if (btn) btn.innerText = "Aborting...";
+
+        try {
+          const combinedOrders = [
+            ...AppState.activeQueue,
+            ...AppState.triageQueue,
+          ];
+          const uniqueOrderIds = [
+            ...new Set(combinedOrders.map((item) => item.dbId)),
+          ];
+
+          for (const orderId of uniqueOrderIds) {
+            if (orderId) {
+              await window.updateDoc(window.doc(window.db, "orders", orderId), {
+                status: "pending",
+                assignedDriverId: null,
+                queuePosition: null,
+              });
+            }
+          }
+
+          AppState.workflowPhase = "idle";
+          AppState.activeQueue = [];
+          AppState.triageQueue = [];
+
+          await window.saveShiftState();
+
+          updateDashboardUI();
+          closeAllModals();
+
+          if (btn) btn.innerText = "Abort Run";
+          window.showCustomAlert(
+            "Route Aborted",
+            "Your route has been successfully cleared. Orders have been released back to the global network."
+          );
+        } catch (e) {
+          console.error("Failed to abort route:", e);
+          if (btn) btn.innerText = "Abort Run";
+          window.showCustomAlert(
+            "Network Error",
+            "Failed to release orders to the network. Please check your connection and try again."
+          );
         }
       };
 
