@@ -4431,6 +4431,20 @@
         document.getElementById("step2Panel").lastElementChild.style.display =
           "flex";
       };
+      
+      
+      
+      
+      window.shiftToTomorrow = function () {
+        document.getElementById("standardTodayGate").style.display = "none";
+        window.appState.targetTimeline = "tomorrow";
+        document.getElementById("timelineDisplay").innerText = "Tomorrow";
+        document.getElementById("step2Panel").lastElementChild.style.display = "flex";
+      };
+      
+      
+      
+      
 
       // --- SETTINGS DROPDOWN & GATE LOGIC ---
       window.toggleSettingsDropdown = function () {
