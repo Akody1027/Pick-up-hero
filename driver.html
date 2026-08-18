@@ -2896,10 +2896,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
-      
-      
-      
-      
       window.rejectTriageOrder = function (uniqueId) {
         const item = AppState.triageQueue.find((o) => o.id === uniqueId);
         if (!item) return;
@@ -2911,9 +2907,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           window.declineTriageOrder(item.dbId);
         }
       };
-      
 
-      
       // --- ROUTING & DISTANCE MATRIX UTILS ---
       let activeRouteLayer = null;
 
@@ -3657,7 +3651,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       }
 
       // --- CUSTOM TIMELINES & ACTIONS ---
-      
 
       window.markPickupComplete = async function (uniqueId) {
         // Find the exact stop using its unique internal ID
@@ -3672,7 +3665,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         // 2. Check if there are any MORE pickups left for THIS specific customer
         const remainingCustomerPickups = AppState.activeQueue.filter(
-          (i) => i.dbId === cleanId && i.type === "pickup" && i.status !== "completed"
+          (i) =>
+            i.dbId === cleanId &&
+            i.type === "pickup" &&
+            i.status !== "completed"
         );
 
         try {
@@ -3699,12 +3695,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         window.saveShiftState();
       };
-      
-      
-      
-      
-      
-      
+
       function drawPickupTimeline() {
         const timeline = document.getElementById("timelineList");
         timeline.innerHTML = "";
@@ -3721,7 +3712,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           if (!isDone && !activeFound) {
             statusClass = "active";
             activeFound = true;
-
             // Native OS deep link to Google Maps
             const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${node.lat},${node.lng}&travelmode=driving`;
             navBtnHTML = `<button class="btn" style="margin-top:10px; margin-bottom:5px; padding:12px; font-size:0.95rem; background:#22c55e; color:white; border:none; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="window.open('${mapsUrl}', '_blank')">
@@ -3795,38 +3785,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           `;
         });
       }
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
 
       function drawDeliveryTimeline() {
         const timeline = document.getElementById("timelineList");
