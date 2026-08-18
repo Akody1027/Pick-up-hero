@@ -2896,6 +2896,24 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
+      
+      
+      
+      
+      window.rejectTriageOrder = function (uniqueId) {
+        const item = AppState.triageQueue.find((o) => o.id === uniqueId);
+        if (!item) return;
+        if (
+          confirm(
+            "Are you sure you want to reject this stop? This will decline the entire customer order from your queue."
+          )
+        ) {
+          window.declineTriageOrder(item.dbId);
+        }
+      };
+      
+
+      
       // --- ROUTING & DISTANCE MATRIX UTILS ---
       let activeRouteLayer = null;
 
@@ -3639,27 +3657,36 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       }
 
       // --- CUSTOM TIMELINES & ACTIONS ---
+      
+
       window.markPickupComplete = async function (uniqueId) {
-        // Find the exact stop using its unique internal ID, not the shared database ID
+        // Find the exact stop using its unique internal ID
         const item = AppState.activeQueue.find(
           (i) => i.id === uniqueId && i.type === "pickup"
         );
         if (!item) return;
 
-        // Broadcast to customer that item is picked up and driver is en route
+        // 1. Mark this specific stop as completed locally first
+        item.status = "completed";
         const cleanId = item.dbId;
 
+        // 2. Check if there are any MORE pickups left for THIS specific customer
+        const remainingCustomerPickups = AppState.activeQueue.filter(
+          (i) => i.dbId === cleanId && i.type === "pickup" && i.status !== "completed"
+        );
+
         try {
-          await window.updateDoc(window.doc(window.db, "orders", cleanId), {
-            status: "picked_up",
-          });
+          if (remainingCustomerPickups.length === 0) {
+            // All items for this customer are secured, flip the master switch
+            await window.updateDoc(window.doc(window.db, "orders", cleanId), {
+              status: "picked_up",
+            });
+          }
         } catch (e) {
           console.error("Firebase update failed", e);
         }
 
-        item.status = "completed";
-
-        // Transition to delivery if all pickups are complete
+        // 3. Transition to delivery phase ONLY if ALL pickups for ALL customers are complete
         const pendingPickups = AppState.activeQueue.filter(
           (i) => i.type === "pickup" && i.status !== "completed"
         );
@@ -3672,99 +3699,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         window.saveShiftState();
       };
-
-      function drawPickupTimeline() {
-        const timeline = document.getElementById("timelineList");
-        timeline.innerHTML = "";
-
-        const pickups = AppState.activeQueue.filter((q) => q.type === "pickup");
-
-        let activeFound = false;
-
-        pickups.forEach((node) => {
-          const isDone = node.status === "completed";
-          let statusClass = "completed";
-          let navBtnHTML = "";
-
-          if (!isDone && !activeFound) {
-            statusClass = "active";
-            activeFound = true;
-
-            // Native OS deep link to Google Maps
-            const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${node.lat},${node.lng}&travelmode=driving`;
-            navBtnHTML = `<button class="btn" style="margin-top:10px; margin-bottom:5px; padding:12px; font-size:0.95rem; background:#22c55e; color:white; border:none; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="window.open('${mapsUrl}', '_blank')">
-              <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-              Navigate to Pickup
-            </button>`;
-          } else if (!isDone) {
-            statusClass = "";
-          }
-
-          const btnHTML = isDone
-            ? `<button class="btn btn-secondary" style="margin-top:10px; padding:8px; font-size:0.85rem;" disabled>Picked Up ✓</button>`
-            : `<button class="btn btn-primary" style="margin-top:10px; padding:8px; font-size:0.85rem;" onclick="markPickupComplete('${node.id}')">Items Picked Up</button>`;
-
-          let connectHTML = "";
-          if (
-            !isDone &&
-            (AppState.workflowPhase === "pickup" ||
-              AppState.workflowPhase === "ready_pickup")
-          ) {
-            connectHTML = `
-
-              <div style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
-                <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${node.userId}')">📞 Call</button>
-                <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${node.dbId}')">💬 Chat</button>
-              </div>
-            `;
-          }
-
-          // Generate the detailed pickup information UI box
-          let extraInfo = `
-            <div style="background: var(--surface); padding: 12px; border-radius: 8px; margin-top: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem;">
-              ${
-                node.pickupNumber
-                  ? `<div><strong style="color:var(--accent);">Pickup Order #:</strong> ${node.pickupNumber}</div>`
-                  : ""
-              }
-              ${
-                node.pin
-                  ? `<div><strong style="color:var(--accent);">Pickup PIN:</strong> ${node.pin}</div>`
-                  : ""
-              }
-              ${
-                node.curbsideInstructions
-                  ? `<div><strong style="color:var(--accent);">Pickup Notes:</strong> ${node.curbsideInstructions}</div>`
-                  : ""
-              }
-              ${
-                node.barcodeImageUrl
-                  ? `<img src="${node.barcodeImageUrl}" style="max-width: 100%; margin-top: 10px; border-radius: 6px; border: 1px solid white;">`
-                  : ""
-              }
-            </div>
-          `;
-
-          timeline.innerHTML += `
-            <li class="timeline-item ${statusClass}">
-              <div class="node-card">
-                ${connectHTML}
-                <div class="node-header">
-                  <strong>${node.title}</strong>
-                </div>
-                <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
-
-                ${AppState.workflowPhase === "pickup" ? navBtnHTML : ""}
-
-                <!-- Only show the detailed info if the pickup isn't completed yet -->
-                ${!isDone ? extraInfo : ""}
-
-                ${AppState.workflowPhase === "pickup" ? btnHTML : ""}
-              </div>
-            </li>
-          `;
-        });
-      }
+      
+      
+      
 
       function drawDeliveryTimeline() {
         const timeline = document.getElementById("timelineList");
