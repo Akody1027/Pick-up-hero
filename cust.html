@@ -16,13 +16,13 @@
     <script src="https://js.stripe.com/v3/"></script>
 
     <style>
-      :root { 
+      :root {
         --bg: #121212;
-        --surface: #1e1e1e; 
+        --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
-        --text: #ffffff; 
+        --text: #ffffff;
         --text-muted: #94a3b8;
         --border: #333333;
         --success: #22c55e;
@@ -398,6 +398,11 @@
         border-color: var(--accent);
         background: rgba(238, 97, 28, 0.1);
       }
+
+      .cal-day.today {
+        border: 2px solid var(--accent);
+      }
+
       .cal-day .dow {
         font-size: 0.65rem;
         color: var(--text-muted);
@@ -1107,6 +1112,21 @@
             class="calendar-intercept"
             style="display: none"
           >
+            <div
+              style="
+                padding: 12px;
+                border: 1px solid var(--accent);
+                border-radius: 8px;
+                background: rgba(238, 97, 28, 0.05);
+                color: var(--text-muted);
+                font-size: 0.85rem;
+                text-align: center;
+                margin-bottom: 5px;
+              "
+            >
+              You can schedule up to 7 days in advance. Pick a day below.
+            </div>
+
             <h4
               style="
                 color: var(--text);
@@ -4525,23 +4545,21 @@
       const originalOpenAddModal = openAddModal;
       openAddModal = function (type = "scheduled") {
         originalOpenAddModal(type);
-        
-        
+
         if (type === "scheduled") {
           window.initScheduleIntercept();
         } else if (type === "emergency") {
-          document.getElementById('scheduleInterceptModule').style.display = 'none';
-          document.getElementById('checkoutFlowContent').style.display = 'flex';
-          
-          const banner = document.getElementById('timelineDisplay');
-          if (window.appState.targetTimeline === 'asap_today') {
-            banner.innerText = 'ASAP Today (Priority)';
+          document.getElementById("scheduleInterceptModule").style.display =
+            "none";
+          document.getElementById("checkoutFlowContent").style.display = "flex";
+
+          const banner = document.getElementById("timelineDisplay");
+          if (window.appState.targetTimeline === "asap_today") {
+            banner.innerText = "ASAP Today (Priority)";
           } else {
-            banner.innerText = 'Priority Tomorrow Morning'; 
+            banner.innerText = "Priority Tomorrow Morning";
           }
         }
-        
-       
       };
 
       window.initScheduleIntercept = async function () {
@@ -4574,10 +4592,7 @@
           console.error("Failed to fetch schedule", e);
         }
       };
-      
-      
-      
-      
+
       window.renderCalendarGrid = function () {
         const topRow = document.getElementById("calendarGridTop");
         topRow.innerHTML = "";
@@ -4597,13 +4612,16 @@
           const hasRuns =
             window.appState.driverScheduleSettings?.weeklyRoutine?.[dowStr]
               ?.length > 0;
-          
+
           const isActive = hasRuns;
 
           const fullDateStr = currentDate.toISOString().split("T")[0];
 
           const block = document.createElement("div");
-          block.className = `cal-day ${isActive ? "active" : ""}`;
+
+          block.className = `cal-day ${isActive ? "active" : ""} ${
+            i === 0 ? "today" : ""
+          }`;
           block.id = `calDay_${fullDateStr}`;
           block.innerHTML = `<span class="dow">${dowStr}</span><span class="dom">${dom}</span>`;
 
@@ -4615,12 +4633,6 @@
           topRow.appendChild(block);
         }
       };
-      
-      
-      
-      
-      
-   
 
       window.selectCalendarDate = function (dateObj, dateStr, dowStr) {
         document
