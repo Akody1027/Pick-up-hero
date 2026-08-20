@@ -1450,7 +1450,12 @@
               <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
             </svg>
           </button>
-          <button class="close-btn" onclick="closeAllModals()">✕</button>
+          
+          
+          
+          <button class="close-btn" onclick="window.closeSettingsModal()">✕</button>
+          
+          
         </div>
 
         <div class="settings-dropdown" id="settingsDropdownMenu">
@@ -2292,6 +2297,9 @@
           localStorage.removeItem("unsavedCustomerProfile");
           window.checkProfileDirty();
           alert("Profile successfully saved!");
+          window.closeSettingsModal();
+          
+          
         } catch (error) {
           console.error("Error saving profile:", error);
           alert("Failed to save profile. Please check your connection.");
@@ -2668,6 +2676,32 @@
           window.checkProfileDirty();
         }
       }
+      
+      
+      
+      
+      window.closeSettingsModal = function () {
+        document.getElementById("settingsModal").classList.remove("active");
+
+        // If the checkout flow is hiding underneath, just reveal it
+        if (document.getElementById("addModal").classList.contains("active")) {
+          updateNavState("");
+        } else {
+          // Otherwise, return to the home map normally
+          updateNavState("navHome");
+          const sheet = document.getElementById("trackerSheet");
+          if (window.appState && (window.appState.selectedDriverId || window.isTrackingActiveOrder)) {
+            sheet.style.transform = "translateY(0)";
+          } else {
+            sheet.style.transform = "translateY(150%)";
+          }
+        }
+      };
+      
+      
+      
+      
+      
 
       function closeAllModals() {
         // Check if any full-screen modals are currently open
