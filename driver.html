@@ -12,14 +12,14 @@
 
     <link
       rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
     />
 
     <style>
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
-        --surface-elevated: #2c2c2c;
+        --surface-elevated: #2c2c2c; 
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
@@ -500,6 +500,40 @@
       .toggle-switch.on .toggle-knob {
         left: 24px;
       }
+      
+      
+      
+      
+      /* --- WEEKLY ROUTINE BUILDER --- */
+      .day-toggles {
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+        margin-bottom: 15px;
+      }
+      .day-btn {
+        flex: 1;
+        padding: 12px 0;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .day-btn.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+      
+      
+      
+      
+      
+      
 
       /* Map Cluster Badges */
       .cluster-pin {
@@ -1217,27 +1251,47 @@
         <button class="close-btn" onclick="closeAllModals()">✕</button>
       </div>
       <div class="modal-content">
+        
+        
+        
+         
+        
         <div class="form-group">
-          <label>Date</label>
-          <select id="routeDaySelect">
-            <option value="today">Today</option>
-            <option value="tomorrow">Tomorrow</option>
-          </select>
+          <label>Global Order Cutoff (Minutes Before Departure)</label>
+          <input type="number" id="globalCutoffInput" value="30" />
         </div>
-        <div style="display: flex; gap: 15px">
-          <div class="form-group" style="flex: 1">
-            <label>Start Time</label>
-            <input type="time" id="routeStartTime" value="08:00" />
+
+        <div class="form-group">
+          <label>Active Days</label>
+          
+          <div class="day-toggles">
+            <button type="button" class="day-btn" id="dayBtn_Sun" onclick="toggleRoutineDay('Sun')">Sun</button>
+            <button type="button" class="day-btn" id="dayBtn_Mon" onclick="toggleRoutineDay('Mon')">Mon</button>
+            <button type="button" class="day-btn" id="dayBtn_Tue" onclick="toggleRoutineDay('Tue')">Tue</button>
+            <button type="button" class="day-btn" id="dayBtn_Wed" onclick="toggleRoutineDay('Wed')">Wen</button>
+            <button type="button" class="day-btn" id="dayBtn_Thu" onclick="toggleRoutineDay('Thu')">Thu</button>
+            <button type="button" class="day-btn" id="dayBtn_Fri" onclick="toggleRoutineDay('Fri')">Fri</button>
+            <button type="button" class="day-btn" id="dayBtn_Sat" onclick="toggleRoutineDay('Sat')">Sat</button>
           </div>
-          <div class="form-group" style="flex: 1">
-            <label>End Time</label>
-            <input type="time" id="routeEndTime" value="13:00" />
-          </div>
+          
+          
+
         </div>
-        <div class="form-group" style="margin-bottom: 30px">
-          <label>Max Stops (Capacity)</label>
-          <input type="number" id="routeMaxStops" value="6" />
+
+        <div id="waveBuilderContainer" style="margin-bottom: 25px;">
+           <p style="color:var(--text-muted); font-size: 0.85rem; text-align: center;">Select a day above to configure waves.</p>
         </div>
+
+        <hr style="border: none; border-top: 1px solid var(--border); margin: 0 0 25px 0;" />
+ 
+        
+        
+        
+        
+        
+        
+        
+        
 
         <div class="form-group" style="margin-bottom: 20px">
           <label id="basePinCountLabel">Base Locations (0 / 5)</label>
@@ -2061,17 +2115,30 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               hasSavedLocation = true;
             }
 
-            if (data.routeDay)
-              document.getElementById("routeDaySelect").value = data.routeDay;
-            if (data.routeStartTime)
-              document.getElementById("routeStartTime").value =
-                data.routeStartTime;
-            if (data.routeEndTime)
-              document.getElementById("routeEndTime").value = data.routeEndTime;
-            if (data.routeMaxStops)
-              document.getElementById("routeMaxStops").value =
-                data.routeMaxStops;
+            
+            
+            
+            
+            
+            if (data.globalCutoffMinutes) {
+              document.getElementById("globalCutoffInput").value = data.globalCutoffMinutes;
+            }
 
+            
+            if (data.weeklyRoutine) {
+              AppState.weeklyRoutine = data.weeklyRoutine;
+            } else {
+              AppState.weeklyRoutine = { Sun: [], Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [] };
+            }
+            window.renderWaveBuilder();
+            
+            
+            
+            
+            
+            
+
+            
             const killSwitch = document.getElementById("killSwitchToggle");
             if (data.globalKillSwitch) killSwitch.classList.add("on");
             else killSwitch.classList.remove("on");
@@ -2356,6 +2423,91 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         renderHomeBases();
         openModal("scheduleModal");
       };
+      
+      
+      
+      
+      
+      AppState.weeklyRoutine = { Sun: [], Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [] };
+      AppState.activeRoutineDay = null;
+
+      window.toggleRoutineDay = function(day) {
+          AppState.activeRoutineDay = day;
+          document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
+          document.getElementById('dayBtn_' + day).classList.add('active');
+          window.renderWaveBuilder();
+      };
+
+      window.renderWaveBuilder = function() {
+          const container = document.getElementById('waveBuilderContainer');
+          const day = AppState.activeRoutineDay;
+          
+          if (!day) {
+              container.innerHTML = '<p style="color:var(--text-muted); font-size: 0.85rem; text-align: center;">Select a day above to configure waves.</p>';
+              return;
+          }
+
+          let html = `<label style="color: var(--accent); margin-bottom: 10px; display: block; font-weight: 700;">${day} Departure Waves</label>`;
+          const waves = AppState.weeklyRoutine[day] || [];
+
+          if (waves.length === 0) {
+              html += `<p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">No runs scheduled for ${day}.</p>`;
+          } else {
+              waves.forEach((wave, index) => {
+                  html += `
+                  <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: center; background: var(--surface-elevated); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+                      <div style="flex: 1;">
+                          <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Departure</label>
+                          <input type="time" value="${wave.time}" onchange="updateWaveTime('${day}', ${index}, this.value)" style="padding: 8px; width: 100%; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text);" />
+                      </div>
+                      <div style="flex: 1;">
+                          <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Max Stops</label>
+                          <input type="number" value="${wave.capacity}" min="1" onchange="updateWaveCapacity('${day}', ${index}, this.value)" style="padding: 8px; width: 100%; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text);" />
+                      </div>
+                      <button type="button" onclick="removeWave('${day}', ${index})" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--danger); border-radius: 6px; font-size: 1.1rem; cursor: pointer; padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-top: 18px;">✕</button>
+                  </div>
+                  `;
+              });
+          }
+
+          html += `<button type="button" class="btn btn-secondary" style="padding: 12px; font-size: 0.9rem;" onclick="addWave('${day}')">+ Add Wave</button>`;
+          container.innerHTML = html;
+          
+          document.querySelectorAll('.day-btn').forEach(btn => {
+             const d = btn.id.split('_')[1];
+             if (AppState.weeklyRoutine[d] && AppState.weeklyRoutine[d].length > 0) {
+                 btn.style.borderBottom = "3px solid var(--accent)";
+             } else {
+                 btn.style.borderBottom = "1px solid var(--border)";
+             }
+          });
+      };
+
+      window.addWave = function(day) {
+          if (!AppState.weeklyRoutine[day]) AppState.weeklyRoutine[day] = [];
+          AppState.weeklyRoutine[day].push({ time: '12:00', capacity: 6 });
+          window.renderWaveBuilder();
+      };
+
+      window.removeWave = function(day, index) {
+          AppState.weeklyRoutine[day].splice(index, 1);
+          window.renderWaveBuilder();
+      };
+
+      window.updateWaveTime = function(day, index, val) {
+          AppState.weeklyRoutine[day][index].time = val;
+      };
+
+      window.updateWaveCapacity = function(day, index, val) {
+          AppState.weeklyRoutine[day][index].capacity = parseInt(val) || 1;
+      };
+      
+      
+      
+  
+      
+      
+      
 
       window.saveScheduleBlock = async function () {
         const btn = document.getElementById("saveScheduleBtn");
@@ -2374,14 +2526,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               baseLocations: AppState.baseLocations,
               baseLat: primaryBase.lat,
               baseLng: primaryBase.lng,
-              routeDay: document.getElementById("routeDaySelect").value,
-              routeStartTime: document.getElementById("routeStartTime").value,
-              routeEndTime: document.getElementById("routeEndTime").value,
-              routeMaxStops:
-                parseInt(document.getElementById("routeMaxStops").value) || 6,
+              
+              
+              globalCutoffMinutes: parseInt(document.getElementById("globalCutoffInput").value) || 30,
+              weeklyRoutine: AppState.weeklyRoutine,
+              
+              
+      
             },
-            { merge: true }
-          );
+            { merge: true } 
+          ); 
           btn.innerText = "Saved!";
           btn.classList.replace("btn-primary", "btn-success");
           setTimeout(() => {
@@ -2390,7 +2544,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             closeAllModals();
           }, 1500);
         } catch (e) {
-          console.error("Save failed:", e);
+          console.error("Save failed:", e); 
           btn.innerText = "Error Saving";
         }
       };
