@@ -2847,7 +2847,7 @@
               "No stores found near the Hero's base. Try a different search."
             );
 
-            openAddModal(window.appState.bookingType);
+            openAddModal(window.appState.bookingType, true);
           }
         });
       }
@@ -2868,7 +2868,7 @@
           `selectedStoreDisplay_${activeStopContext}`
         ).style.display = "block";
 
-        openAddModal(window.appState.bookingType);
+        openAddModal(window.appState.bookingType, true);
       }
 
       // Utils
@@ -4543,8 +4543,10 @@
       };
 
       const originalOpenAddModal = openAddModal;
-      openAddModal = function (type = "scheduled") {
+      openAddModal = function (type = "scheduled", isResuming = false) {
         originalOpenAddModal(type);
+
+        if (isResuming) return;
 
         if (type === "scheduled") {
           window.initScheduleIntercept();
@@ -4721,12 +4723,23 @@
             bookedCount = shiftSnap.data().bookedCount || 0;
           }
 
-          let blocksHtml = "";
+          let blocksHtml = `
+            <div style="grid-column: 1 / -1; display: flex; justify-content: center; gap: 20px; padding-bottom: 5px; font-size: 0.8rem; color: var(--text-muted);">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 14px; height: 14px; border-radius: 3px; background: var(--success);"></div>
+                <span>= Available</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 14px; height: 14px; border-radius: 3px; background: var(--surface); border: 1px solid var(--border);"></div>
+                <span>= Unavailable</span>
+              </div>
+            </div>
+          `;
           for (let i = 0; i < capacity; i++) {
             if (i < bookedCount) {
-              blocksHtml += `<div class="capacity-block booked">✕</div>`;
+              blocksHtml += `<div class="capacity-block booked"></div>`;
             } else {
-              blocksHtml += `<div class="capacity-block" onclick="window.confirmSlotSelection('${shiftId}', '${displayString}')">✓</div>`;
+              blocksHtml += `<div class="capacity-block" onclick="window.confirmSlotSelection('${shiftId}', '${displayString}')"></div>`;
             }
           }
           blocksContainer.innerHTML = blocksHtml;
