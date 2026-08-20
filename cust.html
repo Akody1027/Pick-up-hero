@@ -16,13 +16,13 @@
     <script src="https://js.stripe.com/v3/"></script>
 
     <style>
-      :root {
+      :root { 
         --bg: #121212;
-        --surface: #1e1e1e;
+        --surface: #1e1e1e; 
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
-        --text: #ffffff;
+        --text: #ffffff; 
         --text-muted: #94a3b8;
         --border: #333333;
         --success: #22c55e;
@@ -366,6 +366,106 @@
         background: rgba(239, 68, 68, 0.1);
         color: var(--danger);
         border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+
+      /* --- CALENDAR INTERCEPT --- */
+      .calendar-intercept {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+      }
+      .cal-day {
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 0;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        opacity: 0.3;
+        pointer-events: none;
+      }
+      .cal-day.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .cal-day.selected {
+        border-color: var(--accent);
+        background: rgba(238, 97, 28, 0.1);
+      }
+      .cal-day .dow {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 2px;
+      }
+      .cal-day .dom {
+        font-size: 1rem;
+        color: var(--text);
+        font-weight: 700;
+        display: block;
+      }
+      .wave-accordion {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .wave-card {
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .wave-header {
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .wave-header.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .wave-blocks {
+        display: none;
+        padding: 15px;
+        border-top: 1px solid var(--border);
+        grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+        gap: 10px;
+      }
+      .wave-card.expanded .wave-blocks {
+        display: grid;
+      }
+      .capacity-block {
+        height: 45px;
+        border-radius: 8px;
+        background: var(--success);
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        color: white;
+        transition: transform 0.1s;
+      }
+      .capacity-block:active {
+        transform: scale(0.95);
+      }
+      .capacity-block.booked {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        cursor: not-allowed;
+        color: var(--border);
+        text-decoration: line-through;
       }
 
       /* --- STEP PANELS --- */
@@ -1002,179 +1102,209 @@
             >
           </div>
 
-          <div id="stopsContainer">
-            <!-- Stop 1 Block -->
-            <div
-              class="stop-block"
-              id="stopBlock_1"
+          <div
+            id="scheduleInterceptModule"
+            class="calendar-intercept"
+            style="display: none"
+          >
+            <h4
               style="
-                padding-bottom: 15px;
-                border-bottom: 1px solid var(--border);
-                margin-bottom: 15px;
+                color: var(--text);
+                text-align: center;
+                margin-bottom: 5px;
+                font-size: 1.1rem;
               "
             >
-              <div class="stop-summary" onclick="toggleStop(1)">
-                <strong id="summaryText_1">Stop 1</strong>
-                <span style="color: var(--accent); font-size: 0.8rem"
-                  >Edit</span
-                >
-              </div>
+              Select a Delivery Date
+            </h4>
+            <div class="calendar-grid" id="calendarGridTop"></div>
 
-              <div class="stop-details" id="stopDetails_1">
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 10px;
-                  "
-                >
-                  <h4 style="color: var(--accent)">Pickup Stop 1</h4>
-                </div>
+            <div
+              class="wave-accordion"
+              id="waveAccordionContainer"
+              style="margin-top: 10px"
+            ></div>
+          </div>
 
-                <div class="form-group">
-                  <label>Search Store Location</label>
-                  <input
-                    type="text"
-                    id="storeSearchInput_1"
-                    placeholder="Walmart, Target, etc..."
-                  />
-                  <button
-                    class="btn btn-secondary"
-                    style="margin-top: 8px; Margin-bottom:5%;"
-                    onclick="triggerStoreSearch(1)"
+          <div
+            id="checkoutFlowContent"
+            style="display: none; flex-direction: column; flex: 1"
+          >
+            <div id="stopsContainer">
+              <!-- Stop 1 Block -->
+              <div
+                class="stop-block"
+                id="stopBlock_1"
+                style="
+                  padding-bottom: 15px;
+                  border-bottom: 1px solid var(--border);
+                  margin-bottom: 15px;
+                "
+              >
+                <div class="stop-summary" onclick="toggleStop(1)">
+                  <strong id="summaryText_1">Stop 1</strong>
+                  <span style="color: var(--accent); font-size: 0.8rem"
+                    >Edit</span
                   >
-                    Search Map
-                  </button>
                 </div>
 
-                <div
-                  id="selectedStoreDisplay_1"
-                  style="
-                    display: none;
-                    padding: 15px;
-                    background: var(--surface-elevated);
-                    border-radius: 12px;
-                    border-left: 4px solid var(--accent);
-                    margin-top: 10px;
-                    margin-bottom: 15px;
-                  "
-                >
-                  <strong id="storeNameDisplay_1">Walmart Supercenter</strong>
-                  <p
-                    style="
-                      font-size: 0.85rem;
-                      color: var(--text-muted);
-                      margin-top: 4px;
-                    "
-                  >
-                    Location Confirmed
-                  </p>
-                </div>
-
-                <div style="display: flex; gap: 10px">
-                  <div class="form-group" style="flex: 2">
-                    <label>Store Order Number *</label>
-                    <input
-                      type="text"
-                      id="pickupNumberInput_1"
-                      placeholder="e.g., #98765432"
-                    />
-                  </div>
-                  <div class="form-group" style="flex: 1">
-                    <label
-                      >PIN
-                      <span class="tooltip-icon" onclick="openInfoTooltip()"
-                        >?</span
-                      ></label
-                    >
-                    <input
-                      type="text"
-                      id="pickupPinInput_1"
-                      placeholder="1234"
-                    />
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label>Order Screenshot (Optional)</label>
-
-                  <label
-                    for="screenshotInput_1"
+                <div class="stop-details" id="stopDetails_1">
+                  <div
                     style="
                       display: flex;
+                      justify-content: space-between;
                       align-items: center;
-                      justify-content: center;
-                      gap: 10px;
-                      padding: 16px;
-                      border: 2px dashed var(--border);
-                      border-radius: 12px;
-                      background: var(--surface);
-                      cursor: pointer;
-                      color: var(--text-muted);
-                      transition: all 0.2s ease;
+                      margin-bottom: 10px;
                     "
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      style="width: 24px; height: 24px; fill: currentColor"
-                    >
-                      <path
-                        d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"
-                      />
-                    </svg>
-                    <span
-                      id="screenshotLabelText_1"
-                      style="font-size: 0.95rem; font-weight: 600"
-                      >Tap to Upload Image</span
-                    >
+                    <h4 style="color: var(--accent)">Pickup Stop 1</h4>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Search Store Location</label>
                     <input
-                      type="file"
-                      id="screenshotInput_1"
-                      accept="image/*"
-                      onchange="handleImageCompress(event, 1)"
-                      style="display: none"
+                      type="text"
+                      id="storeSearchInput_1"
+                      placeholder="Walmart, Target, etc..."
                     />
-                  </label>
-                  <img
-                    id="screenshotThumbnail_1"
+                    <button
+                      class="btn btn-secondary"
+                      style="margin-top: 8px; margin-bottom: 5%"
+                      onclick="triggerStoreSearch(1)"
+                    >
+                      Search Map
+                    </button>
+                  </div>
+
+                  <div
+                    id="selectedStoreDisplay_1"
                     style="
                       display: none;
-                      width: 100%;
-                      max-height: 200px;
-                      object-fit: contain;
-                      border-radius: 8px;
+                      padding: 15px;
+                      background: var(--surface-elevated);
+                      border-radius: 12px;
+                      border-left: 4px solid var(--accent);
                       margin-top: 10px;
-                      border: 1px solid var(--border);
+                      margin-bottom: 15px;
                     "
-                  />
-                </div>
+                  >
+                    <strong id="storeNameDisplay_1">Walmart Supercenter</strong>
+                    <p
+                      style="
+                        font-size: 0.85rem;
+                        color: var(--text-muted);
+                        margin-top: 4px;
+                      "
+                    >
+                      Location Confirmed
+                    </p>
+                  </div>
 
-                <div class="form-group">
-                  <label>Curbside Instructions (Optional)</label>
-                  <textarea
-                    id="curbsideInstructionsInput_1"
-                    rows="2"
-                    placeholder="Spot 4, blue Honda..."
-                  ></textarea>
+                  <div style="display: flex; gap: 10px">
+                    <div class="form-group" style="flex: 2">
+                      <label>Store Order Number *</label>
+                      <input
+                        type="text"
+                        id="pickupNumberInput_1"
+                        placeholder="e.g., #98765432"
+                      />
+                    </div>
+                    <div class="form-group" style="flex: 1">
+                      <label
+                        >PIN
+                        <span class="tooltip-icon" onclick="openInfoTooltip()"
+                          >?</span
+                        ></label
+                      >
+                      <input
+                        type="text"
+                        id="pickupPinInput_1"
+                        placeholder="1234"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Order Screenshot (Optional)</label>
+
+                    <label
+                      for="screenshotInput_1"
+                      style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 10px;
+                        padding: 16px;
+                        border: 2px dashed var(--border);
+                        border-radius: 12px;
+                        background: var(--surface);
+                        cursor: pointer;
+                        color: var(--text-muted);
+                        transition: all 0.2s ease;
+                      "
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        style="width: 24px; height: 24px; fill: currentColor"
+                      >
+                        <path
+                          d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"
+                        />
+                      </svg>
+                      <span
+                        id="screenshotLabelText_1"
+                        style="font-size: 0.95rem; font-weight: 600"
+                        >Tap to Upload Image</span
+                      >
+                      <input
+                        type="file"
+                        id="screenshotInput_1"
+                        accept="image/*"
+                        onchange="handleImageCompress(event, 1)"
+                        style="display: none"
+                      />
+                    </label>
+                    <img
+                      id="screenshotThumbnail_1"
+                      style="
+                        display: none;
+                        width: 100%;
+                        max-height: 200px;
+                        object-fit: contain;
+                        border-radius: 8px;
+                        margin-top: 10px;
+                        border: 1px solid var(--border);
+                      "
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Curbside Instructions (Optional)</label>
+                    <textarea
+                      id="curbsideInstructionsInput_1"
+                      rows="2"
+                      placeholder="Spot 4, blue Honda..."
+                    ></textarea>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <button
+              id="addStopBtn"
+              class="btn btn-secondary"
+              onclick="addNewStopBlock()"
+              style="margin-bottom: 10px"
+            >
+              + Add Another Stop ($12.99)
+            </button>
+
+            <div style="flex: 1"></div>
+
+            <button class="btn btn-primary" onclick="goToStep2()">
+              Next: Delivery Details
+            </button>
           </div>
-
-          <button
-            id="addStopBtn"
-            class="btn btn-secondary"
-            onclick="addNewStopBlock()"
-            style="margin-bottom: 10px"
-          >
-            + Add Another Stop ($12.99)
-          </button>
-
-          <div style="flex: 1"></div>
-          <button class="btn btn-primary" onclick="goToStep2()">
-            Next: Delivery Details
-          </button>
         </div>
 
         <!-- STEP 2: DELIVERY DETAILS -->
@@ -1721,6 +1851,7 @@
         serverTimestamp,
         orderBy,
         updateDoc,
+        increment,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -1754,6 +1885,7 @@
       window.orderBy = orderBy;
       window.deleteDoc = deleteDoc;
       window.updateDoc = updateDoc;
+      window.increment = increment;
 
       window.deleteUser = deleteUser;
       window.signOut = signOut;
@@ -1967,6 +2099,8 @@
             stops: stops,
             totalCost: totalCost,
             tipAmount: tipAmount,
+            shiftId: window.appState.selectedShiftId || null,
+
             bookingType: window.appState.bookingType,
             sosTimeline: window.appState.targetTimeline || "scheduled",
             status: "pending_payment",
@@ -1978,6 +2112,14 @@
             orderData
           );
           window.appState.currentOrderId = docRef.id;
+
+          if (window.appState.selectedShiftId) {
+            await window.setDoc(
+              window.doc(window.db, "shifts", window.appState.selectedShiftId),
+              { bookedCount: window.increment(1) },
+              { merge: true }
+            );
+          }
 
           // Replace URL below with your deployed Cloud Function endpoint URL
           const cloudFunctionUrl =
@@ -3120,17 +3262,15 @@
                           loc.lng
                         );
                       });
-                      
-                      
-                      
 
-              window.baseMarkers[driverId].push(marker);
+                      window.baseMarkers[driverId].push(marker);
                     });
                   }
                 });
 
                 // Immediately enforce visibility if a new driver drops a base while the customer is tracking
-                if (window.applyDriverVisibilityFilter) window.applyDriverVisibilityFilter();
+                if (window.applyDriverVisibilityFilter)
+                  window.applyDriverVisibilityFilter();
               }
 
               // 2. CHAINING: Only attach live telemetry AFTER bases are loaded in memory
@@ -3248,14 +3388,13 @@
                           );
                         }
                       }
-                      
-                      
-                      }
+                    }
                   );
 
                   await Promise.all(mapPromises);
 
-                  if (window.applyDriverVisibilityFilter) window.applyDriverVisibilityFilter();
+                  if (window.applyDriverVisibilityFilter)
+                    window.applyDriverVisibilityFilter();
 
                   // 3. FINISH BOOT: Map is armed, fire the session checker
 
@@ -3397,42 +3536,36 @@
 
       window.checkActiveSession = function () {
         if (!window.appState.userId) return;
-        
-        
-        
+
         window.applyDriverVisibilityFilter = function () {
-        if (!map) return;
-        const tracking = window.isTrackingActiveOrder;
-        const assignedId = window.appState.selectedDriverId;
+          if (!map) return;
+          const tracking = window.isTrackingActiveOrder;
+          const assignedId = window.appState.selectedDriverId;
 
-        // 1. Toggle Base Pins
-        if (window.baseMarkers) {
-          for (const [dId, markers] of Object.entries(window.baseMarkers)) {
-            markers.forEach((m) => {
-              if (tracking && dId !== assignedId) {
-                if (map.hasLayer(m)) map.removeLayer(m);
-              } else {
-                if (!map.hasLayer(m)) m.addTo(map);
-              }
-            });
-          }
-        }
-
-        // 2. Toggle Live Telemetry Pins
-        if (window.liveMarkers) {
-          for (const [dId, m] of Object.entries(window.liveMarkers)) {
-            if (tracking && dId !== assignedId) {
-              m.setOpacity(0);
-            } else {
-              m.setOpacity(1);
+          // 1. Toggle Base Pins
+          if (window.baseMarkers) {
+            for (const [dId, markers] of Object.entries(window.baseMarkers)) {
+              markers.forEach((m) => {
+                if (tracking && dId !== assignedId) {
+                  if (map.hasLayer(m)) map.removeLayer(m);
+                } else {
+                  if (!map.hasLayer(m)) m.addTo(map);
+                }
+              });
             }
           }
-        }
-      };
-        
-        
-        
-        
+
+          // 2. Toggle Live Telemetry Pins
+          if (window.liveMarkers) {
+            for (const [dId, m] of Object.entries(window.liveMarkers)) {
+              if (tracking && dId !== assignedId) {
+                m.setOpacity(0);
+              } else {
+                m.setOpacity(1);
+              }
+            }
+          }
+        };
 
         if (window.activeSessionListener) {
           window.activeSessionListener();
@@ -3481,19 +3614,13 @@
           if (hasActive) {
             fab.classList.add("locked");
 
- 
-            
             if (!window.isTrackingActiveOrder) {
               document.getElementById("activeDeliveryPrompt").style.display =
                 "flex";
               window.isTrackingActiveOrder = true;
-              if (window.applyDriverVisibilityFilter) window.applyDriverVisibilityFilter();
+              if (window.applyDriverVisibilityFilter)
+                window.applyDriverVisibilityFilter();
             }
-            
-            
-            
-            
-            
 
             if (defaultActions) defaultActions.style.display = "none";
             if (timeline) timeline.style.display = "flex";
@@ -3509,20 +3636,16 @@
                 window.renderRecoveredOrder(window.appState.activeOrder);
               }
             }
-            
-            } else {
+          } else {
             fab.classList.remove("locked");
-            
+
             if (window.isTrackingActiveOrder) {
               window.isTrackingActiveOrder = false;
-              if (window.applyDriverVisibilityFilter) window.applyDriverVisibilityFilter();
+              if (window.applyDriverVisibilityFilter)
+                window.applyDriverVisibilityFilter();
             }
 
             window.currentlyListeningTo = null;
-
-            
-            
-            
 
             if (defaultActions) defaultActions.style.display = "flex";
             if (timeline) {
@@ -4402,9 +4525,208 @@
       const originalOpenAddModal = openAddModal;
       openAddModal = function (type = "scheduled") {
         originalOpenAddModal(type);
+        
+        
         if (type === "scheduled") {
-          window.evalDriverStateForTimeline();
+          window.initScheduleIntercept();
+        } else if (type === "emergency") {
+          document.getElementById('scheduleInterceptModule').style.display = 'none';
+          document.getElementById('checkoutFlowContent').style.display = 'flex';
+          
+          const banner = document.getElementById('timelineDisplay');
+          if (window.appState.targetTimeline === 'asap_today') {
+            banner.innerText = 'ASAP Today (Priority)';
+          } else {
+            banner.innerText = 'Priority Tomorrow Morning'; 
+          }
         }
+        
+       
+      };
+
+      window.initScheduleIntercept = async function () {
+        if (!window.appState.selectedDriverId) return;
+
+        document.getElementById("scheduleInterceptModule").style.display =
+          "flex";
+        document.getElementById("checkoutFlowContent").style.display = "none";
+        document.getElementById("waveAccordionContainer").innerHTML = "";
+        document.getElementById("timelineDisplay").innerText = "Select a Slot";
+
+        try {
+          const docSnap = await window.getDoc(
+            window.doc(
+              window.db,
+              "driver_settings",
+              window.appState.selectedDriverId
+            )
+          );
+          if (docSnap.exists() && docSnap.data().weeklyRoutine) {
+            window.appState.driverScheduleSettings = docSnap.data();
+          } else {
+            window.appState.driverScheduleSettings = {
+              weeklyRoutine: {},
+              globalCutoffMinutes: 30,
+            };
+          }
+          window.renderCalendarGrid();
+        } catch (e) {
+          console.error("Failed to fetch schedule", e);
+        }
+      };
+
+      window.renderCalendarGrid = function () {
+        const topRow = document.getElementById("calendarGridTop");
+
+        topRow.innerHTML = "";
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const startDay = new Date(today);
+        startDay.setDate(today.getDate() - today.getDay());
+
+        const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+        for (let i = 0; i < 7; i++) {
+          const currentDate = new Date(startDay);
+          currentDate.setDate(startDay.getDate() + i);
+
+          const dowStr = dayNames[currentDate.getDay()];
+          const dom = currentDate.getDate();
+          const isPast = currentDate < today;
+
+          const hasRuns =
+            window.appState.driverScheduleSettings?.weeklyRoutine?.[dowStr]
+              ?.length > 0;
+          const isActive = !isPast && hasRuns;
+
+          const fullDateStr = currentDate.toISOString().split("T")[0];
+
+          const block = document.createElement("div");
+          block.className = `cal-day ${isActive ? "active" : ""}`;
+          block.id = `calDay_${fullDateStr}`;
+          block.innerHTML = `<span class="dow">${dowStr}</span><span class="dom">${dom}</span>`;
+
+          if (isActive) {
+            block.onclick = () =>
+              window.selectCalendarDate(currentDate, fullDateStr, dowStr);
+          }
+
+          topRow.appendChild(block);
+        }
+      };
+
+      window.selectCalendarDate = function (dateObj, dateStr, dowStr) {
+        document
+          .querySelectorAll(".cal-day")
+          .forEach((el) => el.classList.remove("selected"));
+        document.getElementById(`calDay_${dateStr}`).classList.add("selected");
+
+        const container = document.getElementById("waveAccordionContainer");
+        container.innerHTML = "";
+
+        const waves =
+          window.appState.driverScheduleSettings.weeklyRoutine[dowStr] || [];
+        const cutoffMins =
+          window.appState.driverScheduleSettings.globalCutoffMinutes || 30;
+        const now = new Date();
+
+        waves.forEach((wave) => {
+          const [hrs, mins] = wave.time.split(":").map(Number);
+          const departureTime = new Date(dateObj);
+          departureTime.setHours(hrs, mins, 0, 0);
+
+          const cutoffTime = new Date(
+            departureTime.getTime() - cutoffMins * 60000
+          );
+          const isClosed = now > cutoffTime;
+
+          const ampm = hrs >= 12 ? "PM" : "AM";
+          const hrs12 = hrs % 12 || 12;
+          const timeLabel = `${hrs12}:${mins
+            .toString()
+            .padStart(2, "0")} ${ampm}`;
+
+          const shiftId = `${
+            window.appState.selectedDriverId
+          }_${dateStr.replace(/-/g, "")}_${wave.time.replace(":", "")}`;
+
+          const card = document.createElement("div");
+          card.className = "wave-card";
+
+          if (isClosed) {
+            card.innerHTML = `
+              <div class="wave-header disabled">
+                <span>${timeLabel} Run</span>
+                <span style="font-size:0.8rem; font-weight:normal; color:var(--danger);">Closed</span>
+              </div>
+            `;
+          } else {
+            card.innerHTML = `
+              <div class="wave-header" onclick="window.expandWave(this, '${shiftId}', ${
+              wave.capacity
+            }, '${dowStr}, ${dateObj.toLocaleString("default", {
+              month: "short",
+            })} ${dateObj.getDate()} @ ${timeLabel}')">
+                <span>${timeLabel} Run</span>
+                <span style="font-size:0.8rem; font-weight:normal; color:var(--accent);">Select Slot ▼</span>
+              </div>
+              <div class="wave-blocks" id="blocks_${shiftId}"></div>
+            `;
+          }
+          container.appendChild(card);
+        });
+      };
+
+      window.expandWave = async function (
+        headerEl,
+        shiftId,
+        capacity,
+        displayString
+      ) {
+        const card = headerEl.parentElement;
+        document
+          .querySelectorAll(".wave-card")
+          .forEach((c) => c.classList.remove("expanded"));
+        card.classList.add("expanded");
+
+        const blocksContainer = document.getElementById(`blocks_${shiftId}`);
+        blocksContainer.innerHTML =
+          '<div style="grid-column: 1/-1; text-align: center;"><div class="search-spinner" style="width:16px;height:16px;"></div> Loading...</div>';
+
+        try {
+          const shiftSnap = await window.getDoc(
+            window.doc(window.db, "shifts", shiftId)
+          );
+          let bookedCount = 0;
+          if (shiftSnap.exists()) {
+            bookedCount = shiftSnap.data().bookedCount || 0;
+          }
+
+          let blocksHtml = "";
+          for (let i = 0; i < capacity; i++) {
+            if (i < bookedCount) {
+              blocksHtml += `<div class="capacity-block booked">✕</div>`;
+            } else {
+              blocksHtml += `<div class="capacity-block" onclick="window.confirmSlotSelection('${shiftId}', '${displayString}')">✓</div>`;
+            }
+          }
+          blocksContainer.innerHTML = blocksHtml;
+        } catch (e) {
+          console.error("Error loading shift capacity", e);
+          blocksContainer.innerHTML =
+            '<p style="color:var(--danger); grid-column:1/-1;">Error loading slots.</p>';
+        }
+      };
+
+      window.confirmSlotSelection = function (shiftId, displayString) {
+        window.appState.selectedShiftId = shiftId;
+        window.appState.targetTimeline = "scheduled";
+        document.getElementById("timelineDisplay").innerText = displayString;
+        document.getElementById("scheduleInterceptModule").style.display =
+          "none";
+        document.getElementById("checkoutFlowContent").style.display = "flex";
       };
 
       const originalGoToStep2 = goToStep2;
@@ -4431,20 +4753,14 @@
         document.getElementById("step2Panel").lastElementChild.style.display =
           "flex";
       };
-      
-      
-      
-      
+
       window.shiftToTomorrow = function () {
         document.getElementById("standardTodayGate").style.display = "none";
         window.appState.targetTimeline = "tomorrow";
         document.getElementById("timelineDisplay").innerText = "Tomorrow";
-        document.getElementById("step2Panel").lastElementChild.style.display = "flex";
+        document.getElementById("step2Panel").lastElementChild.style.display =
+          "flex";
       };
-      
-      
-      
-      
 
       // --- SETTINGS DROPDOWN & GATE LOGIC ---
       window.toggleSettingsDropdown = function () {
