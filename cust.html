@@ -20,7 +20,7 @@
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
-        --accent: #ee611c;
+        --accent: #ee611c; 
         --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
@@ -4752,10 +4752,24 @@
           const shiftSnap = await window.getDoc(
             window.doc(window.db, "shifts", shiftId)
           );
+           
+           
+          
           let bookedCount = 0;
+          let isDeparted = false;
+
           if (shiftSnap.exists()) {
-            bookedCount = shiftSnap.data().bookedCount || 0;
+            const sData = shiftSnap.data();
+            bookedCount = sData.bookedCount || 0;
+            if (sData.status === "departed") isDeparted = true;
           }
+
+          if (isDeparted) {
+            blocksContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--danger); font-weight: bold; padding: 10px 0;">Driver has already departed for this run.</div>';
+            return;
+          }
+          
+ 
 
           let blocksHtml = `
             <div style="grid-column: 1 / -1; display: flex; justify-content: center; gap: 20px; padding-bottom: 5px; font-size: 0.8rem; color: var(--text-muted);">
