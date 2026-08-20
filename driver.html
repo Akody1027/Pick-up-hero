@@ -13,16 +13,16 @@
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+    /> 
 
     <style>
       :root {
         --bg: #121212;
-        --surface: #1e1e1e; 
+        --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
-        --text: #ffffff;
+        --text: #ffffff; 
         --text-muted: #94a3b8;
         --border: #333333;
         --success: #22c55e;
@@ -2793,6 +2793,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   bookingType: data.bookingType || "scheduled",
                   stripeSessionId: data.stripeSessionId || null,
 
+                  shiftId: data.shiftId || null,
+
                   pickupNumber: stop.pickupNumber || "",
                   sosTimeline: data.sosTimeline || "scheduled",
 
@@ -2821,6 +2823,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   totalCost: data.totalCost || 0,
                   bookingType: data.bookingType || "scheduled",
                   stripeSessionId: data.stripeSessionId || null,
+
+                  shiftId: data.shiftId || null,
 
                   sosTimeline: data.sosTimeline || "scheduled",
                 });
@@ -3725,6 +3729,21 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   })
                   .catch((e) => console.error(e));
               }
+            }
+
+            const uniqueShiftIds = [
+              ...new Set(
+                distinctNew.map((item) => item.shiftId).filter(Boolean)
+              ),
+            ];
+            for (const sId of uniqueShiftIds) {
+              window
+                .updateDoc(window.doc(window.db, "shifts", sId), {
+                  status: "departed",
+                })
+                .catch((e) =>
+                  console.error("Failed to update shift status:", e)
+                );
             }
           };
 
