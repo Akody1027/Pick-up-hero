@@ -4574,32 +4574,31 @@
           console.error("Failed to fetch schedule", e);
         }
       };
-
+      
+      
+      
+      
       window.renderCalendarGrid = function () {
         const topRow = document.getElementById("calendarGridTop");
-
         topRow.innerHTML = "";
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const startDay = new Date(today);
-        startDay.setDate(today.getDate() - today.getDay());
-
         const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
         for (let i = 0; i < 7; i++) {
-          const currentDate = new Date(startDay);
-          currentDate.setDate(startDay.getDate() + i);
+          const currentDate = new Date(today);
+          currentDate.setDate(today.getDate() + i);
 
           const dowStr = dayNames[currentDate.getDay()];
           const dom = currentDate.getDate();
-          const isPast = currentDate < today;
 
           const hasRuns =
             window.appState.driverScheduleSettings?.weeklyRoutine?.[dowStr]
               ?.length > 0;
-          const isActive = !isPast && hasRuns;
+          
+          const isActive = hasRuns;
 
           const fullDateStr = currentDate.toISOString().split("T")[0];
 
@@ -4616,6 +4615,12 @@
           topRow.appendChild(block);
         }
       };
+      
+      
+      
+      
+      
+   
 
       window.selectCalendarDate = function (dateObj, dateStr, dowStr) {
         document
