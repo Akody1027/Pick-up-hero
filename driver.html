@@ -18,7 +18,7 @@
     <style>
       :root {
         --bg: #121212;
-        --surface: #1e1e1e;
+        --surface: #1e1e1e; 
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
@@ -2223,29 +2223,25 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               hasSavedLocation = true;
             }
 
-
-
-
-
-
             if (data.globalCutoffMinutes) {
-              document.getElementById("globalCutoffInput").value = data.globalCutoffMinutes;
+              document.getElementById("globalCutoffInput").value =
+                data.globalCutoffMinutes;
             }
-
 
             if (data.weeklyRoutine) {
               AppState.weeklyRoutine = data.weeklyRoutine;
             } else {
-              AppState.weeklyRoutine = { Sun: [], Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [] };
+              AppState.weeklyRoutine = {
+                Sun: [],
+                Mon: [],
+                Tue: [],
+                Wed: [],
+                Thu: [],
+                Fri: [],
+                Sat: [],
+              };
             }
             window.renderWaveBuilder();
-
-
-
-
-
-
-
 
             const killSwitch = document.getElementById("killSwitchToggle");
             if (data.globalKillSwitch) killSwitch.classList.add("on");
@@ -2532,55 +2528,67 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         openModal("scheduleModal");
       };
 
-
-
-
-      AppState.weeklyRoutine = { Sun: [], Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [] };
+      AppState.weeklyRoutine = {
+        Sun: [],
+        Mon: [],
+        Tue: [],
+        Wed: [],
+        Thu: [],
+        Fri: [],
+        Sat: [],
+      };
       AppState.activeRoutineDays = [];
 
-      window.toggleRoutineDay = function(day) {
-          const index = AppState.activeRoutineDays.indexOf(day);
-          if (index > -1) {
-              // Toggle Off
-              AppState.activeRoutineDays.splice(index, 1);
-              document.getElementById('dayBtn_' + day).classList.remove('active');
-          } else {
-              // Toggle On
-              AppState.activeRoutineDays.push(day);
-              document.getElementById('dayBtn_' + day).classList.add('active');
-          }
-          window.renderWaveBuilder();
+      window.toggleRoutineDay = function (day) {
+        const index = AppState.activeRoutineDays.indexOf(day);
+        if (index > -1) {
+          // Toggle Off
+          AppState.activeRoutineDays.splice(index, 1);
+          document.getElementById("dayBtn_" + day).classList.remove("active");
+        } else {
+          // Toggle On
+          AppState.activeRoutineDays.push(day);
+          document.getElementById("dayBtn_" + day).classList.add("active");
+        }
+        window.renderWaveBuilder();
       };
 
-      window.syncActiveDays = function() {
-          if (AppState.activeRoutineDays.length === 0) return;
-          const templateDay = AppState.activeRoutineDays[0];
-          const templateWaves = JSON.parse(JSON.stringify(AppState.weeklyRoutine[templateDay]));
+      window.syncActiveDays = function () {
+        if (AppState.activeRoutineDays.length === 0) return;
+        const templateDay = AppState.activeRoutineDays[0];
+        const templateWaves = JSON.parse(
+          JSON.stringify(AppState.weeklyRoutine[templateDay])
+        );
 
-          AppState.activeRoutineDays.forEach(day => {
-              AppState.weeklyRoutine[day] = JSON.parse(JSON.stringify(templateWaves));
-          });
-          window.renderWaveBuilder();
+        AppState.activeRoutineDays.forEach((day) => {
+          AppState.weeklyRoutine[day] = JSON.parse(
+            JSON.stringify(templateWaves)
+          );
+        });
+        window.renderWaveBuilder();
       };
 
-      window.renderWaveBuilder = function() {
-          const container = document.getElementById('waveBuilderContainer');
-          const activeDays = AppState.activeRoutineDays;
+      window.renderWaveBuilder = function () {
+        const container = document.getElementById("waveBuilderContainer");
+        const activeDays = AppState.activeRoutineDays;
 
-          if (activeDays.length === 0) {
-              container.innerHTML = '<p style="color:var(--text-muted); font-size: 0.85rem; text-align: center;">Select one or more days above to configure waves.</p>';
-              return;
-          }
+        if (activeDays.length === 0) {
+          container.innerHTML =
+            '<p style="color:var(--text-muted); font-size: 0.85rem; text-align: center;">Select one or more days above to configure waves.</p>';
+          return;
+        }
 
-          const templateDay = activeDays[0];
-          let html = `<label style="color: var(--accent); margin-bottom: 10px; display: block; font-weight: 700;">Editing: ${activeDays.join(', ')}</label>`;
-          const waves = AppState.weeklyRoutine[templateDay] || [];
+        const templateDay = activeDays[0];
+        let html = `<label style="color: var(--accent); margin-bottom: 10px; display: block; font-weight: 700;">Editing: ${activeDays.join(
+          ", "
+        )}</label>`;
+        const waves = AppState.weeklyRoutine[templateDay] || [];
 
-          if (waves.length === 0) {
-              html += `<p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">No runs scheduled for the selected days.</p>`;
-          } else {
-              waves.forEach((wave, index) => {
-                  html += `
+        if (waves.length === 0) {
+          html += `<p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">No runs scheduled for the selected days.</p>`;
+        } else {
+          waves.forEach((wave, index) => {
+            html += `
                   <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: center; background: var(--surface-elevated); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                       <div style="flex: 1;">
                           <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Departure</label>
@@ -2593,55 +2601,58 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                       <button type="button" onclick="removeWave(${index})" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--danger); border-radius: 6px; font-size: 1.1rem; cursor: pointer; padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-top: 18px;">✕</button>
                   </div>
                   `;
-              });
-          }
-
-          html += `<button type="button" class="btn btn-secondary" style="padding: 12px; font-size: 0.9rem;" onclick="addWave()">+ Add Wave</button>`;
-          container.innerHTML = html;
-
-          document.querySelectorAll('.day-btn').forEach(btn => {
-             const d = btn.id.split('_')[1];
-             if (AppState.weeklyRoutine[d] && AppState.weeklyRoutine[d].length > 0) {
-                 btn.style.borderBottom = "3px solid var(--accent)";
-             } else {
-                 btn.style.borderBottom = "1px solid var(--border)";
-             }
           });
+        }
+
+        html += `<button type="button" class="btn btn-secondary" style="padding: 12px; font-size: 0.9rem;" onclick="addWave()">+ Add Wave</button>`;
+        container.innerHTML = html;
+
+        document.querySelectorAll(".day-btn").forEach((btn) => {
+          const d = btn.id.split("_")[1];
+          if (
+            AppState.weeklyRoutine[d] &&
+            AppState.weeklyRoutine[d].length > 0
+          ) {
+            btn.style.borderBottom = "3px solid var(--accent)";
+          } else {
+            btn.style.borderBottom = "1px solid var(--border)";
+          }
+        });
       };
 
-      window.addWave = function() {
-          if (AppState.activeRoutineDays.length === 0) return;
-          const templateDay = AppState.activeRoutineDays[0];
-          if (!AppState.weeklyRoutine[templateDay]) AppState.weeklyRoutine[templateDay] = [];
-          AppState.weeklyRoutine[templateDay].push({ time: '12:00', capacity: 6 });
-          window.syncActiveDays();
+      window.addWave = function () {
+        if (AppState.activeRoutineDays.length === 0) return;
+        const templateDay = AppState.activeRoutineDays[0];
+        if (!AppState.weeklyRoutine[templateDay])
+          AppState.weeklyRoutine[templateDay] = [];
+        AppState.weeklyRoutine[templateDay].push({
+          time: "12:00",
+          capacity: 6,
+        });
+        window.syncActiveDays();
       };
 
-      window.removeWave = function(index) {
-          if (AppState.activeRoutineDays.length === 0) return;
-          const templateDay = AppState.activeRoutineDays[0];
-          AppState.weeklyRoutine[templateDay].splice(index, 1);
-          window.syncActiveDays();
+      window.removeWave = function (index) {
+        if (AppState.activeRoutineDays.length === 0) return;
+        const templateDay = AppState.activeRoutineDays[0];
+        AppState.weeklyRoutine[templateDay].splice(index, 1);
+        window.syncActiveDays();
       };
 
-      window.updateWaveTime = function(index, val) {
-          if (AppState.activeRoutineDays.length === 0) return;
-          const templateDay = AppState.activeRoutineDays[0];
-          AppState.weeklyRoutine[templateDay][index].time = val;
-          window.syncActiveDays();
+      window.updateWaveTime = function (index, val) {
+        if (AppState.activeRoutineDays.length === 0) return;
+        const templateDay = AppState.activeRoutineDays[0];
+        AppState.weeklyRoutine[templateDay][index].time = val;
+        window.syncActiveDays();
       };
 
-      window.updateWaveCapacity = function(index, val) {
-          if (AppState.activeRoutineDays.length === 0) return;
-          const templateDay = AppState.activeRoutineDays[0];
-          AppState.weeklyRoutine[templateDay][index].capacity = parseInt(val) || 1;
-          window.syncActiveDays();
+      window.updateWaveCapacity = function (index, val) {
+        if (AppState.activeRoutineDays.length === 0) return;
+        const templateDay = AppState.activeRoutineDays[0];
+        AppState.weeklyRoutine[templateDay][index].capacity =
+          parseInt(val) || 1;
+        window.syncActiveDays();
       };
-
-
-
-
-
 
       window.saveScheduleBlock = async function () {
         const btn = document.getElementById("saveScheduleBtn");
@@ -2661,12 +2672,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               baseLat: primaryBase.lat,
               baseLng: primaryBase.lng,
 
-
-              globalCutoffMinutes: parseInt(document.getElementById("globalCutoffInput").value) || 30,
+              globalCutoffMinutes:
+                parseInt(document.getElementById("globalCutoffInput").value) ||
+                30,
               weeklyRoutine: AppState.weeklyRoutine,
-
-
-
             },
             { merge: true }
           );
@@ -3145,28 +3154,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           );
         }
 
-        // Draw Interactive Pruning Pins with Customer-Style Teardrop
+        // Draw Interactive Pruning Pins
         sorted.forEach((order) => {
-          const pinClass =
+          let pinClass =
             order.bookingType === "emergency"
               ? "custom-sos-pin"
               : "custom-store-pin";
-          const icon = L.divIcon({
-            className: pinClass,
-            html: "",
-            iconSize: [28, 28],
-            iconAnchor: [14, 28],
-            popupAnchor: [0, -28],
-          });
-          const marker = L.marker([order.lat, order.lng], { icon }).addTo(
-            AppState.layerGroup
-          );
-
-
-
-          // Draw Interactive Pruning Pins
-        sorted.forEach((order) => {
-          let pinClass = order.bookingType === "emergency" ? "custom-sos-pin" : "custom-store-pin";
           let iconHtml = "";
           let iSize = [28, 28];
           let iAnchor = [14, 28];
@@ -3187,13 +3180,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             iconAnchor: iAnchor,
             popupAnchor: pAnchor,
           });
+
           const marker = L.marker([order.lat, order.lng], { icon }).addTo(
             AppState.layerGroup
           );
-
-
-
-
 
           marker.bindPopup(`
           <div style="text-align:center;">
@@ -3930,26 +3920,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             );
 
             sortedDeliveries.forEach((d) => {
-              const pinClass =
-                d.bookingType === "emergency"
-                  ? "custom-sos-pin"
-                  : "custom-store-pin";
-              const delIcon = L.divIcon({
-                className: pinClass,
-                html: "",
-                iconSize: [28, 28],
-                iconAnchor: [14, 28],
-                popupAnchor: [0, -28],
-              });
-              L.marker([d.lat, d.lng], { icon: delIcon }).addTo(
-                AppState.layerGroup
-              );
-            });
-
-
-
-
-            sortedDeliveries.forEach((d) => {
               const delIcon = L.divIcon({
                 className: "custom-delivery-pin",
                 html: "⌂",
@@ -3961,15 +3931,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 AppState.layerGroup
               );
             });
-
-
-
-
-
-
-
-
-
           }
 
           drawDeliveryTimeline();
