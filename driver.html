@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <title>Pick Up Hero - Driver Command</title>
-    
-    <link rel="icon" href="hero.ico" type="image/x-icon" /> 
+
+    <link rel="icon" href="hero.ico" type="image/x-icon" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -12,14 +12,14 @@
 
     <link
       rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
 
     <style>
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
-        --surface-elevated: #2c2c2c; 
+        --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
@@ -500,10 +500,7 @@
       .toggle-switch.on .toggle-knob {
         left: 24px;
       }
-      
-      
-      
-      
+
       /* --- WEEKLY ROUTINE BUILDER --- */
       .day-toggles {
         display: flex;
@@ -528,12 +525,6 @@
         border-color: var(--accent);
         color: white;
       }
-      
-      
-      
-      
-      
-      
 
       /* Map Cluster Badges */
       .cluster-pin {
@@ -606,6 +597,19 @@
         border: 3px solid var(--surface);
         border-radius: 50%;
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+      }
+
+      .custom-delivery-pin {
+        background-color: var(--success);
+        border: 3px solid #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: bold;
       }
 
       /* --- DUTY STATUS UI --- */
@@ -1121,6 +1125,60 @@
       <button id="dutyToggleBtn" class="duty-btn" onclick="toggleDutyStatus()">
         Off Duty
       </button>
+
+      <div
+        id="mapLegend"
+        style="
+          margin-top: 15px;
+          background: var(--surface-elevated);
+          padding: 12px;
+          border-radius: 12px;
+          border: 1px solid var(--border);
+          box-shadow: var(--shadow);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        "
+      >
+        <div style="display: flex; align-items: center; gap: 8px">
+          <div
+            style="
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              background: var(--accent);
+              border: 2px solid #ffffff;
+              box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            "
+          ></div>
+          <span style="font-size: 0.85rem; font-weight: 700; color: var(--text)"
+            >Pickups</span
+          >
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px">
+          <div
+            style="
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              background: var(--success);
+              border: 2px solid #ffffff;
+              box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 11px;
+              font-weight: bold;
+            "
+          >
+            ⌂
+          </div>
+          <span style="font-size: 0.85rem; font-weight: 700; color: var(--text)"
+            >Deliveries</span
+          >
+        </div>
+      </div>
     </div>
 
     <!-- TOP COMMAND CENTER -->
@@ -1251,11 +1309,6 @@
         <button class="close-btn" onclick="closeAllModals()">✕</button>
       </div>
       <div class="modal-content">
-        
-        
-        
-         
-        
         <div class="form-group">
           <label>Global Order Cutoff (Minutes Before Departure)</label>
           <input type="number" id="globalCutoffInput" value="30" />
@@ -1263,35 +1316,86 @@
 
         <div class="form-group">
           <label>Active Days</label>
-          
+
           <div class="day-toggles">
-            <button type="button" class="day-btn" id="dayBtn_Sun" onclick="toggleRoutineDay('Sun')">Sun</button>
-            <button type="button" class="day-btn" id="dayBtn_Mon" onclick="toggleRoutineDay('Mon')">Mon</button>
-            <button type="button" class="day-btn" id="dayBtn_Tue" onclick="toggleRoutineDay('Tue')">Tue</button>
-            <button type="button" class="day-btn" id="dayBtn_Wed" onclick="toggleRoutineDay('Wed')">Wen</button>
-            <button type="button" class="day-btn" id="dayBtn_Thu" onclick="toggleRoutineDay('Thu')">Thu</button>
-            <button type="button" class="day-btn" id="dayBtn_Fri" onclick="toggleRoutineDay('Fri')">Fri</button>
-            <button type="button" class="day-btn" id="dayBtn_Sat" onclick="toggleRoutineDay('Sat')">Sat</button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Sun"
+              onclick="toggleRoutineDay('Sun')"
+            >
+              Sun
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Mon"
+              onclick="toggleRoutineDay('Mon')"
+            >
+              Mon
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Tue"
+              onclick="toggleRoutineDay('Tue')"
+            >
+              Tue
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Wed"
+              onclick="toggleRoutineDay('Wed')"
+            >
+              Wen
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Thu"
+              onclick="toggleRoutineDay('Thu')"
+            >
+              Thu
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Fri"
+              onclick="toggleRoutineDay('Fri')"
+            >
+              Fri
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Sat"
+              onclick="toggleRoutineDay('Sat')"
+            >
+              Sat
+            </button>
           </div>
-          
-          
-
         </div>
 
-        <div id="waveBuilderContainer" style="margin-bottom: 25px;">
-           <p style="color:var(--text-muted); font-size: 0.85rem; text-align: center;">Select a day above to configure waves.</p>
+        <div id="waveBuilderContainer" style="margin-bottom: 25px">
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 0.85rem;
+              text-align: center;
+            "
+          >
+            Select a day above to configure waves.
+          </p>
         </div>
 
-        <hr style="border: none; border-top: 1px solid var(--border); margin: 0 0 25px 0;" />
- 
-        
-        
-        
-        
-        
-        
-        
-        
+        <hr
+          style="
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 0 0 25px 0;
+          "
+        />
 
         <div class="form-group" style="margin-bottom: 20px">
           <label id="basePinCountLabel">Base Locations (0 / 5)</label>
@@ -1721,7 +1825,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
     <!-- LEAFLET MAP JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqlDSF6sSZqagHDlFCw2K-v4lRQQCK6Ew&libraries=places&loading=async"></script>
+    <script
+      async
+      defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqlDSF6sSZqagHDlFCw2K-v4lRQQCK6Ew&libraries=places&loading=async"
+    ></script>
     <!-- FIREBASE SDK -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
@@ -2115,30 +2223,30 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               hasSavedLocation = true;
             }
 
-            
-            
-            
-            
-            
+
+
+
+
+
             if (data.globalCutoffMinutes) {
               document.getElementById("globalCutoffInput").value = data.globalCutoffMinutes;
             }
 
-            
+
             if (data.weeklyRoutine) {
               AppState.weeklyRoutine = data.weeklyRoutine;
             } else {
               AppState.weeklyRoutine = { Sun: [], Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [] };
             }
             window.renderWaveBuilder();
-            
-            
-            
-            
-            
-            
 
-            
+
+
+
+
+
+
+
             const killSwitch = document.getElementById("killSwitchToggle");
             if (data.globalKillSwitch) killSwitch.classList.add("on");
             else killSwitch.classList.remove("on");
@@ -2423,10 +2531,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         renderHomeBases();
         openModal("scheduleModal");
       };
-      
-      
-      
-      
+
+
+
+
       AppState.weeklyRoutine = { Sun: [], Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [] };
       AppState.activeRoutineDays = [];
 
@@ -2448,7 +2556,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           if (AppState.activeRoutineDays.length === 0) return;
           const templateDay = AppState.activeRoutineDays[0];
           const templateWaves = JSON.parse(JSON.stringify(AppState.weeklyRoutine[templateDay]));
-          
+
           AppState.activeRoutineDays.forEach(day => {
               AppState.weeklyRoutine[day] = JSON.parse(JSON.stringify(templateWaves));
           });
@@ -2458,7 +2566,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.renderWaveBuilder = function() {
           const container = document.getElementById('waveBuilderContainer');
           const activeDays = AppState.activeRoutineDays;
-          
+
           if (activeDays.length === 0) {
               container.innerHTML = '<p style="color:var(--text-muted); font-size: 0.85rem; text-align: center;">Select one or more days above to configure waves.</p>';
               return;
@@ -2490,7 +2598,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           html += `<button type="button" class="btn btn-secondary" style="padding: 12px; font-size: 0.9rem;" onclick="addWave()">+ Add Wave</button>`;
           container.innerHTML = html;
-          
+
           document.querySelectorAll('.day-btn').forEach(btn => {
              const d = btn.id.split('_')[1];
              if (AppState.weeklyRoutine[d] && AppState.weeklyRoutine[d].length > 0) {
@@ -2529,11 +2637,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           AppState.weeklyRoutine[templateDay][index].capacity = parseInt(val) || 1;
           window.syncActiveDays();
       };
-      
-      
-      
 
-      
+
+
+
+
 
       window.saveScheduleBlock = async function () {
         const btn = document.getElementById("saveScheduleBtn");
@@ -2552,16 +2660,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               baseLocations: AppState.baseLocations,
               baseLat: primaryBase.lat,
               baseLng: primaryBase.lng,
-              
-              
+
+
               globalCutoffMinutes: parseInt(document.getElementById("globalCutoffInput").value) || 30,
               weeklyRoutine: AppState.weeklyRoutine,
-              
-              
-      
+
+
+
             },
-            { merge: true } 
-          ); 
+            { merge: true }
+          );
           btn.innerText = "Saved!";
           btn.classList.replace("btn-primary", "btn-success");
           setTimeout(() => {
@@ -2570,7 +2678,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             closeAllModals();
           }, 1500);
         } catch (e) {
-          console.error("Save failed:", e); 
+          console.error("Save failed:", e);
           btn.innerText = "Error Saving";
         }
       };
@@ -3053,6 +3161,40 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           const marker = L.marker([order.lat, order.lng], { icon }).addTo(
             AppState.layerGroup
           );
+
+
+
+          // Draw Interactive Pruning Pins
+        sorted.forEach((order) => {
+          let pinClass = order.bookingType === "emergency" ? "custom-sos-pin" : "custom-store-pin";
+          let iconHtml = "";
+          let iSize = [28, 28];
+          let iAnchor = [14, 28];
+          let pAnchor = [0, -28];
+
+          if (order.type === "delivery") {
+            pinClass = "custom-delivery-pin";
+            iconHtml = "⌂";
+            iSize = [32, 32];
+            iAnchor = [16, 16];
+            pAnchor = [0, -16];
+          }
+
+          const icon = L.divIcon({
+            className: pinClass,
+            html: iconHtml,
+            iconSize: iSize,
+            iconAnchor: iAnchor,
+            popupAnchor: pAnchor,
+          });
+          const marker = L.marker([order.lat, order.lng], { icon }).addTo(
+            AppState.layerGroup
+          );
+
+
+
+
+
           marker.bindPopup(`
           <div style="text-align:center;">
             <strong>${order.title}</strong><br>
@@ -3803,6 +3945,31 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 AppState.layerGroup
               );
             });
+
+
+
+
+            sortedDeliveries.forEach((d) => {
+              const delIcon = L.divIcon({
+                className: "custom-delivery-pin",
+                html: "⌂",
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, -16],
+              });
+              L.marker([d.lat, d.lng], { icon: delIcon }).addTo(
+                AppState.layerGroup
+              );
+            });
+
+
+
+
+
+
+
+
+
           }
 
           drawDeliveryTimeline();
