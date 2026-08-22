@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+heroimgheroimg<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -914,6 +914,28 @@
     <!-- GLOBAL ACTIVITY RIBBON -->
     <div id="globalActivityRibbon" class="activity-ribbon"></div>
 
+    
+    
+    <!-- PWA INSTALL PROMPT -->
+    <div id="pwaInstallPrompt" style="position: fixed; top: -150px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: var(--surface-elevated); border: 1px solid var(--accent); border-radius: 16px; padding: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 5000; transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1);">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <img src="heroimg512.png" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover;" alt="App Icon" />
+        <div style="display: flex; flex-direction: column;">
+          <strong style="color: var(--text); font-size: 0.95rem;">Install Pick Up Hero</strong>
+          <span style="color: var(--text-muted); font-size: 0.75rem;">Add to home screen</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button id="pwaInstallBtn" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.85rem; width: auto; margin: 0;">Install Now</button>
+        <button onclick="dismissPwaPrompt()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 4px;">✕</button>
+      </div>
+    </div>
+    
+    
+    
+    
+    
+    
     <audio
       id="customerAlertSound"
       src="Roadwatchero.mp3"
@@ -5110,6 +5132,49 @@
           alert("Failed to send message.");
         }
       };
+      
+      
+      
+      
+      // --- PWA INSTALLATION PROMPT ---
+      let deferredInstallPrompt = null;
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        
+        // Slight delay to allow the app shell to render before sliding down
+        setTimeout(() => {
+          document.getElementById('pwaInstallPrompt').style.top = 'env(safe-area-inset-top, 20px)';
+        }, 2000);
+      });
+
+      const installBtn = document.getElementById('pwaInstallBtn');
+      if (installBtn) {
+        installBtn.addEventListener('click', async () => {
+          if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            const { outcome } = await deferredInstallPrompt.userChoice;
+            if (outcome === 'accepted') {
+              deferredInstallPrompt = null;
+              dismissPwaPrompt();
+            }
+          }
+        });
+      }
+
+      window.dismissPwaPrompt = function() {
+        document.getElementById('pwaInstallPrompt').style.top = '-150px';
+      };
+
+      window.addEventListener('appinstalled', () => {
+        dismissPwaPrompt();
+      });
+      
+      
+      
+      
+      
     </script>
   </body>
 </html>
