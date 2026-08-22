@@ -2160,18 +2160,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       // --- SECURE BOOT SEQUENCE ---
       let hasBooted = false;
 
+      
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
-            .register("./sw.js")
-            .then((reg) =>
-              console.log("Driver Service Worker Active:", reg.scope)
-            )
-            .catch((err) =>
-              console.error("Driver Service Worker failed:", err)
-            );
+            .register("./sw-driver.js", { scope: "./driver.html" })
+            .then((reg) => console.log("Driver SW Active:", reg.scope))
+            .catch((err) => console.error("Driver SW failed:", err));
         });
       }
+
 
       window.bootApplication = function () {
         window.auth.onAuthStateChanged((user) => {
