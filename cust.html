@@ -2406,15 +2406,16 @@
         }
       });
 
+      
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
-            .register("./sw.js")
-            .then((reg) => console.log("Customer Service Worker Active:", reg.scope))
-            .catch((err) => console.error("Service Worker failed:", err));
+            .register("./sw-cust.js", { scope: "./cust.html" })
+            .then((reg) => console.log("Customer SW Active:", reg.scope))
+            .catch((err) => console.error("Customer SW failed:", err));
         });
       }
-      
+
 
       // --- BACKGROUND SYNC ENGINE ---
       document.addEventListener("visibilitychange", async () => {
