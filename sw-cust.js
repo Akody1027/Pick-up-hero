@@ -3,7 +3,8 @@ const STATIC_ASSETS = [
   "./cust.html",
   "./manifest-customer.json",
   "./Roadwatchero.mp3",
-  "./cart1.png",
+  "./heroimg192.png",
+  "./heroimg512.png",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 ];
