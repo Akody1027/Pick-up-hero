@@ -8,6 +8,16 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
 
+    
+    <link rel="manifest" href="manifest-customer.json" />
+    <meta name="theme-color" content="#ee611c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PickUpHero" />
+    <link rel="apple-touch-icon" href="cart1.png" />
+    
+    
+    
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -2395,6 +2405,16 @@
           window.loadActiveDriver();
         }
       });
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./sw.js")
+            .then((reg) => console.log("Customer Service Worker Active:", reg.scope))
+            .catch((err) => console.error("Service Worker failed:", err));
+        });
+      }
+      
 
       // --- BACKGROUND SYNC ENGINE ---
       document.addEventListener("visibilitychange", async () => {
