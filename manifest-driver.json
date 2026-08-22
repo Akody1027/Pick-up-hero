@@ -3,6 +3,7 @@
   "short_name": "Hero Driver",
   "description": "Driver portal and dispatch command center.",
   "start_url": "./driver.html",
+  "scope": "./driver.html",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#ee611c",
