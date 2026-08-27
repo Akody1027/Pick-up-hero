@@ -3389,11 +3389,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           for (const orderId of uniqueOrderIds) {
             if (orderId) {
+              
               await window.updateDoc(window.doc(window.db, "orders", orderId), {
-                status: "pending",
-                assignedDriverId: null,
-                queuePosition: null,
+                status: "cancelled",
+                cancelReason: "Driver experienced an emergency and had to abort the route.",
               });
+              
+              
+              
+    
             }
           }
 
