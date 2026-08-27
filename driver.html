@@ -968,29 +968,72 @@
     <!-- GLOBAL ACTIVITY RIBBON -->
     <div id="globalActivityRibbon" class="activity-ribbon"></div>
 
-    
-    
-    
     <!-- PWA INSTALL PROMPT -->
-    <div id="pwaInstallPrompt" style="position: fixed; top: -150px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: var(--surface-elevated); border: 1px solid var(--accent); border-radius: 16px; padding: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 9999; transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1);">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <img src="heroimg512.png" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover;" alt="App Icon" />
-        <div style="display: flex; flex-direction: column;">
-          <strong style="color: var(--text); font-size: 0.95rem;">Hero Command</strong>
-          <span style="color: var(--text-muted); font-size: 0.75rem;">Add to home screen</span>
+    <div
+      id="pwaInstallPrompt"
+      style="
+        position: fixed;
+        top: -150px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 400px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--accent);
+        border-radius: 16px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+        z-index: 9999;
+        transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      "
+    >
+      <div style="display: flex; align-items: center; gap: 12px">
+        <img
+          src="heroimg512.png"
+          style="
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;
+          "
+          alt="App Icon"
+        />
+        <div style="display: flex; flex-direction: column">
+          <strong style="color: var(--text); font-size: 0.95rem"
+            >Hero Command</strong
+          >
+          <span style="color: var(--text-muted); font-size: 0.75rem"
+            >Add to home screen</span
+          >
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <button id="pwaInstallBtn" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.85rem; width: auto; margin: 0;">Install Now</button>
-        <button onclick="dismissPwaPrompt()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 4px;">✕</button>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <button
+          id="pwaInstallBtn"
+          class="btn btn-primary"
+          style="padding: 8px 16px; font-size: 0.85rem; width: auto; margin: 0"
+        >
+          Install Now
+        </button>
+        <button
+          onclick="dismissPwaPrompt()"
+          style="
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+          "
+        >
+          ✕
+        </button>
       </div>
     </div>
-    
-    
-    
-    
-    
-    
+
     <!-- AUTHENTICATION OVERLAY -->
     <div id="authOverlay">
       <div class="auth-card">
@@ -1114,7 +1157,9 @@
         >
           Priority SOS Run
         </h2>
+
         <p
+          id="sosAlertText"
           style="
             color: var(--text);
             font-size: 1rem;
@@ -1122,9 +1167,10 @@
             line-height: 1.5;
           "
         >
-          A customer just paid $50 to skip the line. They have confirmed this
-          order is <strong>ready for pickup right now</strong>.
+          A customer just paid a premium to skip the line. They have confirmed
+          this order is <strong>ready for pickup right now</strong>.
         </p>
+
         <button
           class="btn btn-primary"
           onclick="acknowledgeSOS()"
@@ -2183,7 +2229,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       // --- SECURE BOOT SEQUENCE ---
       let hasBooted = false;
 
-      
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
@@ -2192,7 +2237,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             .catch((err) => console.error("Driver SW failed:", err));
         });
       }
-
 
       window.bootApplication = function () {
         window.auth.onAuthStateChanged((user) => {
@@ -2896,8 +2940,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           const previousTriageLength = AppState.triageQueue.length;
 
           if (hasNewSOS && !AppState.isInitialLoad) {
+            const currentPremium =
+              parseFloat(document.getElementById("premiumRateInput").value) ||
+              50.0;
+            const alertText = document.getElementById("sosAlertText");
+            if (alertText) {
+              alertText.innerHTML = `A customer just paid <strong>$${currentPremium.toFixed(
+                2
+              )}</strong> to skip the line. They have confirmed this order is <strong>ready for pickup right now</strong>.`;
+            }
+
             document.getElementById("sosAlertModal").style.display = "flex";
             const sosAudio = document.getElementById("sosAlarmSound");
+
             if (sosAudio) {
               sosAudio.loop = true;
               sosAudio
@@ -4748,31 +4803,27 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           if (window.monitorActiveRoute) window.monitorActiveRoute();
         }, 500);
       };
-      
-      
-      
-      
-      
-      
+
       // --- PWA INSTALLATION PROMPT ---
       let deferredInstallPrompt = null;
 
-      window.addEventListener('beforeinstallprompt', (e) => {
+      window.addEventListener("beforeinstallprompt", (e) => {
         e.preventDefault();
         deferredInstallPrompt = e;
-        
+
         setTimeout(() => {
-          document.getElementById('pwaInstallPrompt').style.top = 'env(safe-area-inset-top, 20px)';
+          document.getElementById("pwaInstallPrompt").style.top =
+            "env(safe-area-inset-top, 20px)";
         }, 2000);
       });
 
-      const installBtn = document.getElementById('pwaInstallBtn');
+      const installBtn = document.getElementById("pwaInstallBtn");
       if (installBtn) {
-        installBtn.addEventListener('click', async () => {
+        installBtn.addEventListener("click", async () => {
           if (deferredInstallPrompt) {
             deferredInstallPrompt.prompt();
             const { outcome } = await deferredInstallPrompt.userChoice;
-            if (outcome === 'accepted') {
+            if (outcome === "accepted") {
               deferredInstallPrompt = null;
               dismissPwaPrompt();
             }
@@ -4780,18 +4831,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         });
       }
 
-      window.dismissPwaPrompt = function() {
-        document.getElementById('pwaInstallPrompt').style.top = '-150px';
+      window.dismissPwaPrompt = function () {
+        document.getElementById("pwaInstallPrompt").style.top = "-150px";
       };
 
-      window.addEventListener('appinstalled', () => {
+      window.addEventListener("appinstalled", () => {
         dismissPwaPrompt();
       });
-      
-      
-      
-      
-      
     </script>
   </body>
 </html>
