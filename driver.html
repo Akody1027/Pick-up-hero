@@ -1988,6 +1988,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.triggerGlobalActivity = function () {
         const ribbon = document.getElementById("globalActivityRibbon");
         const spinner = document.getElementById("globalActivitySpinner");
+        
+        // UNLOCK AUDIO ENGINE ON FIRST GESTURE: Prevent browser autoplay blocking
+        if (!window.audioUnlocked) {
+          const stdAudio = document.getElementById("alertSound");
+          const sosAudio = document.getElementById("sosAlarmSound");
+          if (stdAudio) { stdAudio.play().then(() => stdAudio.pause()).catch(e => {}); }
+          if (sosAudio) { sosAudio.play().then(() => sosAudio.pause()).catch(e => {}); }
+          window.audioUnlocked = true;
+        }
 
         if (ribbon) ribbon.classList.add("activity-active");
         if (spinner) spinner.classList.add("activity-active");
