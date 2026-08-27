@@ -13,7 +13,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent" 
+      content="black-translucent"
     />
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
@@ -979,9 +979,13 @@
         </button>
       </div>
     </div>
-    
-    <audio id="customerAlertSound" src="Roadwatchero.mp3" preload="auto"></audio>
-    
+
+    <audio
+      id="customerAlertSound"
+      src="Roadwatchero.mp3"
+      preload="auto"
+    ></audio>
+
     <audio
       id="abortAlarmSound"
       src="Roadwatchero.mp3"
@@ -1064,10 +1068,11 @@
           the run. Don't worry, you won't be charged. The pending Authorization
           on your card will drop off.
         </p>
+
         <div style="display: flex; flex-direction: column; gap: 10px">
           <button
             class="btn btn-primary"
-            onclick="handleAbortRecovery()"
+            onclick="handleAbortDismiss()"
             style="
               background: #22c55e;
               color: white;
@@ -1077,19 +1082,7 @@
               box-shadow: 0 4px 15px rgba(34, 197, 94, 0.5);
             "
           >
-            Find a New Hero
-          </button>
-          <button
-            class="btn btn-secondary"
-            onclick="handleAbortDismiss()"
-            style="
-              background: transparent;
-              border: none;
-              color: var(--text-muted);
-              font-size: 1rem;
-            "
-          >
-            Cancel Order Entirely
+            Understood
           </button>
         </div>
       </div>
@@ -2176,16 +2169,6 @@
             .catch((e) => console.error("Error updating payment status:", e));
         }
       }
-
-      window.handleAbortRecovery = function () {
-        document.getElementById("abortAlertModal").style.display = "none";
-        const abortAudio = document.getElementById("abortAlarmSound");
-        if (abortAudio) {
-          abortAudio.pause();
-          abortAudio.currentTime = 0;
-        }
-        window.recoverEditDelivery();
-      };
 
       window.handleAbortDismiss = function () {
         document.getElementById("abortAlertModal").style.display = "none";
