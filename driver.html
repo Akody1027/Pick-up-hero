@@ -1988,13 +1988,23 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.triggerGlobalActivity = function () {
         const ribbon = document.getElementById("globalActivityRibbon");
         const spinner = document.getElementById("globalActivitySpinner");
-        
+
         // UNLOCK AUDIO ENGINE ON FIRST GESTURE: Prevent browser autoplay blocking
         if (!window.audioUnlocked) {
           const stdAudio = document.getElementById("alertSound");
           const sosAudio = document.getElementById("sosAlarmSound");
-          if (stdAudio) { stdAudio.play().then(() => stdAudio.pause()).catch(e => {}); }
-          if (sosAudio) { sosAudio.play().then(() => sosAudio.pause()).catch(e => {}); }
+          if (stdAudio) {
+            stdAudio
+              .play()
+              .then(() => stdAudio.pause())
+              .catch((e) => {});
+          }
+          if (sosAudio) {
+            sosAudio
+              .play()
+              .then(() => sosAudio.pause())
+              .catch((e) => {});
+          }
           window.audioUnlocked = true;
         }
 
@@ -2913,6 +2923,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   status: data.status,
 
                   type: "delivery",
+                  instructions: data.instructions || "",
                   tipAmount: data.tipAmount || 0,
 
                   userId: data.userId,
@@ -2949,7 +2960,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           const previousTriageLength = AppState.triageQueue.length;
 
           if (hasNewSOS && !AppState.isInitialLoad) {
-            
             document.getElementById("sosAlertModal").style.display = "flex";
             const sosAudio = document.getElementById("sosAlarmSound");
 
@@ -3398,15 +3408,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           for (const orderId of uniqueOrderIds) {
             if (orderId) {
-              
               await window.updateDoc(window.doc(window.db, "orders", orderId), {
                 status: "cancelled",
-                cancelReason: "Driver experienced an emergency and had to abort the route.",
+                cancelReason:
+                  "Driver experienced an emergency and had to abort the route.",
               });
-              
-              
-              
-    
             }
           }
 
@@ -3781,8 +3787,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         if (AppState.workflowPhase === "triage") {
           gTitle.innerText = "Waiting Room";
-          
-          const uniqueOrderCount = new Set(AppState.triageQueue.map(item => item.dbId)).size;
+
+          const uniqueOrderCount = new Set(
+            AppState.triageQueue.map((item) => item.dbId)
+          ).size;
           gSub.innerText = `${uniqueOrderCount} Incoming Request(s).`;
 
           wfBtn.innerText = "Proceed to Pickups";
@@ -4384,6 +4392,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             `;
           }
 
+          let extraInfo = "";
+          if (node.instructions && node.status !== "completed") {
+            extraInfo = `
+              <div style="background: var(--surface); padding: 12px; border-radius: 8px; margin-top: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem;">
+                <div><strong style="color:var(--accent);">Drop-off Notes:</strong> ${node.instructions}</div>
+              </div>
+            `;
+          }
+
           timeline.innerHTML += `
             <li class="timeline-item ${statusClass}">
               <div class="node-card">
@@ -4394,6 +4411,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Rural Route Drop-off</p>
 
                 ${AppState.workflowPhase === "delivery" ? navBtnHTML : ""}
+                
+                ${extraInfo}
+                
+                
               </div>
             </li>
           `;
