@@ -8,16 +8,16 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
 
-    
     <link rel="manifest" href="manifest-customer.json" />
     <meta name="theme-color" content="#ee611c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
-    
-    
-    
+
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -30,7 +30,7 @@
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
-        --accent: #ee611c; 
+        --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
@@ -914,28 +914,72 @@
     <!-- GLOBAL ACTIVITY RIBBON -->
     <div id="globalActivityRibbon" class="activity-ribbon"></div>
 
-    
-    
     <!-- PWA INSTALL PROMPT -->
-    <div id="pwaInstallPrompt" style="position: fixed; top: -150px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: var(--surface-elevated); border: 1px solid var(--accent); border-radius: 16px; padding: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 5000; transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1);">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <img src="heroimg512.png" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover;" alt="App Icon" />
-        <div style="display: flex; flex-direction: column;">
-          <strong style="color: var(--text); font-size: 0.95rem;">Install Pick Up Hero</strong>
-          <span style="color: var(--text-muted); font-size: 0.75rem;">Add to home screen</span>
+    <div
+      id="pwaInstallPrompt"
+      style="
+        position: fixed;
+        top: -150px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 400px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--accent);
+        border-radius: 16px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+        z-index: 5000;
+        transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      "
+    >
+      <div style="display: flex; align-items: center; gap: 12px">
+        <img
+          src="heroimg512.png"
+          style="
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;
+          "
+          alt="App Icon"
+        />
+        <div style="display: flex; flex-direction: column">
+          <strong style="color: var(--text); font-size: 0.95rem"
+            >Install Pick Up Hero</strong
+          >
+          <span style="color: var(--text-muted); font-size: 0.75rem"
+            >Add to home screen</span
+          >
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <button id="pwaInstallBtn" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.85rem; width: auto; margin: 0;">Install Now</button>
-        <button onclick="dismissPwaPrompt()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 4px;">✕</button>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <button
+          id="pwaInstallBtn"
+          class="btn btn-primary"
+          style="padding: 8px 16px; font-size: 0.85rem; width: auto; margin: 0"
+        >
+          Install Now
+        </button>
+        <button
+          onclick="dismissPwaPrompt()"
+          style="
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+          "
+        >
+          ✕
+        </button>
       </div>
     </div>
-    
-    
-    
-    
-    
-    
+
     <audio
       id="customerAlertSound"
       src="Roadwatchero.mp3"
@@ -1482,12 +1526,10 @@
               <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
             </svg>
           </button>
-          
-          
-          
-          <button class="close-btn" onclick="window.closeSettingsModal()">✕</button>
-          
-          
+
+          <button class="close-btn" onclick="window.closeSettingsModal()">
+            ✕
+          </button>
         </div>
 
         <div class="settings-dropdown" id="settingsDropdownMenu">
@@ -2106,11 +2148,9 @@
           return;
         }
 
-        const perStopRate =
-          window.appState.bookingType === "emergency"
-            ? parseFloat(window.appState.currentPremiumRate || 50.0)
-            : 12.99;
-
+        const premiumRate = parseFloat(
+          window.appState.currentPremiumRate || 50.0
+        );
         const tipElement = document.getElementById("tipInput");
 
         // PROFILE GATE ENFORCEMENT
@@ -2133,7 +2173,15 @@
 
         const tipAmount =
           tipElement && tipElement.value ? parseFloat(tipElement.value) : 0;
-        const totalCost = activeStopsFound * perStopRate + tipAmount;
+
+        let baseFee = 0;
+        if (window.appState.bookingType === "emergency") {
+          baseFee = premiumRate + (activeStopsFound - 1) * 12.99;
+        } else {
+          baseFee = activeStopsFound * 12.99;
+        }
+
+        const totalCost = baseFee + tipAmount;
 
         const submitBtn = document.querySelector(
           'button[onclick="submitOrderToFirebase()"]'
@@ -2149,6 +2197,7 @@
           const orderData = {
             userId: window.appState.userId,
             assignedDriverId: window.appState.selectedDriverId,
+            premiumRate: premiumRate,
             deliveryAddress: address,
             deliveryLat: window.appState.deliveryLat || null,
             deliveryLng: window.appState.deliveryLng || null,
@@ -2330,8 +2379,6 @@
           window.checkProfileDirty();
           alert("Profile successfully saved!");
           window.closeSettingsModal();
-          
-          
         } catch (error) {
           console.error("Error saving profile:", error);
           alert("Failed to save profile. Please check your connection.");
@@ -2428,7 +2475,6 @@
         }
       });
 
-      
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
@@ -2437,7 +2483,6 @@
             .catch((err) => console.error("Customer SW failed:", err));
         });
       }
-
 
       // --- BACKGROUND SYNC ENGINE ---
       document.addEventListener("visibilitychange", async () => {
@@ -2621,15 +2666,11 @@
           document.getElementById("step1Panel").classList.add("active");
         }
 
-        const perStopRate =
-          type === "emergency"
-            ? parseFloat(window.appState.currentPremiumRate || 50.0)
-            : 12.99;
         const addStopBtn = document.getElementById("addStopBtn");
-        if (addStopBtn)
-          addStopBtn.innerText = `+ Add Another Stop ($${perStopRate.toFixed(
-            2
-          )})`;
+        if (addStopBtn) {
+          addStopBtn.innerText = "+ Add Another Stop ($12.99)";
+        }
+
         updateTotalCost();
       }
 
@@ -2719,10 +2760,7 @@
           window.checkProfileDirty();
         }
       }
-      
-      
-      
-      
+
       window.closeSettingsModal = function () {
         document.getElementById("settingsModal").classList.remove("active");
 
@@ -2733,18 +2771,16 @@
           // Otherwise, return to the home map normally
           updateNavState("navHome");
           const sheet = document.getElementById("trackerSheet");
-          if (window.appState && (window.appState.selectedDriverId || window.isTrackingActiveOrder)) {
+          if (
+            window.appState &&
+            (window.appState.selectedDriverId || window.isTrackingActiveOrder)
+          ) {
             sheet.style.transform = "translateY(0)";
           } else {
             sheet.style.transform = "translateY(150%)";
           }
         }
       };
-      
-      
-      
-      
-      
 
       function closeAllModals() {
         // Check if any full-screen modals are currently open
@@ -3003,16 +3039,22 @@
 
         // Check if this is an SOS order or a scheduled order
 
-        const perStopRate =
-          window.appState.bookingType === "emergency"
-            ? parseFloat(window.appState.currentPremiumRate || 50.0)
-            : 12.99;
+        let baseFee = 0;
+        if (window.appState.bookingType === "emergency") {
+          const premiumRate = parseFloat(
+            window.appState.currentPremiumRate || 50.0
+          );
+          baseFee = premiumRate + (activeStops - 1) * 12.99;
+        } else {
+          baseFee = activeStops * 12.99;
+        }
 
         const tipElement = document.getElementById("tipInput");
         const tipAmount =
           tipElement && tipElement.value ? parseFloat(tipElement.value) : 0;
 
-        const total = activeStops * perStopRate + tipAmount;
+        const total = baseFee + tipAmount;
+
         document.getElementById("totalPriceDisplay").innerText =
           "$" + total.toFixed(2);
       }
@@ -3163,7 +3205,8 @@
                 if (cancelBtn) cancelBtn.style.display = "none";
               } else if (data.status === "completed") {
                 title.innerText = "Delivery Complete";
-                subtitle.innerText = "Thank you for using Pick Up Hero, See you next time! ....";
+                subtitle.innerText =
+                  "Thank you for using Pick Up Hero, See you next time! ....";
 
                 const timeline = document.getElementById("activeStopsTimeline");
                 if (timeline) timeline.style.display = "none";
@@ -4795,9 +4838,7 @@
           const shiftSnap = await window.getDoc(
             window.doc(window.db, "shifts", shiftId)
           );
-           
-           
-          
+
           let bookedCount = 0;
           let isDeparted = false;
 
@@ -4808,11 +4849,10 @@
           }
 
           if (isDeparted) {
-            blocksContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--danger); font-weight: bold; padding: 10px 0;">Driver has already departed for this run.</div>';
+            blocksContainer.innerHTML =
+              '<div style="grid-column: 1/-1; text-align: center; color: var(--danger); font-weight: bold; padding: 10px 0;">Driver has already departed for this run.</div>';
             return;
           }
-          
- 
 
           let blocksHtml = `
             <div style="grid-column: 1 / -1; display: flex; justify-content: center; gap: 20px; padding-bottom: 5px; font-size: 0.8rem; color: var(--text-muted);">
@@ -5132,30 +5172,28 @@
           alert("Failed to send message.");
         }
       };
-      
-      
-      
-      
+
       // --- PWA INSTALLATION PROMPT ---
       let deferredInstallPrompt = null;
 
-      window.addEventListener('beforeinstallprompt', (e) => {
+      window.addEventListener("beforeinstallprompt", (e) => {
         e.preventDefault();
         deferredInstallPrompt = e;
-        
+
         // Slight delay to allow the app shell to render before sliding down
         setTimeout(() => {
-          document.getElementById('pwaInstallPrompt').style.top = 'env(safe-area-inset-top, 20px)';
+          document.getElementById("pwaInstallPrompt").style.top =
+            "env(safe-area-inset-top, 20px)";
         }, 2000);
       });
 
-      const installBtn = document.getElementById('pwaInstallBtn');
+      const installBtn = document.getElementById("pwaInstallBtn");
       if (installBtn) {
-        installBtn.addEventListener('click', async () => {
+        installBtn.addEventListener("click", async () => {
           if (deferredInstallPrompt) {
             deferredInstallPrompt.prompt();
             const { outcome } = await deferredInstallPrompt.userChoice;
-            if (outcome === 'accepted') {
+            if (outcome === "accepted") {
               deferredInstallPrompt = null;
               dismissPwaPrompt();
             }
@@ -5163,18 +5201,13 @@
         });
       }
 
-      window.dismissPwaPrompt = function() {
-        document.getElementById('pwaInstallPrompt').style.top = '-150px';
+      window.dismissPwaPrompt = function () {
+        document.getElementById("pwaInstallPrompt").style.top = "-150px";
       };
 
-      window.addEventListener('appinstalled', () => {
+      window.addEventListener("appinstalled", () => {
         dismissPwaPrompt();
       });
-      
-      
-      
-      
-      
     </script>
   </body>
 </html>
