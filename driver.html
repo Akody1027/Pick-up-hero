@@ -2940,16 +2940,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           const previousTriageLength = AppState.triageQueue.length;
 
           if (hasNewSOS && !AppState.isInitialLoad) {
-            const currentPremium =
-              parseFloat(document.getElementById("premiumRateInput").value) ||
-              50.0;
-            const alertText = document.getElementById("sosAlertText");
-            if (alertText) {
-              alertText.innerHTML = `A customer just paid <strong>$${currentPremium.toFixed(
-                2
-              )}</strong> to skip the line. They have confirmed this order is <strong>ready for pickup right now</strong>.`;
-            }
-
+            
             document.getElementById("sosAlertModal").style.display = "flex";
             const sosAudio = document.getElementById("sosAlarmSound");
 
