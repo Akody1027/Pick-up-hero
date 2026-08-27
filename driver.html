@@ -3777,7 +3777,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         if (AppState.workflowPhase === "triage") {
           gTitle.innerText = "Waiting Room";
-          gSub.innerText = `${AppState.triageQueue.length} Incoming Request(s).`;
+          
+          const uniqueOrderCount = new Set(AppState.triageQueue.map(item => item.dbId)).size;
+          gSub.innerText = `${uniqueOrderCount} Incoming Request(s).`;
+
           wfBtn.innerText = "Proceed to Pickups";
           wfBtn.className = "btn btn-primary";
           wfBtn.style.display = "block";
