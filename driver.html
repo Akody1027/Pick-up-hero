@@ -2348,6 +2348,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 Sat: [],
               };
             }
+
+            AppState.activeRoutineDays = [];
+            Object.keys(AppState.weeklyRoutine).forEach((day) => {
+              if (
+                AppState.weeklyRoutine[day] &&
+                AppState.weeklyRoutine[day].length > 0
+              ) {
+                AppState.activeRoutineDays.push(day);
+                const btn = document.getElementById("dayBtn_" + day);
+                if (btn) btn.classList.add("active");
+              }
+            });
+
             window.renderWaveBuilder();
 
             const killSwitch = document.getElementById("killSwitchToggle");
