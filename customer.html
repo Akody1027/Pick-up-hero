@@ -6,28 +6,28 @@
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    /> 
 
     <link rel="manifest" href="manifest-customer.json" />
     <meta name="theme-color" content="#ee611c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent" 
+      content="black-translucent"
     />
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
  
-    <link  
-      rel="stylesheet"   
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"  
-    />  
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
 
-    <script src="https://js.stripe.com/v3/"></script> 
+    <script src="https://js.stripe.com/v3/"></script>
 
     <style>
       :root {
-        --bg: #121212; 
+        --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
         --accent: #ee611c;
@@ -915,8 +915,7 @@
 
       /* --- PRIORITY TOOLTIP --- */
       .tooltip-icon-btn {
-        
-         width: 25px; 
+        width: 25px;
         height: 25px;
         background: var(--surface-elevated);
         border: 1px solid var(--accent);
@@ -952,7 +951,7 @@
         background: var(--surface-elevated);
         border: 1px solid var(--border);
         border-radius: 16px;
-        padding: 16px; 
+        padding: 16px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
         transform-origin: bottom right;
         transform: scale(0);
@@ -1267,7 +1266,7 @@
           style="transform: translateY(-10px)"
         >
           ?
-        </div> 
+        </div>
       </div>
 
       <div
@@ -2680,6 +2679,29 @@
           });
         }
       );
+
+      let audioUnlocked = false;
+      window.unlockGlobalAudio = function () {
+        if (audioUnlocked) return;
+        const alertAudio = document.getElementById("customerAlertSound");
+        if (alertAudio) {
+          alertAudio
+            .play()
+            .then(() => {
+              alertAudio.pause();
+              alertAudio.currentTime = 0;
+            })
+            .catch((e) => {});
+        }
+        audioUnlocked = true;
+      };
+
+      ["touchstart", "click"].forEach((evt) => {
+        document.addEventListener(evt, window.unlockGlobalAudio, {
+          once: true,
+          passive: true,
+        });
+      });
 
       let map, driverMarker, storeMarker;
 
@@ -5324,13 +5346,12 @@
             const chatModal = document.getElementById("chatModal");
             const isLookingAtThisChat = chatModal.classList.contains("active");
 
+            const alertAudio = document.getElementById("customerAlertSound");
+            if (alertAudio) {
+              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
+            }
+
             if (!isLookingAtThisChat) {
-              const alertAudio = document.getElementById("customerAlertSound");
-              if (alertAudio) {
-                alertAudio
-                  .play()
-                  .catch((e) => console.log("Audio blocked:", e));
-              }
               window.appState.unreadMessages++;
             }
           }
