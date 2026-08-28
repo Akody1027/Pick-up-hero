@@ -13,24 +13,24 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
+      content="black-translucent" 
     />
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
 
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
- 
-    <script src="https://js.stripe.com/v3/"></script>
+    <link 
+      rel="stylesheet"  
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+    /> 
+
+    <script src="https://js.stripe.com/v3/"></script> 
 
     <style>
       :root {
-        --bg: #121212;
+        --bg: #121212; 
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
-        --accent: #ee611c; 
+        --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
         --text-muted: #94a3b8;
@@ -908,6 +908,91 @@
       .activity-active {
         opacity: 1 !important;
       }
+
+      .activity-active {
+        opacity: 1 !important;
+      }
+
+      /* --- PRIORITY TOOLTIP --- */
+      .tooltip-icon-btn {
+        
+         width: 30px; 
+        height: 30px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--accent);
+        color: var(--text);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.1rem;
+        cursor: pointer;
+      }
+
+      .glowing-pin {
+        box-shadow: 0 0 15px 3px var(--accent) !important;
+        animation: pulse-glow 2s infinite alternate;
+      }
+
+      @keyframes pulse-glow {
+        from {
+          box-shadow: 0 0 5px 1px var(--accent);
+        }
+        to {
+          box-shadow: 0 0 15px 5px var(--accent);
+        }
+      }
+
+      .tooltip-box {
+        position: absolute;
+        bottom: 20px;
+        right: 0;
+        width: 290px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+        transform-origin: bottom right;
+        transform: scale(0);
+        opacity: 0;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+          opacity 0.2s ease;
+        pointer-events: none;
+      }
+
+      .tooltip-box.active {
+        transform: scale(1);
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .tooltip-box h4 {
+        color: var(--accent);
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .tooltip-box p {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        line-height: 1.5;
+        text-align: left;
+      }
+
+      .tooltip-close-icon {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0;
+      }
     </style>
   </head>
   <body>
@@ -1145,6 +1230,44 @@
             </svg>
           </button>
         </div>
+      </div>
+
+      <!-- PRIORITY TOOLTIP ANCHOR -->
+      <div
+        style="
+          position: relative;
+          height: 0;
+          width: 100%;
+          display: flex;
+          justify-content: flex-end;
+          overflow: visible;
+          z-index: 2500;
+        "
+      >
+        <div id="priorityTooltipBox" class="tooltip-box">
+          <h4>
+            Priority Dispatch
+            <button
+              class="tooltip-close-icon"
+              onclick="togglePriorityTooltip(event)"
+            >
+              ✕
+            </button>
+          </h4>
+          <p>
+            Choosing "Skip the Line" flags your order as an immediate emergency.
+            Your Hero will drop what they are doing and make a dedicated,
+            special trip strictly for your items. Because this requires
+            immediate rerouting, priority orders carry a premium driver fee.
+          </p>
+        </div>
+        <div
+          class="tooltip-icon-btn glowing-pin"
+          onclick="togglePriorityTooltip(event)"
+          style="transform: translateY(20px)"
+        >
+          ?
+        </div> 
       </div>
 
       <div
@@ -3093,6 +3216,27 @@
       }
 
       // Utils
+
+      window.togglePriorityTooltip = function (event) {
+        if (event) event.stopPropagation();
+        const box = document.getElementById("priorityTooltipBox");
+        if (box) {
+          box.classList.toggle("active");
+        }
+      };
+
+      document.addEventListener("click", function (event) {
+        const box = document.getElementById("priorityTooltipBox");
+        const btn = document.querySelector(".tooltip-icon-btn");
+        if (box && box.classList.contains("active")) {
+          if (
+            !box.contains(event.target) &&
+            (!btn || !btn.contains(event.target))
+          ) {
+            box.classList.remove("active");
+          }
+        }
+      });
 
       function openInfoTooltip() {
         document.getElementById("infoTooltipPrompt").style.display = "flex";
