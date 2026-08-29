@@ -3500,6 +3500,11 @@
                 const timeline = document.getElementById("activeStopsTimeline");
                 if (timeline) timeline.style.display = "none";
 
+                const defaultActions = document.getElementById(
+                  "defaultSheetActions"
+                );
+                if (defaultActions) defaultActions.style.display = "none";
+
                 setTimeout(() => {
                   window.location.reload();
                 }, 6000);
