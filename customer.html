@@ -14,7 +14,7 @@
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
-    />
+    /> 
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
 
@@ -1231,48 +1231,64 @@
         </div>
       </div>
 
-      <!-- PRIORITY TOOLTIP ANCHOR -->
-      <div
-        style="
-          position: relative;
-          height: 0;
-          width: 100%;
-          display: flex;
-          justify-content: flex-end;
-          overflow: visible;
-          z-index: 950;
-        "
-      >
-        <div id="priorityTooltipBox" class="tooltip-box">
-          <h4>
-            Skip The Line Priority
-            <button
-              class="tooltip-close-icon"
-              onclick="togglePriorityTooltip(event)"
-            >
-              ✕
-            </button>
-          </h4>
-          <p>
-            Choosing "Skip the Line" flags your order as an immediate emergency.
-            Your Hero will drop what they are doing and make a dedicated,
-            special trip strictly for your items. Because this requires
-            immediate rerouting, priority orders carry a premium driver fee.
-          </p>
-        </div>
-        <div
-          class="tooltip-icon-btn glowing-pin"
-          onclick="togglePriorityTooltip(event)"
-          style="transform: translateY(-10px)"
-        >
-          ?
-        </div>
-      </div>
-
+      
+      
+      
+      
+      
       <div
         id="defaultSheetActions"
-        style="display: none; gap: 10px; width: 100%"
+        style="display: none; gap: 10px; width: 100%; position: relative;"
       >
+        <!-- PRIORITY TOOLTIP ANCHOR (Tied to Button Visibility) -->
+        <div
+          style="
+            position: absolute;
+            top: -20px;
+            right: 0;
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            overflow: visible;
+            z-index: 950;
+          "
+        >
+          <div id="priorityTooltipBox" class="tooltip-box">
+            <h4>
+              Skip The Line Priority
+              <button
+                class="tooltip-close-icon"
+                onclick="togglePriorityTooltip(event)"
+              >
+                ✕
+              </button>
+            </h4>
+            <p>
+              Choosing "Skip the Line" flags your order as an immediate emergency.
+              Your Hero will drop what they are doing and make a dedicated,
+              special trip strictly for your items. Because this requires
+              immediate rerouting, priority orders carry a premium driver fee.
+            </p>
+          </div>
+          <div
+            class="tooltip-icon-btn glowing-pin"
+            onclick="togglePriorityTooltip(event)"
+            style="transform: translateY(-10px)"
+          >
+            ?
+          </div> 
+        </div>
+      
+      
+      
+      
+      
+      
+   
+        
+        
+        
+        
         <button
           class="btn btn-secondary"
           style="padding: 12px; font-size: 0.9rem; flex: 1"
