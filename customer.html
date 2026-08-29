@@ -3391,10 +3391,20 @@
             if (docSnap.exists()) {
               const data = docSnap.data();
 
-              // AUDIO TRIGGER: Check if the status has changed from the last known state
+              // Calculate completed stops to track individual pickups
+              let completedStopsCount = 0;
+              if (data.stops && Array.isArray(data.stops)) {
+                completedStopsCount = data.stops.filter(
+                  (stop) => stop.completed
+                ).length;
+              }
+
+              // AUDIO TRIGGER: Check if the overall status OR the completed stops count has changed
               if (
-                window.appState.lastKnownStatus &&
-                window.appState.lastKnownStatus !== data.status
+                (window.appState.lastKnownStatus &&
+                  window.appState.lastKnownStatus !== data.status) ||
+                (window.appState.lastKnownStopsCount !== undefined &&
+                  window.appState.lastKnownStopsCount !== completedStopsCount)
               ) {
                 if (alertSound) {
                   alertSound
@@ -3404,8 +3414,10 @@
                     );
                 }
               }
-              // Save the new status so we can compare it next time
+
+              // Save the new status and stops count so we can compare it next time
               window.appState.lastKnownStatus = data.status;
+              window.appState.lastKnownStopsCount = completedStopsCount;
 
               // 1. FIX: Fetch dynamic driver image during a live delivery
               if (data.assignedDriverId) {
