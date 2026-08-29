@@ -4231,6 +4231,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         if (!item) return;
 
         const cleanId = item.dbId;
+        const stopIndex = parseInt(uniqueId.split("_pickup_")[1]);
 
         // Check if there are any MORE pickups left for THIS specific customer (excluding the current one)
         const remainingCustomerPickups = AppState.activeQueue.filter(
@@ -4242,11 +4243,25 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         );
 
         try {
-          if (remainingCustomerPickups.length === 0) {
-            // All items for this customer are secured, flip the master switch FIRST
-            await window.updateDoc(window.doc(window.db, "orders", cleanId), {
-              status: "picked_up",
-            });
+          const orderRef = window.doc(window.db, "orders", cleanId);
+          const orderSnap = await window.getDoc(orderRef);
+
+          if (orderSnap.exists()) {
+            const orderData = orderSnap.data();
+            const updatedStops = [...orderData.stops];
+
+            if (updatedStops[stopIndex]) {
+              updatedStops[stopIndex].completed = true;
+            }
+
+            const updatePayload = { stops: updatedStops };
+
+            if (remainingCustomerPickups.length === 0) {
+              // All items for this customer are secured, flip the master switch
+              updatePayload.status = "picked_up";
+            }
+
+            await window.updateDoc(orderRef, updatePayload);
           }
 
           // Network call succeeded, NOW update the local state
