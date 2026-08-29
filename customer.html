@@ -6,7 +6,7 @@
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    /> 
+    />
 
     <link rel="manifest" href="manifest-customer.json" />
     <meta name="theme-color" content="#ee611c" />
@@ -17,7 +17,7 @@
     />
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
- 
+
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -4675,12 +4675,15 @@
 
         if (order.stops && Array.isArray(order.stops)) {
           order.stops.forEach((stop, index) => {
-            const isDone = [
-              "picked_up",
-              "ready_delivery",
-              "in_transit",
-              "completed",
-            ].includes(order.status);
+            const isDone =
+              stop.completed === true ||
+              [
+                "picked_up",
+                "ready_delivery",
+                "in_transit",
+                "completed",
+              ].includes(order.status);
+
             timelineHTML += `
               <div class="timeline-item">
                 <div class="timeline-title">Pickup Stop ${index + 1} ${
