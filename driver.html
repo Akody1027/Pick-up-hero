@@ -3671,18 +3671,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             AppState.unreadCounts[orderId] = unreadForThisOrder;
 
             if (hasNewAlert) {
-              const chatModal = document.getElementById("chatModal");
-              const isLookingAtThisChat =
-                chatModal.classList.contains("active") &&
-                window.activeChatOrderId === orderId;
-
-              if (!isLookingAtThisChat) {
-                const alertAudio = document.getElementById("alertSound");
-                if (alertAudio) {
-                  alertAudio
-                    .play()
-                    .catch((e) => console.log("Audio blocked:", e));
-                }
+              const alertAudio = document.getElementById("alertSound");
+              if (alertAudio) {
+                alertAudio
+                  .play()
+                  .catch((e) => console.log("Audio blocked:", e));
               }
             }
 
@@ -4633,18 +4626,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           container.scrollTop = container.scrollHeight;
 
           if (isNewPayload) {
-            const chatModal = document.getElementById("chatModal");
-            const isLookingAtThisChat =
-              chatModal.classList.contains("active") &&
-              window.activeChatOrderId === orderId;
-
-            if (!isLookingAtThisChat) {
-              const alertAudio = document.getElementById("alertSound");
-              if (alertAudio) {
-                alertAudio
-                  .play()
-                  .catch((e) => console.log("Audio blocked:", e));
-              }
+            const alertAudio = document.getElementById("alertSound");
+            if (alertAudio) {
+              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
             }
           }
         });
