@@ -3491,36 +3491,112 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       }
 
       function drawActualRoute(origin, waypoints, destination) {
-        if (activeRouteLayer)
+        if (activeRouteLayer) {
           AppState.mapInstance.removeLayer(activeRouteLayer);
+        }
+        activeRouteLayer = L.featureGroup().addTo(AppState.layerGroup);
+
         const directionsService = new google.maps.DirectionsService();
+        const allPoints = [origin, ...waypoints, destination];
 
-        const request = {
-          origin: new google.maps.LatLng(origin[0], origin[1]),
-          destination: new google.maps.LatLng(destination[0], destination[1]),
-          waypoints: waypoints.map((wp) => ({
-            location: new google.maps.LatLng(wp[0], wp[1]),
-            stopover: true,
-          })),
-          travelMode: google.maps.TravelMode.DRIVING,
-        };
+        // Standard Single-Call Engine (<= 25 points)
+        if (allPoints.length <= 25) {
+          const request = {
+            origin: new google.maps.LatLng(origin[0], origin[1]),
+            destination: new google.maps.LatLng(destination[0], destination[1]),
+            waypoints: waypoints.map((wp) => ({
+              location: new google.maps.LatLng(wp[0], wp[1]),
+              stopover: true,
+            })),
+            travelMode: google.maps.TravelMode.DRIVING,
+          };
 
-        directionsService.route(request, (result, status) => {
-          if (status === google.maps.DirectionsStatus.OK) {
-            const encodedPath = result.routes[0].overview_polyline;
-            const decodedCoords = decodePolyline(encodedPath);
-            activeRouteLayer = L.polyline(decodedCoords, {
-              color: "var(--accent)",
-              weight: 5,
-              opacity: 0.9,
-              lineJoin: "round",
-            }).addTo(AppState.layerGroup);
-            AppState.mapInstance.fitBounds(activeRouteLayer.getBounds(), {
-              padding: [60, 60],
-            });
-          } else {
-            console.error("Directions request failed:", status);
-          }
+          directionsService.route(request, (result, status) => {
+            if (status === google.maps.DirectionsStatus.OK) {
+              const encodedPath = result.routes[0].overview_polyline;
+              const decodedCoords = decodePolyline(encodedPath);
+              L.polyline(decodedCoords, {
+                color: "var(--accent)",
+                weight: 5,
+                opacity: 0.9,
+                lineJoin: "round",
+              }).addTo(activeRouteLayer);
+
+              AppState.mapInstance.fitBounds(activeRouteLayer.getBounds(), {
+                padding: [60, 60],
+              });
+            } else {
+              console.warn(
+                "Single route request failed (" +
+                  status +
+                  "). Activating batch fallback..."
+              );
+              executeBatchedRoute(allPoints, directionsService);
+            }
+          });
+        } else {
+          // High-Capacity Batch Engine (> 25 points)
+          executeBatchedRoute(allPoints, directionsService);
+        }
+      }
+
+      function executeBatchedRoute(allPoints, directionsService) {
+        const chunks = [];
+        const chunkSize = 24; // 24 segments = 25 coordinates (overlaps boundaries)
+
+        for (let i = 0; i < allPoints.length - 1; i += chunkSize) {
+          chunks.push(allPoints.slice(i, i + chunkSize + 1));
+        }
+
+        chunks.forEach((chunk, index) => {
+          setTimeout(() => {
+            if (chunk.length < 2) return;
+
+            const reqOrigin = new google.maps.LatLng(chunk[0][0], chunk[0][1]);
+            const reqDest = new google.maps.LatLng(
+              chunk[chunk.length - 1][0],
+              chunk[chunk.length - 1][1]
+            );
+            const reqWaypoints = chunk.slice(1, -1).map((wp) => ({
+              location: new google.maps.LatLng(wp[0], wp[1]),
+              stopover: true,
+            }));
+
+            directionsService.route(
+              {
+                origin: reqOrigin,
+                destination: reqDest,
+                waypoints: reqWaypoints,
+                travelMode: google.maps.TravelMode.DRIVING,
+              },
+              (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                  const encodedPath = result.routes[0].overview_polyline;
+                  const decodedCoords = decodePolyline(encodedPath);
+                  L.polyline(decodedCoords, {
+                    color: "var(--accent)",
+                    weight: 5,
+                    opacity: 0.9,
+                    lineJoin: "round",
+                  }).addTo(activeRouteLayer);
+
+                  if (activeRouteLayer.getLayers().length > 0) {
+                    AppState.mapInstance.fitBounds(
+                      activeRouteLayer.getBounds(),
+                      {
+                        padding: [60, 60],
+                      }
+                    );
+                  }
+                } else {
+                  console.error(
+                    "Batch routing chunk " + index + " failed:",
+                    status
+                  );
+                }
+              }
+            );
+          }, index * 60); // 60ms micro-throttle to protect Google API burst quota
         });
       }
 
@@ -3539,38 +3615,115 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       }
 
       async function sortDeliveriesByTime(originLat, originLng, deliveries) {
-        return new Promise((resolve) => {
-          if (deliveries.length === 0) return resolve([]);
-          const service = new google.maps.DistanceMatrixService();
-          const destinations = deliveries.map(
-            (d) => new google.maps.LatLng(d.lat, d.lng)
-          );
-          const origin = new google.maps.LatLng(originLat, originLng);
+        if (!deliveries || deliveries.length === 0) return [];
 
-          service.getDistanceMatrix(
-            {
-              origins: [origin],
-              destinations: destinations,
-              travelMode: "DRIVING",
-            },
-            (response, status) => {
-              if (status === "OK") {
-                const results = response.rows[0].elements;
-                let mapped = deliveries.map((d, i) => ({
-                  ...d,
-                  durationVal:
-                    results[i].status === "OK"
-                      ? results[i].duration.value
-                      : 999999,
-                }));
-                mapped.sort((a, b) => a.durationVal - b.durationVal);
-                resolve(mapped);
-              } else {
-                resolve(deliveries); // Fallback to unsorted if API fails
+        const origin = new google.maps.LatLng(originLat, originLng);
+        const service = new google.maps.DistanceMatrixService();
+
+        // Standard Single-Call Engine (<= 25 destinations)
+        if (deliveries.length <= 25) {
+          return new Promise((resolve) => {
+            const destinations = deliveries.map(
+              (d) => new google.maps.LatLng(d.lat, d.lng)
+            );
+
+            service.getDistanceMatrix(
+              {
+                origins: [origin],
+                destinations: destinations,
+                travelMode: google.maps.TravelMode.DRIVING,
+              },
+              async (response, status) => {
+                if (status === "OK") {
+                  const results = response.rows[0].elements;
+                  let mapped = deliveries.map((d, i) => ({
+                    ...d,
+                    durationVal:
+                      results[i] && results[i].status === "OK"
+                        ? results[i].duration.value
+                        : 999999,
+                  }));
+                  mapped.sort((a, b) => a.durationVal - b.durationVal);
+                  resolve(mapped);
+                } else {
+                  console.warn(
+                    "Single Distance Matrix failed (" +
+                      status +
+                      "). Activating batch engine..."
+                  );
+                  const batched = await executeBatchedDistanceMatrix(
+                    origin,
+                    deliveries,
+                    service
+                  );
+                  resolve(batched);
+                }
               }
-            }
-          );
+            );
+          });
+        }
+
+        // High-Capacity Batch Engine (> 25 destinations)
+        return await executeBatchedDistanceMatrix(origin, deliveries, service);
+      }
+
+      async function executeBatchedDistanceMatrix(origin, deliveries, service) {
+        const chunkSize = 25;
+        const chunks = [];
+
+        for (let i = 0; i < deliveries.length; i += chunkSize) {
+          chunks.push(deliveries.slice(i, i + chunkSize));
+        }
+
+        const chunkPromises = chunks.map((chunk, index) => {
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              const destinations = chunk.map(
+                (d) => new google.maps.LatLng(d.lat, d.lng)
+              );
+
+              service.getDistanceMatrix(
+                {
+                  origins: [origin],
+                  destinations: destinations,
+                  travelMode: google.maps.TravelMode.DRIVING,
+                },
+                (response, status) => {
+                  if (status === "OK") {
+                    const results = response.rows[0].elements;
+                    const mapped = chunk.map((d, i) => ({
+                      ...d,
+                      durationVal:
+                        results[i] && results[i].status === "OK"
+                          ? results[i].duration.value
+                          : 999999,
+                    }));
+                    resolve(mapped);
+                  } else {
+                    console.error(
+                      "Distance Matrix chunk " +
+                        index +
+                        " failed (" +
+                        status +
+                        "). Applying Euclidean fallback."
+                    );
+                    const originCoords = [origin.lat(), origin.lng()];
+                    const mapped = chunk.map((d) => ({
+                      ...d,
+                      durationVal: getDistance(originCoords, [d.lat, d.lng]),
+                    }));
+                    resolve(mapped);
+                  }
+                }
+              );
+            }, index * 60); // 60ms micro-throttle to protect Google API burst quota
+          });
         });
+
+        const allChunkResults = await Promise.all(chunkPromises);
+        const flattened = allChunkResults.flat();
+        flattened.sort((a, b) => a.durationVal - b.durationVal);
+        return flattened;
       }
 
       window.activeOrderUnsubscribers = [];
