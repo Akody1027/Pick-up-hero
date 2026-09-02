@@ -3981,7 +3981,89 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               (x) => !existingIds.has(x.id)
             );
 
-            AppState.activeQueue = [...existingActive, ...distinctNew];
+            const originalText = wfBtn.innerText;
+            wfBtn.innerText = "Calculating Route Tags...";
+            wfBtn.disabled = true;
+
+            let tempQueue = [...existingActive, ...distinctNew];
+            let untaggedDeliveries = tempQueue.filter(
+              (q) => q.type === "delivery" && !q.deliveryTag
+            );
+
+            if (untaggedDeliveries.length > 0) {
+              let maxD = 0;
+              let maxED = 0;
+              tempQueue.forEach((q) => {
+                if (q.deliveryTag) {
+                  if (q.deliveryTag.startsWith("ED")) {
+                    let num = parseInt(q.deliveryTag.replace("ED", ""));
+                    if (num > maxED) maxED = num;
+                  } else if (q.deliveryTag.startsWith("D")) {
+                    let num = parseInt(q.deliveryTag.replace("D", ""));
+                    if (num > maxD) maxD = num;
+                  }
+                }
+              });
+
+              const pickups = tempQueue.filter((q) => q.type === "pickup");
+              const currentLoc =
+                pickups.length > 0
+                  ? [
+                      pickups[pickups.length - 1].lat,
+                      pickups[pickups.length - 1].lng,
+                    ]
+                  : AppState.homeBase;
+
+              const sosDeliveries = untaggedDeliveries.filter(
+                (d) => d.bookingType === "emergency"
+              );
+              const stdDeliveries = untaggedDeliveries.filter(
+                (d) => d.bookingType !== "emergency"
+              );
+
+              const sortedSOS = await sortDeliveriesByTime(
+                currentLoc[0],
+                currentLoc[1],
+                sosDeliveries
+              );
+              const nextOrigin =
+                sortedSOS.length > 0
+                  ? [
+                      sortedSOS[sortedSOS.length - 1].lat,
+                      sortedSOS[sortedSOS.length - 1].lng,
+                    ]
+                  : currentLoc;
+              const sortedStandard = await sortDeliveriesByTime(
+                nextOrigin[0],
+                nextOrigin[1],
+                stdDeliveries
+              );
+
+              sortedSOS.forEach((d) => {
+                maxED++;
+                d.deliveryTag = "ED" + maxED;
+              });
+              sortedStandard.forEach((d) => {
+                maxD++;
+                d.deliveryTag = "D" + maxD;
+              });
+
+              const tagMap = {};
+              [...sortedSOS, ...sortedStandard].forEach((d) => {
+                tagMap[d.dbId] = d.deliveryTag;
+              });
+
+              tempQueue.forEach((q) => {
+                if (q.type === "pickup" && tagMap[q.dbId]) {
+                  q.deliveryTag = tagMap[q.dbId];
+                }
+              });
+            }
+
+            AppState.activeQueue = tempQueue;
+
+            wfBtn.innerText = originalText;
+            wfBtn.disabled = false;
 
             AppState.workflowPhase = "ready_pickup";
             AppState.pendingOrders = 0;
@@ -4105,10 +4187,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           gTitle.innerText = "Pickups Complete";
           gSub.innerText = "Calculating fastest delivery route...";
           wfBtn.style.display = "none";
-          timeline.innerHTML =
-            "<p style='color: var(--text-muted);'>Sorting via Google Distance Matrix...</p>";
 
-          // Lock origin to the final pickup location (or fallback to HomeBase)
+          timeline.innerHTML =
+            "<p style='color: var(--text-muted);'>Locking tagged route sequence...</p>";
+
           const pickups = AppState.activeQueue.filter(
             (q) => q.type === "pickup"
           );
@@ -4125,37 +4207,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             (q) => q.type === "delivery"
           );
 
-          const sosDeliveries = deliveries.filter(
-            (d) => d.bookingType === "emergency"
-          );
-          const standardDeliveries = deliveries.filter(
-            (d) => d.bookingType !== "emergency"
-          );
+          deliveries.sort((a, b) => {
+            const getTagValue = (tag) => {
+              if (!tag) return 999999;
+              if (tag.startsWith("ED"))
+                return parseInt(tag.replace("ED", "")) - 10000;
+              if (tag.startsWith("D")) return parseInt(tag.replace("D", ""));
+              return 999999;
+            };
+            return getTagValue(a.deliveryTag) - getTagValue(b.deliveryTag);
+          });
 
-          // Sort SOS Deliveries First
-          const sortedSOS = await sortDeliveriesByTime(
-            currentLoc[0],
-            currentLoc[1],
-            sosDeliveries
-          );
-
-          // Update Origin to the last SOS Drop-off
-          const nextOrigin =
-            sortedSOS.length > 0
-              ? [
-                  sortedSOS[sortedSOS.length - 1].lat,
-                  sortedSOS[sortedSOS.length - 1].lng,
-                ]
-              : currentLoc;
-
-          // Cascade Standard Deliveries from there
-          const sortedStandard = await sortDeliveriesByTime(
-            nextOrigin[0],
-            nextOrigin[1],
-            standardDeliveries
-          );
-
-          const sortedDeliveries = [...sortedSOS, ...sortedStandard];
+          const sortedDeliveries = [...deliveries];
 
           AppState.activeQueue = [
             ...AppState.activeQueue.filter((q) => q.type === "pickup"),
@@ -4511,6 +4574,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 ${connectHTML}
                 <div class="node-header">
                   <strong>${node.title}</strong>
+                  
+                  ${
+                    node.deliveryTag
+                      ? `<span style="background: ${
+                          node.deliveryTag.startsWith("ED")
+                            ? "var(--danger)"
+                            : "var(--accent)"
+                        }; color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.4); margin-left: 10px;">TAG: ${
+                          node.deliveryTag
+                        }</span>`
+                      : ""
+                  }
+                  
+                  
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
 
@@ -4581,6 +4658,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 ${connectHTML}
                 <div class="node-header">
                   <strong>${node.title}</strong>
+                  
+                  ${
+                    node.deliveryTag
+                      ? `<span style="background: ${
+                          node.deliveryTag.startsWith("ED")
+                            ? "var(--danger)"
+                            : "var(--accent)"
+                        }; color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.4); margin-left: 10px;">TAG: ${
+                          node.deliveryTag
+                        }</span>`
+                      : ""
+                  }
+                  
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Rural Route Drop-off</p>
 
