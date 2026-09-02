@@ -4054,7 +4054,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               });
 
               tempQueue.forEach((q) => {
-                if (q.type === "pickup" && tagMap[q.dbId]) {
+                if (tagMap[q.dbId]) {
                   q.deliveryTag = tagMap[q.dbId];
                 }
               });
