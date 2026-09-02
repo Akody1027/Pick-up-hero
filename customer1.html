@@ -18,13 +18,13 @@
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
 
-    <link
-      rel="stylesheet" 
+    <link 
+      rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
- 
-    <script src="https://js.stripe.com/v3/"></script>
 
+    <script src="https://js.stripe.com/v3/"></script>
+ 
     <style>
       :root {
         --bg: #121212;
@@ -782,7 +782,7 @@
         border-top: 1px solid var(--border);
         align-items: center;
         padding-bottom: calc(15px + env(safe-area-inset-bottom));
-        padding-right:10%;
+        padding-right: 10%;
       }
       .chat-input-area input {
         flex: 1;
@@ -993,10 +993,7 @@
         cursor: pointer;
         padding: 0;
       }
-      
-      
-      
-      
+
       /* --- COMMUNITY HUB UI --- */
       .community-triangle-wrapper {
         position: fixed;
@@ -1017,7 +1014,8 @@
         border-right: 90px solid transparent;
       }
       .community-triangle-wrapper.active {
-        transform: translate(calc(100vw - 90px), calc(100vh - 90px)) rotate(180deg);
+        transform: translate(calc(100vw - 90px), calc(100vh - 90px))
+          rotate(180deg);
       }
       .community-triangle-icon {
         position: absolute;
@@ -1083,44 +1081,24 @@
         margin-top: 10px;
         border: 1px solid var(--border);
       }
-      
-      
-      
-      
-      
-      
-      
     </style>
   </head>
   <body>
     <!-- GLOBAL ACTIVITY RIBBON -->
     <div id="globalActivityRibbon" class="activity-ribbon"></div>
-    
-    
-    
-    
-    <!-- COMMUNITY HUB TRIGGER & TOOLTIP -->
-    <div class="community-triangle-wrapper" id="communityTriggerBtn" onclick="toggleCommunityFeed()">
-      <img src="socialicon.PNG" class="community-triangle-icon" alt="Community" />
-    </div>
 
-    <div class="community-tooltip-anchor" id="communityTooltipAnchor">
-      <div class="tooltip-icon-btn glowing-pin" onclick="toggleCommunityTooltip(event)">?</div>
-      <div id="communityTooltipBox" class="tooltip-box" style="top: 35px; bottom: auto; left: 0; transform-origin: top left;">
-        <h4>
-          Neighborhood Hub
-          <button class="tooltip-close-icon" onclick="toggleCommunityTooltip(event)">✕</button>
-        </h4>
-        <p>Welcome to the Neighborhood Hub! This is your local space to connect with Pickup Hero drivers, share delivery reviews, ask questions, or even drop digital coupons for the community. Keep it friendly and local!</p>
-      </div>
+    <!-- COMMUNITY HUB TRIGGER -->
+    <div
+      class="community-triangle-wrapper"
+      id="communityTriggerBtn"
+      onclick="toggleCommunityFeed()"
+    >
+      <img
+        src="socialicon.PNG"
+        class="community-triangle-icon"
+        alt="Community"
+      />
     </div>
-    
-    
-    
-    
-    
-    
-    
 
     <!-- PWA INSTALL PROMPT -->
     <div
@@ -2264,41 +2242,92 @@
         </button>
       </div>
     </div>
-    
-    
-    
+
     <!-- COMMUNITY FEED MODAL -->
     <div id="communityModal" class="modal">
       <div class="modal-header">
         <div>
           <h2 id="communityHeaderTitle">Neighborhood Hub</h2>
-          <span style="font-size: 0.8rem; color: var(--text-muted)">Local community feed</span>
+          <span style="font-size: 0.8rem; color: var(--text-muted)"
+            >Local community feed</span
+          >
         </div>
+        
+        
+        
+        <div style="position: relative; display: flex; align-items: center; justify-content: flex-end;">
+          <div class="tooltip-icon-btn glowing-pin" onclick="toggleCommunityTooltip(event)" style="margin: 0; width: 32px; height: 32px;">?</div>
+          <div id="communityTooltipBox" class="tooltip-box" style="top: 45px; right: 0; bottom: auto; left: auto; transform-origin: top right; z-index: 2100;">
+            <h4>
+              Neighborhood Hub
+              <button class="tooltip-close-icon" onclick="toggleCommunityTooltip(event)">✕</button>
+            </h4>
+            <p>Welcome to the Neighborhood Hub! This is your local space to connect with Pickup Hero drivers, share delivery reviews, ask questions, or even drop digital coupons for the community. Keep it friendly and local!</p>
+          </div>
+        </div>
+        
+        
+        
+        
+        
+
         <!-- Empty 36px div perfectly balances the flex-between layout since the close action is handled by the triangle -->
-        <div style="width: 36px;"></div> 
+        <div style="width: 36px"></div>
       </div>
+      
+      
+      
+      
+      
 
       <div class="community-messages" id="communityFeedContainer">
         <!-- Messages populate here -->
       </div>
 
       <div class="chat-input-area" id="communityInputArea">
-        <label style="cursor: pointer; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--surface-elevated); border-radius: 50%; flex-shrink: 0; transition: background 0.2s;">
-          <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: var(--text-muted)"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-          <input type="file" id="communityImageInput" accept="image/*" style="display: none" onchange="handleCommunityImageUpload(event)" />
+        <label
+          style="
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: var(--surface-elevated);
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: background 0.2s;
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 22px; height: 22px; fill: var(--text-muted)"
+          >
+            <path
+              d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+            />
+          </svg>
+          <input
+            type="file"
+            id="communityImageInput"
+            accept="image/*"
+            style="display: none"
+            onchange="handleCommunityImageUpload(event)"
+          />
         </label>
 
-        <input type="text" id="communityTextInput" placeholder="Share a message..." />
+        <input
+          type="text"
+          id="communityTextInput"
+          placeholder="Share a message..."
+        />
         <button class="chat-send-btn" onclick="sendCommunityMessage()">
-          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          <svg viewBox="0 0 24 24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          </svg>
         </button>
       </div>
     </div>
-    
-    
-    
-    
-    
 
     <!-- LEAFLET MAP JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -5631,23 +5660,20 @@
           alert("Failed to send message.");
         }
       };
-      
-      
-      
+
       // --- COMMUNITY HUB LOGIC ---
       window.communityUnsubscribe = null;
       window.communityPendingImage = null;
-
+      
+      
       window.toggleCommunityFeed = function () {
         const trigger = document.getElementById("communityTriggerBtn");
         const modal = document.getElementById("communityModal");
-        const tooltipAnchor = document.getElementById("communityTooltipAnchor");
         const isActive = trigger.classList.contains("active");
 
         if (!isActive) {
           trigger.classList.add("active");
           modal.classList.add("active");
-          if (tooltipAnchor) tooltipAnchor.classList.add("hidden");
           
           if (!window.communityUnsubscribe && window.appState && window.appState.userId) {
             window.initCommunityListener();
@@ -5661,9 +5687,16 @@
         } else {
           trigger.classList.remove("active");
           modal.classList.remove("active");
-          if (tooltipAnchor) tooltipAnchor.classList.remove("hidden");
         }
       };
+      
+      
+
+      
+      
+      
+      
+      
 
       window.toggleCommunityTooltip = function (event) {
         if (event) event.stopPropagation();
@@ -5673,9 +5706,14 @@
 
       document.addEventListener("click", function (event) {
         const box = document.getElementById("communityTooltipBox");
-        const btn = document.querySelector("#communityTooltipAnchor .tooltip-icon-btn");
+        const btn = document.querySelector(
+          "#communityTooltipAnchor .tooltip-icon-btn"
+        );
         if (box && box.classList.contains("active")) {
-          if (!box.contains(event.target) && (!btn || !btn.contains(event.target))) {
+          if (
+            !box.contains(event.target) &&
+            (!btn || !btn.contains(event.target))
+          ) {
             box.classList.remove("active");
           }
         }
@@ -5693,21 +5731,23 @@
             const ctx = canvas.getContext("2d");
             const maxW = 600;
             const scale = img.width > maxW ? maxW / img.width : 1;
-            
+
             canvas.width = img.width * scale;
             canvas.height = img.height * scale;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
             window.communityPendingImage = canvas.toDataURL("image/jpeg", 0.6);
-            
-            const inputLabel = document.querySelector("#communityInputArea label");
+
+            const inputLabel = document.querySelector(
+              "#communityInputArea label"
+            );
             inputLabel.style.background = "var(--accent)";
             inputLabel.querySelector("svg").style.fill = "white";
           };
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
-        event.target.value = ""; 
+        event.target.value = "";
       };
 
       window.sendCommunityMessage = async function () {
@@ -5718,14 +5758,16 @@
 
         const input = document.getElementById("communityTextInput");
         const text = input.value.trim();
-        
+
         if (!text && !window.communityPendingImage) return;
 
         input.disabled = true;
 
         try {
           let authorName = "Neighbor";
-          const userDoc = await window.getDoc(window.doc(window.db, "users", window.appState.userId));
+          const userDoc = await window.getDoc(
+            window.doc(window.db, "users", window.appState.userId)
+          );
           if (userDoc.exists() && userDoc.data().fullName) {
             authorName = userDoc.data().fullName;
           }
@@ -5735,18 +5777,22 @@
             authorName: authorName,
             text: text || "",
             imageUrl: window.communityPendingImage || null,
-            status: "active", 
-            timestamp: window.serverTimestamp()
+            status: "active",
+            timestamp: window.serverTimestamp(),
           };
 
-          await window.addDoc(window.collection(window.db, "community_posts"), payload);
+          await window.addDoc(
+            window.collection(window.db, "community_posts"),
+            payload
+          );
 
           input.value = "";
           window.communityPendingImage = null;
-          const inputLabel = document.querySelector("#communityInputArea label");
+          const inputLabel = document.querySelector(
+            "#communityInputArea label"
+          );
           inputLabel.style.background = "var(--surface-elevated)";
           inputLabel.querySelector("svg").style.fill = "var(--text-muted)";
-
         } catch (e) {
           console.error("Failed to post message:", e);
           alert("Failed to send message. Please check your connection.");
@@ -5764,49 +5810,65 @@
           window.orderBy("timestamp", "asc")
         );
 
-        window.communityUnsubscribe = window.onSnapshot(q, (snapshot) => {
-          const container = document.getElementById("communityFeedContainer");
-          let html = "";
-          let validPostsFound = false;
+        window.communityUnsubscribe = window.onSnapshot(
+          q,
+          (snapshot) => {
+            const container = document.getElementById("communityFeedContainer");
+            let html = "";
+            let validPostsFound = false;
 
-          snapshot.docs.forEach((docSnap) => {
-            const post = docSnap.data();
-            
-            if (post.status !== "active") return; 
-            validPostsFound = true;
-            
-            const timeString = post.timestamp
-              ? new Date(post.timestamp.toDate()).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
-              : "Posting...";
- 
-            html += `
+            snapshot.docs.forEach((docSnap) => {
+              const post = docSnap.data();
+
+              if (post.status !== "active") return;
+              validPostsFound = true;
+
+              const timeString = post.timestamp
+                ? new Date(post.timestamp.toDate()).toLocaleDateString([], {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Posting...";
+
+              html += `
               <div class="community-post">
                 <div class="community-post-header">
-                  <span class="community-post-author">${post.authorName || "Neighbor"}</span>
+                  <span class="community-post-author">${
+                    post.authorName || "Neighbor"
+                  }</span>
                   <span class="community-post-time">${timeString}</span>
                 </div>
-                ${post.imageUrl ? `<img src="${post.imageUrl}" class="community-post-image">` : ""}
-                ${post.text ? `<div class="community-post-text">${post.text}</div>` : ""}
+                ${
+                  post.imageUrl
+                    ? `<img src="${post.imageUrl}" class="community-post-image">`
+                    : ""
+                }
+                ${
+                  post.text
+                    ? `<div class="community-post-text">${post.text}</div>`
+                    : ""
+                }
               </div>
             `;
-          });
+            });
 
-          container.innerHTML = validPostsFound ? html : `
+            container.innerHTML = validPostsFound
+              ? html
+              : `
             <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
               Be the first to post in the Neighborhood Hub!
             </div>
           `;
-          
-          container.scrollTop = container.scrollHeight;
-        }, (error) => {
-          console.error("Error loading community feed:", error);
-        });
+
+            container.scrollTop = container.scrollHeight;
+          },
+          (error) => {
+            console.error("Error loading community feed:", error);
+          }
+        );
       };
-      
-      
-      
-      
-      
 
       // --- PWA INSTALLATION PROMPT ---
       let deferredInstallPrompt = null;
