@@ -4299,9 +4299,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             return updateDashboardUI();
           }
 
-          gTitle.innerText = `En Route: ${nextDelivery.title}`;
-          gSub.innerText = "Navigating to drop-off.";
+          let tagBadge = "";
+          if (nextDelivery.deliveryTag) {
+            const isEmergency = nextDelivery.deliveryTag.startsWith("ED");
+            tagBadge = `<span style="background: ${
+              isEmergency ? "var(--danger)" : "var(--accent)"
+            }; color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.4); margin-left: 10px; vertical-align: middle;">TAG: ${
+              nextDelivery.deliveryTag
+            }</span>`;
+          }
+
+          gTitle.innerHTML = `En Route: ${nextDelivery.title} ${tagBadge}`;
+          gSub.innerText = "Match the tag to the bag and navigate to drop-off.";
           wfBtn.innerText = "Delivered Next Stop";
+
           wfBtn.className = "btn btn-success";
           wfBtn.style.display = "block";
 
