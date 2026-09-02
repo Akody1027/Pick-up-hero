@@ -22,7 +22,7 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
-
+ 
     <script src="https://js.stripe.com/v3/"></script>
 
     <style>
@@ -2197,7 +2197,59 @@
         <!-- Messages populate here -->
       </div>
 
-      <div class="chat-input-area">
+      <div
+        class="chat-input-area"
+        id="communityInputArea"
+        style="position: relative"
+      >
+        <!-- FLOATING THUMBNAIL PREVIEW -->
+        <div
+          id="communityImagePreviewContainer"
+          style="
+            display: none;
+            position: absolute;
+            bottom: 75px;
+            left: 15px;
+            z-index: 2100;
+          "
+        >
+          <img
+            id="communityImagePreview"
+            src=""
+            style="
+              width: 65px;
+              height: 65px;
+              object-fit: cover;
+              border-radius: 8px;
+              border: 2px solid var(--accent);
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            "
+          />
+          <button
+            onclick="removeCommunityImage(event)"
+            style="
+              position: absolute;
+              top: -8px;
+              right: -8px;
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              background: var(--danger);
+              color: white;
+              border: none;
+              font-size: 0.8rem;
+              font-weight: bold;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            "
+          >
+            ✕
+          </button>
+        </div>
+
         <label
           style="
             cursor: pointer;
@@ -2209,6 +2261,7 @@
             background: var(--surface-elevated);
             border-radius: 50%;
             flex-shrink: 0;
+            transition: background 0.2s;
           "
         >
           <svg
@@ -5749,6 +5802,12 @@
 
             window.communityPendingImage = canvas.toDataURL("image/jpeg", 0.6);
 
+            document.getElementById("communityImagePreview").src =
+              window.communityPendingImage;
+            document.getElementById(
+              "communityImagePreviewContainer"
+            ).style.display = "block";
+
             const inputLabel = document.querySelector(
               "#communityInputArea label"
             );
@@ -5759,6 +5818,21 @@
         };
         reader.readAsDataURL(file);
         event.target.value = "";
+      };
+
+      window.removeCommunityImage = function (event) {
+        if (event) event.preventDefault();
+
+        window.communityPendingImage = null;
+        document.getElementById(
+          "communityImagePreviewContainer"
+        ).style.display = "none";
+        document.getElementById("communityImagePreview").src = "";
+        document.getElementById("communityImageInput").value = "";
+
+        const inputLabel = document.querySelector("#communityInputArea label");
+        inputLabel.style.background = "var(--surface-elevated)";
+        inputLabel.querySelector("svg").style.fill = "var(--text-muted)";
       };
 
       window.sendCommunityMessage = async function () {
@@ -5799,6 +5873,13 @@
 
           input.value = "";
           window.communityPendingImage = null;
+
+          document.getElementById(
+            "communityImagePreviewContainer"
+          ).style.display = "none";
+          document.getElementById("communityImagePreview").src = "";
+          document.getElementById("communityImageInput").value = "";
+
           const inputLabel = document.querySelector(
             "#communityInputArea label"
           );
