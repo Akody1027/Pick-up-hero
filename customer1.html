@@ -20,8 +20,8 @@
 
     <link
       rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
-    /> 
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
 
     <script src="https://js.stripe.com/v3/"></script>
 
@@ -2197,7 +2197,59 @@
         <!-- Messages populate here -->
       </div>
 
-      <div class="chat-input-area">
+      <div
+        class="chat-input-area"
+        id="chatInputArea"
+        style="position: relative"
+      >
+        <!-- FLOATING THUMBNAIL PREVIEW -->
+        <div
+          id="chatImagePreviewContainer"
+          style="
+            display: none;
+            position: absolute;
+            bottom: 75px;
+            left: 15px;
+            z-index: 2100;
+          "
+        >
+          <img
+            id="chatImagePreview"
+            src=""
+            style="
+              width: 65px;
+              height: 65px;
+              object-fit: cover;
+              border-radius: 8px;
+              border: 2px solid var(--accent);
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            "
+          />
+          <button
+            onclick="removeChatImage(event)"
+            style="
+              position: absolute;
+              top: -8px;
+              right: -8px;
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              background: var(--danger);
+              color: white;
+              border: none;
+              font-size: 0.8rem;
+              font-weight: bold;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            "
+          >
+            ✕
+          </button>
+        </div>
+
         <label
           style="
             cursor: pointer;
@@ -2209,6 +2261,7 @@
             background: var(--surface-elevated);
             border-radius: 50%;
             flex-shrink: 0;
+            transition: background 0.2s;
           "
         >
           <svg
@@ -2301,7 +2354,59 @@
         <!-- Messages populate here -->
       </div>
 
-      <div class="chat-input-area" id="communityInputArea">
+      <div
+        class="chat-input-area"
+        id="communityInputArea"
+        style="position: relative"
+      >
+        <!-- FLOATING THUMBNAIL PREVIEW -->
+        <div
+          id="communityImagePreviewContainer"
+          style="
+            display: none;
+            position: absolute;
+            bottom: 75px;
+            left: 15px;
+            z-index: 2100;
+          "
+        >
+          <img
+            id="communityImagePreview"
+            src=""
+            style="
+              width: 65px;
+              height: 65px;
+              object-fit: cover;
+              border-radius: 8px;
+              border: 2px solid var(--accent);
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            "
+          />
+          <button
+            onclick="removeCommunityImage(event)"
+            style="
+              position: absolute;
+              top: -8px;
+              right: -8px;
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              background: var(--danger);
+              color: white;
+              border: none;
+              font-size: 0.8rem;
+              font-weight: bold;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            "
+          >
+            ✕
+          </button>
+        </div>
+
         <label
           style="
             cursor: pointer;
@@ -4125,6 +4230,8 @@
 
       // --- SESSION & MULTI-STOP LOGIC ---
 
+      window.chatPendingImage = null;
+
       window.handleChatImageUpload = function (event) {
         const file = event.target.files[0];
         if (!file || !window.appState.currentOrderId) return;
@@ -4132,7 +4239,7 @@
         const reader = new FileReader();
         reader.onload = function (e) {
           const img = new Image();
-          img.onload = async function () {
+          img.onload = function () {
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
 
@@ -4142,34 +4249,36 @@
             canvas.height = img.height * scale;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
+            window.chatPendingImage = canvas.toDataURL("image/jpeg", 0.6);
 
-            try {
-              await window.addDoc(
-                window.collection(
-                  window.db,
-                  "orders",
-                  window.appState.currentOrderId,
-                  "messages"
-                ),
-                {
-                  senderId: window.appState.userId,
-                  text: "📷 Image attached",
-                  imageUrl: compressedBase64,
-                  timestamp: window.serverTimestamp(),
-                  read: false,
-                }
-              );
-            } catch (err) {
-              console.error("Failed to send image:", err);
-              alert("Failed to send image.");
-            }
+            document.getElementById("chatImagePreview").src =
+              window.chatPendingImage;
+            document.getElementById("chatImagePreviewContainer").style.display =
+              "block";
+
+            const inputLabel = document.querySelector("#chatInputArea label");
+            inputLabel.style.background = "var(--accent)";
+            inputLabel.querySelector("svg").style.fill = "white";
           };
 
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
-        event.target.value = ""; // Reset file path to allow repeat identical uploads
+        event.target.value = "";
+      };
+
+      window.removeChatImage = function (event) {
+        if (event) event.preventDefault();
+
+        window.chatPendingImage = null;
+        document.getElementById("chatImagePreviewContainer").style.display =
+          "none";
+        document.getElementById("chatImagePreview").src = "";
+        document.getElementById("chatImageInput").value = "";
+
+        const inputLabel = document.querySelector("#chatInputArea label");
+        inputLabel.style.background = "var(--surface-elevated)";
+        inputLabel.querySelector("svg").style.fill = "var(--text-muted)";
       };
 
       window.checkActiveSession = function () {
@@ -5653,9 +5762,14 @@
       window.sendChatMessage = async function () {
         const input = document.getElementById("chatTextInput");
         const text = input.value.trim();
-        if (!text || !window.appState.currentOrderId) return;
 
-        input.value = "";
+        if (
+          (!text && !window.chatPendingImage) ||
+          !window.appState.currentOrderId
+        )
+          return;
+
+        input.disabled = true;
 
         try {
           await window.addDoc(
@@ -5667,14 +5781,30 @@
             ),
             {
               senderId: window.appState.userId,
-              text: text,
+              text: text || "📷 Image attached",
+              imageUrl: window.chatPendingImage || null,
               timestamp: window.serverTimestamp(),
               read: false,
             }
           );
+
+          input.value = "";
+          window.chatPendingImage = null;
+
+          document.getElementById("chatImagePreviewContainer").style.display =
+            "none";
+          document.getElementById("chatImagePreview").src = "";
+          document.getElementById("chatImageInput").value = "";
+
+          const inputLabel = document.querySelector("#chatInputArea label");
+          inputLabel.style.background = "var(--surface-elevated)";
+          inputLabel.querySelector("svg").style.fill = "var(--text-muted)";
         } catch (e) {
           console.error("Failed to send message:", e);
           alert("Failed to send message.");
+        } finally {
+          input.disabled = false;
+          input.focus();
         }
       };
 
