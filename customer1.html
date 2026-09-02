@@ -18,13 +18,13 @@
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
 
-    <link 
+    <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
 
     <script src="https://js.stripe.com/v3/"></script>
- 
+
     <style>
       :root {
         --bg: #121212;
@@ -2252,33 +2252,45 @@
             >Local community feed</span
           >
         </div>
-        
-        
-        
-        <div style="position: relative; display: flex; align-items: center; justify-content: flex-end;">
-          <div class="tooltip-icon-btn glowing-pin" onclick="toggleCommunityTooltip(event)" style="margin: 0; width: 32px; height: 32px;">?</div>
-          <div id="communityTooltipBox" class="tooltip-box" style="top: 45px; right: 0; bottom: auto; left: auto; transform-origin: top right; z-index: 2100;">
+
+        <div style="position: relative; display: flex; align-items: center">
+          <div
+            class="tooltip-icon-btn glowing-pin"
+            onclick="toggleCommunityTooltip(event)"
+            style="margin: 0; width: 32px; height: 32px"
+          >
+            ?
+          </div>
+          <div
+            id="communityTooltipBox"
+            class="tooltip-box"
+            style="
+              top: 45px;
+              right: 0;
+              bottom: auto;
+              left: auto;
+              transform-origin: top right;
+              z-index: 2100;
+            "
+          >
             <h4>
               Neighborhood Hub
-              <button class="tooltip-close-icon" onclick="toggleCommunityTooltip(event)">✕</button>
+              <button
+                class="tooltip-close-icon"
+                onclick="toggleCommunityTooltip(event)"
+              >
+                ✕
+              </button>
             </h4>
-            <p>Welcome to the Neighborhood Hub! This is your local space to connect with Pickup Hero drivers, share delivery reviews, ask questions, or even drop digital coupons for the community. Keep it friendly and local!</p>
+            <p>
+              Welcome to the Neighborhood Hub! This is your local space to
+              connect with Pickup Hero drivers, share delivery reviews, ask
+              questions, or even drop digital coupons for the community. Keep it
+              friendly and local!
+            </p>
           </div>
         </div>
-        
-        
-        
-        
-        
-
-        <!-- Empty 36px div perfectly balances the flex-between layout since the close action is handled by the triangle -->
-        <div style="width: 36px"></div>
       </div>
-      
-      
-      
-      
-      
 
       <div class="community-messages" id="communityFeedContainer">
         <!-- Messages populate here -->
@@ -5664,8 +5676,7 @@
       // --- COMMUNITY HUB LOGIC ---
       window.communityUnsubscribe = null;
       window.communityPendingImage = null;
-      
-      
+
       window.toggleCommunityFeed = function () {
         const trigger = document.getElementById("communityTriggerBtn");
         const modal = document.getElementById("communityModal");
@@ -5674,8 +5685,12 @@
         if (!isActive) {
           trigger.classList.add("active");
           modal.classList.add("active");
-          
-          if (!window.communityUnsubscribe && window.appState && window.appState.userId) {
+
+          if (
+            !window.communityUnsubscribe &&
+            window.appState &&
+            window.appState.userId
+          ) {
             window.initCommunityListener();
           } else if (!window.appState || !window.appState.userId) {
             document.getElementById("communityFeedContainer").innerHTML = `
@@ -5689,14 +5704,6 @@
           modal.classList.remove("active");
         }
       };
-      
-      
-
-      
-      
-      
-      
-      
 
       window.toggleCommunityTooltip = function (event) {
         if (event) event.stopPropagation();
