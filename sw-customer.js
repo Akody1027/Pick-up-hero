@@ -1,6 +1,6 @@
 const CACHE_NAME = "pickuphero-cust-v1";
 const STATIC_ASSETS = [
-  "./cust.html",
+  "./customer.html",
   "./manifest-customer.json",
   "./Roadwatchero.mp3",
   "./heroimg192.png",
