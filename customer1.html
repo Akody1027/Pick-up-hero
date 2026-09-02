@@ -1013,10 +1013,15 @@
         border-top: 90px solid var(--accent);
         border-right: 90px solid transparent;
       }
+
       .community-triangle-wrapper.active {
-        transform: translate(calc(100vw - 90px), calc(100vh - 90px))
+        transform: translate(
+            calc(100vw - 90px),
+            calc(100dvh - 90px - env(safe-area-inset-bottom, 15px))
+          )
           rotate(180deg);
       }
+
       .community-triangle-icon {
         position: absolute;
         top: 15px;
@@ -5713,9 +5718,8 @@
 
       document.addEventListener("click", function (event) {
         const box = document.getElementById("communityTooltipBox");
-        const btn = document.querySelector(
-          "#communityTooltipAnchor .tooltip-icon-btn"
-        );
+        // Target the button inside the modal header instead of the deleted anchor
+        const btn = document.querySelector("#communityModal .tooltip-icon-btn");
         if (box && box.classList.contains("active")) {
           if (
             !box.contains(event.target) &&
