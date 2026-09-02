@@ -5976,7 +5976,7 @@
 
         const q = window.query(
           window.collection(window.db, "community_posts"),
-          window.orderBy("timestamp", "asc")
+          window.orderBy("timestamp", "desc")
         );
 
         window.communityUnsubscribe = window.onSnapshot(
@@ -6031,7 +6031,7 @@
             </div>
           `;
 
-            container.scrollTop = container.scrollHeight;
+            container.scrollTop = 0;
           },
           (error) => {
             console.error("Error loading community feed:", error);
