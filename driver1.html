@@ -2724,16 +2724,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 data.globalCutoffMinutes;
             }
 
-
-                        if (data.deliveryZone && data.deliveryZone.length > 2) {
+            if (data.deliveryZone && data.deliveryZone.length > 2) {
               AppState.deliveryZone = data.deliveryZone;
-              if (AppState.zonePolygon) AppState.mapInstance.removeLayer(AppState.zonePolygon);
-              AppState.zonePolygon = L.polygon(AppState.deliveryZone, {color: 'var(--accent)', fillOpacity: 0.1, weight: 2}).addTo(AppState.mapInstance);
+              if (AppState.zonePolygon)
+                AppState.mapInstance.removeLayer(AppState.zonePolygon);
+              AppState.zonePolygon = L.polygon(AppState.deliveryZone, {
+                color: "var(--accent)",
+                fillOpacity: 0.1,
+                weight: 2,
+              }).addTo(AppState.mapInstance);
             }
-
-
-
-
 
             if (data.weeklyRoutine) {
               AppState.weeklyRoutine = data.weeklyRoutine;
@@ -3259,11 +3259,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               baseLat: primaryBase.lat,
               baseLng: primaryBase.lng,
 
+              deliveryZone: AppState.deliveryZone || [],
               globalCutoffMinutes:
-
-                deliveryZone: AppState.deliveryZone || [],
                 parseInt(document.getElementById("globalCutoffInput").value) ||
                 30,
+
               weeklyRoutine: AppState.weeklyRoutine,
             },
             { merge: true }
