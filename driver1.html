@@ -2902,7 +2902,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
         AppState.mapInstance.on("click", function (e) {
           if (AppState.isDrawingZone) {
-            AppState.deliveryZone.push([e.latlng.lat, e.latlng.lng]);
+            AppState.deliveryZone.push({
+              lat: e.latlng.lat,
+              lng: e.latlng.lng,
+            });
+
             if (AppState.zoneTempLine) {
               AppState.zoneTempLine.setLatLngs(AppState.deliveryZone);
             } else {
