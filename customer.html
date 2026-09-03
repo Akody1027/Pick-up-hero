@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Pick Up Hero - Delivery</title> 
+    <title>Pick Up Hero - Delivery</title>
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -18,7 +18,7 @@
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
 
-    <link
+    <link 
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
@@ -1283,6 +1283,93 @@
     <div id="map"></div>
 
     <!-- TOP NOTIFICATION BELL -->
+
+    <!-- MAP LEGEND (Top Left) -->
+    <div
+      id="mapLegend"
+      style="
+        position: absolute;
+        top: calc(env(safe-area-inset-top, 20px) + 40px);
+
+             
+        left: 60px;
+        z-index: 1000;
+        background: var(--surface-elevated);
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      "
+    >
+      <div style="display: flex; align-items: center; gap: 8px">
+        <img
+          src="cart1.png"
+          style="width: 24px; height: 24px; object-fit: contain"
+        />
+        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text)"
+          >Optimal Pickup Area</span
+        >
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <div
+          style="
+            width: 20px;
+            height: 20px;
+            background: rgba(238, 97, 28, 0.1);
+            border: 2px solid var(--accent);
+            border-radius: 4px;
+          "
+        ></div>
+        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text)"
+          >Optimal Delivery Area</span
+        >
+      </div>
+    </div>
+
+    <!-- ZONE HELP TOOLTIP (Below Bell) -->
+    <div
+      style="
+        position: absolute;
+        top: calc(env(safe-area-inset-top, 20px) + 65px);
+        right: 20px;
+        z-index: 1500;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      "
+    >
+      <div
+        id="zoneTooltipBtn"
+        class="tooltip-icon-btn glowing-pin"
+        onclick="toggleZoneTooltip(event)"
+      >
+        ?
+      </div>
+      <div
+        id="zoneTooltipBox"
+        class="tooltip-box"
+        style="top: 35px; right: 0; bottom: auto; transform-origin: top right"
+      >
+        <h4>
+          Optimal Delivery Area
+          <button class="tooltip-close-icon" onclick="toggleZoneTooltip(event)">
+            ✕
+          </button>
+        </h4>
+        <p>
+          This highlighted zone represents your Hero's preferred delivery route.
+          <strong
+            >If your address falls outside this boundary, you are not
+            excluded!</strong
+          >
+          You may still submit your request, and your Hero will review it.
+        </p>
+      </div>
+    </div>
+
     <div class="top-controls">
       <!-- GLOBAL ACTIVITY SPINNER -->
       <div id="globalActivitySpinner" class="activity-spinner"></div>
@@ -3583,6 +3670,25 @@
 
       // Utils
 
+      window.toggleZoneTooltip = function (event) {
+        if (event) event.stopPropagation();
+        const box = document.getElementById("zoneTooltipBox");
+        if (box) box.classList.toggle("active");
+      };
+
+      document.addEventListener("click", function (event) {
+        const box = document.getElementById("zoneTooltipBox");
+        const btn = document.getElementById("zoneTooltipBtn");
+        if (box && box.classList.contains("active")) {
+          if (
+            !box.contains(event.target) &&
+            (!btn || !btn.contains(event.target))
+          ) {
+            box.classList.remove("active");
+          }
+        }
+      });
+
       window.togglePriorityTooltip = function (event) {
         if (event) event.stopPropagation();
         const box = document.getElementById("priorityTooltipBox");
@@ -3922,6 +4028,8 @@
       window.baseMarkers = {};
       window.liveMarkers = {};
 
+      window.zonePolygons = {};
+
       window.selectHero = function (
         driverId,
         profilePic,
@@ -3989,6 +4097,12 @@
                       );
                     }
                     window.baseMarkers[driverId] = [];
+
+                    if (window.zonePolygons && window.zonePolygons[driverId]) {
+                      map.removeLayer(window.zonePolygons[driverId]);
+                      delete window.zonePolygons[driverId];
+                    }
+
                     return;
                   }
 
@@ -4020,6 +4134,24 @@
                       );
                     }
                     window.baseMarkers[driverId] = [];
+
+                    if (window.zonePolygons[driverId]) {
+                      map.removeLayer(window.zonePolygons[driverId]);
+                    }
+                    if (
+                      settingsData.deliveryZone &&
+                      settingsData.deliveryZone.length > 2
+                    ) {
+                      window.zonePolygons[driverId] = L.polygon(
+                        settingsData.deliveryZone,
+                        {
+                          color: "var(--accent)",
+                          fillOpacity: 0.1,
+                          weight: 2,
+                          interactive: false,
+                        }
+                      ).addTo(map);
+                    }
 
                     locations.forEach((loc) => {
                       const marker = L.marker([loc.lat, loc.lng], {
@@ -4330,6 +4462,17 @@
                   if (!map.hasLayer(m)) m.addTo(map);
                 }
               });
+            }
+          }
+
+          // 1.5 Toggle Boundary Polygons
+          if (window.zonePolygons) {
+            for (const [dId, polygon] of Object.entries(window.zonePolygons)) {
+              if (tracking && dId !== assignedId) {
+                if (map.hasLayer(polygon)) map.removeLayer(polygon);
+              } else {
+                if (!map.hasLayer(polygon)) polygon.addTo(map);
+              }
             }
           }
 
