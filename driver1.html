@@ -24,7 +24,7 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
- 
+
     <style>
       :root {
         --bg: #121212;
@@ -1376,6 +1376,23 @@
       Save Location
     </button>
 
+    <button
+      id="finishZoneBtn"
+      class="btn btn-success floating-lock-btn"
+      onclick="finishDrawingZone()"
+      style="display: none"
+    >
+      Save Zone Shape
+    </button>
+    <button
+      id="clearZoneBtn"
+      class="btn btn-emergency floating-lock-btn"
+      onclick="clearZone()"
+      style="display: none; bottom: 50px"
+    >
+      Clear Zone
+    </button>
+
     <!-- DUTY STATUS LAYER -->
     <div class="duty-toggle-container">
       <button id="dutyToggleBtn" class="duty-btn" onclick="toggleDutyStatus()">
@@ -1670,6 +1687,15 @@
             onclick="addNewBasePin()"
           >
             + Add Location Pin (Max 5)
+          </button>
+
+          <button
+            class="btn btn-secondary"
+            id="drawZoneBtn"
+            onclick="startDrawingZone()"
+            style="margin-top: 10px"
+          >
+            + Draw Visual Delivery Zone
           </button>
         </div>
 
@@ -2400,6 +2426,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         mapInstance: null,
         homeMarker: null,
         layerGroup: null, // holds dynamic pins and lines
+
+        deliveryZone: [],
+        zonePolygon: null,
+        isDrawingZone: false,
+        zoneTempLine: null,
       };
 
       // Initialize UI and Map
@@ -2693,6 +2724,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 data.globalCutoffMinutes;
             }
 
+
+                        if (data.deliveryZone && data.deliveryZone.length > 2) {
+              AppState.deliveryZone = data.deliveryZone;
+              if (AppState.zonePolygon) AppState.mapInstance.removeLayer(AppState.zonePolygon);
+              AppState.zonePolygon = L.polygon(AppState.deliveryZone, {color: 'var(--accent)', fillOpacity: 0.1, weight: 2}).addTo(AppState.mapInstance);
+            }
+
+
+
+
+
             if (data.weeklyRoutine) {
               AppState.weeklyRoutine = data.weeklyRoutine;
             } else {
@@ -2857,6 +2899,22 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         startTelemetry();
 
         // Hook global activity tracker to map interactions
+
+        AppState.mapInstance.on("click", function (e) {
+          if (AppState.isDrawingZone) {
+            AppState.deliveryZone.push([e.latlng.lat, e.latlng.lng]);
+            if (AppState.zoneTempLine) {
+              AppState.zoneTempLine.setLatLngs(AppState.deliveryZone);
+            } else {
+              AppState.zoneTempLine = L.polyline(AppState.deliveryZone, {
+                color: "var(--accent)",
+                weight: 3,
+                dashArray: "5, 10",
+              }).addTo(AppState.mapInstance);
+            }
+          }
+        });
+
         AppState.mapInstance.on(
           "zoomstart zoomend dragstart dragend movestart moveend",
           window.triggerGlobalActivity
@@ -2996,6 +3054,57 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.lockHomePin = function () {
         if (AppState.tempMarker) {
           const pos = AppState.tempMarker.getLatLng();
+
+          window.startDrawingZone = function () {
+            closeAllModals();
+            AppState.isDrawingZone = true;
+            AppState.deliveryZone = [];
+            if (AppState.zonePolygon) {
+              AppState.mapInstance.removeLayer(AppState.zonePolygon);
+              AppState.zonePolygon = null;
+            }
+            if (AppState.zoneTempLine) {
+              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+              AppState.zoneTempLine = null;
+            }
+            document.getElementById("finishZoneBtn").style.display = "block";
+            document.getElementById("clearZoneBtn").style.display = "block";
+            window.showCustomAlert(
+              "Draw Mode",
+              "Tap the map to drop boundary points. Connect them around your service area."
+            );
+          };
+
+          window.finishDrawingZone = function () {
+            AppState.isDrawingZone = false;
+            document.getElementById("finishZoneBtn").style.display = "none";
+            document.getElementById("clearZoneBtn").style.display = "none";
+            if (AppState.zoneTempLine) {
+              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+              AppState.zoneTempLine = null;
+            }
+            if (AppState.deliveryZone.length > 2) {
+              AppState.zonePolygon = L.polygon(AppState.deliveryZone, {
+                color: "var(--accent)",
+                fillOpacity: 0.1,
+                weight: 2,
+              }).addTo(AppState.mapInstance);
+            } else {
+              AppState.deliveryZone = [];
+            }
+            openModal("scheduleModal");
+          };
+
+          window.clearZone = function () {
+            AppState.deliveryZone = [];
+            if (AppState.zoneTempLine)
+              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+            if (AppState.zonePolygon)
+              AppState.mapInstance.removeLayer(AppState.zonePolygon);
+            AppState.zoneTempLine = null;
+            AppState.zonePolygon = null;
+          };
+
           AppState.baseLocations.push({ lat: pos.lat, lng: pos.lng });
           AppState.mapInstance.removeLayer(AppState.tempMarker);
           AppState.tempMarker = null;
@@ -3151,6 +3260,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               baseLng: primaryBase.lng,
 
               globalCutoffMinutes:
+
+                deliveryZone: AppState.deliveryZone || [],
                 parseInt(document.getElementById("globalCutoffInput").value) ||
                 30,
               weeklyRoutine: AppState.weeklyRoutine,
