@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+IA<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -16,15 +16,15 @@
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
-    /> 
-    <meta name="apple-mobile-web-app-title" content="Hero Driver" /> 
+    />
+    <meta name="apple-mobile-web-app-title" content="Hero Driver" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
 
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
-
+ 
     <style>
       :root {
         --bg: #121212;
@@ -641,7 +641,7 @@
         cursor: pointer;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         transition: background-color 0.3s ease, border-color 0.3s ease;
-        padding-left:60px;
+        padding-left: 60px;
       }
 
       .duty-btn.active {
@@ -964,9 +964,6 @@
         }
       }
 
-      
-      
-      
       /* --- TOOLTIP UI --- */
       .tooltip-icon-btn {
         width: 25px;
@@ -996,7 +993,8 @@
         transform-origin: bottom right;
         transform: scale(0);
         opacity: 0;
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+          opacity 0.2s ease;
         pointer-events: none;
       }
 
@@ -1032,13 +1030,7 @@
         cursor: pointer;
         padding: 0;
       }
-      
-      
-      
-      
-      
-      
-      
+
       /* --- COMMUNITY HUB UI --- */
       .community-triangle-wrapper {
         position: fixed;
@@ -1079,24 +1071,20 @@
       .community-triangle-wrapper.active .community-triangle-icon {
         transform: rotate(-180deg);
       }
-      
+
       #communityTooltipBox {
         opacity: 0;
         transform: scale(0);
         pointer-events: none;
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+          opacity 0.2s ease;
       }
       #communityTooltipBox.active {
         opacity: 1;
         transform: scale(1);
         pointer-events: auto;
       }
-      
-      
-      
-      
-      
-      
+
       .community-messages {
         flex: 1;
         overflow-y: auto;
@@ -1111,10 +1099,7 @@
         border-radius: 12px;
         border-left: 4px solid var(--accent);
       }
-      
-      
-      
-      
+
       .community-post-header {
         display: flex;
         justify-content: space-between;
@@ -2095,6 +2080,37 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
     <!-- COMMUNITY FEED MODAL -->
     <div id="communityModal" class="modal">
+      <!-- DELETE POST CONFIRMATION MODAL -->
+      <div class="soft-prompt-overlay" id="deletePostConfirmModal">
+        <div class="soft-prompt-box">
+          <h3 style="color: var(--danger)">Delete Post?</h3>
+          <p>
+            Are you sure you want to remove this post? This action cannot be
+            undone.
+          </p>
+          <div class="prompt-actions">
+            <button
+              class="btn btn-secondary"
+              style="flex: 1"
+              onclick="cancelDeletePost()"
+            >
+              Cancel
+            </button>
+            <button
+              class="btn btn-primary"
+              style="
+                flex: 1;
+                background: var(--danger);
+                border-color: var(--danger);
+              "
+              onclick="confirmDeletePost()"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="modal-header">
         <div>
           <h2 id="communityHeaderTitle">Neighborhood Hub</h2>
@@ -4927,7 +4943,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 ${connectHTML}
                 <div class="node-header">
                   <strong>${node.title}</strong>
-                  
+
                   ${
                     node.deliveryTag
                       ? `<span style="background: ${
@@ -4939,8 +4955,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                         }</span>`
                       : ""
                   }
-                  
-                  
+
+
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
 
@@ -5011,7 +5027,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 ${connectHTML}
                 <div class="node-header">
                   <strong>${node.title}</strong>
-                  
+
                   ${
                     node.deliveryTag
                       ? `<span style="background: ${
@@ -5023,15 +5039,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                         }</span>`
                       : ""
                   }
-                  
+
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Rural Route Drop-off</p>
 
                 ${AppState.workflowPhase === "delivery" ? navBtnHTML : ""}
-                
+
                 ${extraInfo}
-                
-                
+
+
               </div>
             </li>
           `;
@@ -5539,65 +5555,36 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         inputLabel.querySelector("svg").style.fill = "var(--text-muted)";
       };
 
-      window.sendCommunityMessage = async function () {
-        if (!DRIVER_DOC_ID) {
-          window.showCustomAlert("Error", "You must be signed in to post.");
-          return;
-        }
+      window.communityUnsubscribe = null;
+      window.postToDeleteId = null;
 
-        const input = document.getElementById("communityTextInput");
-        const text = input.value.trim();
+      window.promptDeletePost = function (postId) {
+        window.postToDeleteId = postId;
+        document.getElementById("deletePostConfirmModal").style.display =
+          "flex";
+      };
 
-        if (!text && !window.communityPendingImage) return;
+      window.cancelDeletePost = function () {
+        window.postToDeleteId = null;
+        document.getElementById("deletePostConfirmModal").style.display =
+          "none";
+      };
 
-        input.disabled = true;
+      window.confirmDeletePost = async function () {
+        if (!window.postToDeleteId) return;
 
         try {
-          let authorName = "Hero";
-          const driverDoc = await window.getDoc(
-            window.doc(window.db, "driver_settings", DRIVER_DOC_ID)
+          await window.updateDoc(
+            window.doc(window.db, "community_posts", window.postToDeleteId),
+            { status: "hidden" }
           );
-          if (driverDoc.exists() && driverDoc.data().displayName) {
-            authorName = "Hero: " + driverDoc.data().displayName;
-          }
-
-          const payload = {
-            userId: DRIVER_DOC_ID,
-            authorName: authorName,
-            text: text || "",
-            imageUrl: window.communityPendingImage || null,
-            status: "active",
-            timestamp: window.serverTimestamp(),
-          };
-
-          await window.addDoc(
-            window.collection(window.db, "community_posts"),
-            payload
-          );
-
-          input.value = "";
-          window.communityPendingImage = null;
-
-          document.getElementById(
-            "communityImagePreviewContainer"
-          ).style.display = "none";
-          document.getElementById("communityImagePreview").src = "";
-          document.getElementById("communityImageInput").value = "";
-
-          const inputLabel = document.querySelector(
-            "#communityInputArea label"
-          );
-          inputLabel.style.background = "var(--surface-elevated)";
-          inputLabel.querySelector("svg").style.fill = "var(--text-muted)";
+          window.cancelDeletePost();
         } catch (e) {
-          console.error("Failed to post message:", e);
+          console.error("Failed to delete post:", e);
           window.showCustomAlert(
-            "Network Error",
-            "Failed to send message. Please check your connection."
+            "Error",
+            "Failed to delete post. Please try again."
           );
-        } finally {
-          input.disabled = false;
-          input.focus();
         }
       };
 
@@ -5631,13 +5618,28 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   })
                 : "Posting...";
 
+              const isAuthor = post.userId === DRIVER_DOC_ID;
+
+              const deleteBtnHtml = isAuthor
+                ? `
+                <button onclick="promptDeletePost('${docSnap.id}')" style="background: transparent; border: none; padding: 4px; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center;">
+                  <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor; transition: fill 0.2s;" onmouseover="this.style.fill='var(--danger)'" onmouseout="this.style.fill='currentColor'">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                  </svg>
+                </button>
+              `
+                : "";
+
               html += `
               <div class="community-post">
                 <div class="community-post-header">
-                  <span class="community-post-author">${
-                    post.authorName || "Hero"
-                  }</span>
-                  <span class="community-post-time">${timeString}</span>
+                  <div style="display: flex; align-items: baseline; gap: 8px;">
+                    <span class="community-post-author">${
+                      post.authorName || "Hero"
+                    }</span>
+                    <span class="community-post-time">${timeString}</span>
+                  </div>
+                  ${deleteBtnHtml}
                 </div>
                 ${
                   post.imageUrl
