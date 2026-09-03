@@ -24,7 +24,7 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
-
+ 
     <style>
       :root {
         --bg: #121212;
@@ -641,6 +641,7 @@
         cursor: pointer;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         transition: background-color 0.3s ease, border-color 0.3s ease;
+        padding-left: 60px;
       }
 
       .duty-btn.active {
@@ -962,11 +963,187 @@
           transform: rotate(360deg);
         }
       }
+
+      /* --- TOOLTIP UI --- */
+      .tooltip-icon-btn {
+        width: 25px;
+        height: 25px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--accent);
+        color: var(--text);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+
+      .tooltip-box {
+        position: absolute;
+        bottom: 20px;
+        right: 5px;
+        width: 290px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+        transform-origin: bottom right;
+        transform: scale(0);
+        opacity: 0;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+          opacity 0.2s ease;
+        pointer-events: none;
+      }
+
+      .tooltip-box.active {
+        transform: scale(1);
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .tooltip-box h4 {
+        color: var(--accent);
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .tooltip-box p {
+        color: #f5f5f5;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        text-align: left;
+        margin: 0;
+      }
+
+      .tooltip-close-icon {
+        background: transparent;
+        border: none;
+        color: #f5f5f5;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      /* --- COMMUNITY HUB UI --- */
+      .community-triangle-wrapper {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 90px;
+        height: 90px;
+        z-index: 2500;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        clip-path: polygon(0 0, 100% 0, 0 100%);
+      }
+      .community-triangle-wrapper::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        border-top: 90px solid var(--accent);
+        border-right: 90px solid transparent;
+      }
+      .community-triangle-wrapper.active {
+        transform: translate(
+            calc(100vw - 90px),
+            calc(100dvh - 90px - env(safe-area-inset-bottom, 15px))
+          )
+          rotate(180deg);
+      }
+      .community-triangle-icon {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 30px;
+        height: 30px;
+        z-index: 2501;
+        object-fit: contain;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .community-triangle-wrapper.active .community-triangle-icon {
+        transform: rotate(-180deg);
+      }
+
+      #communityTooltipBox {
+        opacity: 0;
+        transform: scale(0);
+        pointer-events: none;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+          opacity 0.2s ease;
+      }
+      #communityTooltipBox.active {
+        opacity: 1;
+        transform: scale(1);
+        pointer-events: auto;
+      }
+
+      .community-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .community-post {
+        background: var(--surface-elevated);
+        padding: 15px;
+        border-radius: 12px;
+        border-left: 4px solid var(--accent);
+      }
+
+      .community-post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .community-post-author {
+        font-weight: bold;
+        color: var(--accent);
+        font-size: 0.95rem;
+      }
+      .community-post-time {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+      .community-post-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+        color: var(--text);
+      }
+      .community-post-image {
+        max-width: 100%;
+        border-radius: 8px;
+        margin-top: 10px;
+        border: 1px solid var(--border);
+      }
     </style>
   </head>
   <body>
     <!-- GLOBAL ACTIVITY RIBBON -->
     <div id="globalActivityRibbon" class="activity-ribbon"></div>
+
+    <!-- COMMUNITY HUB TRIGGER -->
+    <div
+      class="community-triangle-wrapper"
+      id="communityTriggerBtn"
+      onclick="toggleCommunityFeed()"
+    >
+      <img
+        src="socialicon.PNG"
+        class="community-triangle-icon"
+        alt="Community"
+      />
+    </div>
 
     <!-- PWA INSTALL PROMPT -->
     <div
@@ -1897,6 +2074,187 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         <p id="customAlertText">Message goes here.</p>
         <button class="btn btn-primary" onclick="closeCustomAlert()">
           Understood
+        </button>
+      </div>
+    </div>
+
+    <!-- COMMUNITY FEED MODAL -->
+    <div id="communityModal" class="modal">
+      <!-- DELETE POST CONFIRMATION MODAL -->
+      <div class="soft-prompt-overlay" id="deletePostConfirmModal">
+        <div class="soft-prompt-box">
+          <h3 style="color: var(--danger)">Delete Post?</h3>
+          <p>
+            Are you sure you want to remove this post? This action cannot be
+            undone.
+          </p>
+          <div class="prompt-actions">
+            <button
+              class="btn btn-secondary"
+              style="flex: 1"
+              onclick="cancelDeletePost()"
+            >
+              Cancel
+            </button>
+            <button
+              class="btn btn-primary"
+              style="
+                flex: 1;
+                background: var(--danger);
+                border-color: var(--danger);
+              "
+              onclick="confirmDeletePost()"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-header">
+        <div>
+          <h2 id="communityHeaderTitle">Neighborhood Hub</h2>
+          <span style="font-size: 0.8rem; color: var(--text-muted)"
+            >Local community feed</span
+          >
+        </div>
+
+        <div style="position: relative; display: flex; align-items: center">
+          <div
+            class="tooltip-icon-btn glowing-pin"
+            onclick="toggleCommunityTooltip(event)"
+            style="margin: 0; width: 32px; height: 32px"
+          >
+            ?
+          </div>
+          <div
+            id="communityTooltipBox"
+            class="tooltip-box"
+            style="
+              top: 45px;
+              right: 0;
+              bottom: auto;
+              left: auto;
+              transform-origin: top right;
+              z-index: 2100;
+            "
+          >
+            <h4>
+              Neighborhood Hub
+              <button
+                class="tooltip-close-icon"
+                onclick="toggleCommunityTooltip(event)"
+              >
+                ✕
+              </button>
+            </h4>
+            <p>
+              Welcome to the Neighborhood Hub! This is your local space to
+              connect with Pickup Hero drivers, share delivery reviews, ask
+              questions, or even drop digital coupons for the community. Keep it
+              friendly and local!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="community-messages" id="communityFeedContainer">
+        <!-- Messages populate here -->
+      </div>
+
+      <div
+        class="chat-input-area"
+        id="communityInputArea"
+        style="position: relative; padding-right: 90px !important"
+      >
+        <!-- FLOATING THUMBNAIL PREVIEW -->
+        <div
+          id="communityImagePreviewContainer"
+          style="
+            display: none;
+            position: absolute;
+            bottom: 75px;
+            left: 15px;
+            z-index: 2100;
+          "
+        >
+          <img
+            id="communityImagePreview"
+            src=""
+            style="
+              width: 65px;
+              height: 65px;
+              object-fit: cover;
+              border-radius: 8px;
+              border: 2px solid var(--accent);
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            "
+          />
+          <button
+            onclick="removeCommunityImage(event)"
+            style="
+              position: absolute;
+              top: -8px;
+              right: -8px;
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              background: var(--danger);
+              color: white;
+              border: none;
+              font-size: 0.8rem;
+              font-weight: bold;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            "
+          >
+            ✕
+          </button>
+        </div>
+
+        <label
+          style="
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: var(--surface-elevated);
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: background 0.2s;
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 22px; height: 22px; fill: var(--text-muted)"
+          >
+            <path
+              d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+            />
+          </svg>
+          <input
+            type="file"
+            id="communityImageInput"
+            accept="image/*"
+            style="display: none"
+            onchange="handleCommunityImageUpload(event)"
+          />
+        </label>
+
+        <input
+          type="text"
+          id="communityTextInput"
+          placeholder="Share a message..."
+        />
+        <button class="chat-send-btn" onclick="sendCommunityMessage()">
+          <svg viewBox="0 0 24 24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          </svg>
         </button>
       </div>
     </div>
@@ -4585,7 +4943,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 ${connectHTML}
                 <div class="node-header">
                   <strong>${node.title}</strong>
-                  
+
                   ${
                     node.deliveryTag
                       ? `<span style="background: ${
@@ -4597,8 +4955,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                         }</span>`
                       : ""
                   }
-                  
-                  
+
+
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
 
@@ -4669,7 +5027,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 ${connectHTML}
                 <div class="node-header">
                   <strong>${node.title}</strong>
-                  
+
                   ${
                     node.deliveryTag
                       ? `<span style="background: ${
@@ -4681,15 +5039,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                         }</span>`
                       : ""
                   }
-                  
+
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Rural Route Drop-off</p>
 
                 ${AppState.workflowPhase === "delivery" ? navBtnHTML : ""}
-                
+
                 ${extraInfo}
-                
-                
+
+
               </div>
             </li>
           `;
@@ -5096,6 +5454,221 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           if (window.updateNotificationsUI) window.updateNotificationsUI();
           if (window.monitorActiveRoute) window.monitorActiveRoute();
         }, 500);
+      };
+
+      // --- COMMUNITY HUB LOGIC ---
+      window.communityUnsubscribe = null;
+      window.communityPendingImage = null;
+
+      window.toggleCommunityFeed = function () {
+        const trigger = document.getElementById("communityTriggerBtn");
+        const modal = document.getElementById("communityModal");
+        const isActive = trigger.classList.contains("active");
+
+        if (!isActive) {
+          trigger.classList.add("active");
+          modal.classList.add("active");
+
+          if (!window.communityUnsubscribe && DRIVER_DOC_ID) {
+            window.initCommunityListener();
+          } else if (!DRIVER_DOC_ID) {
+            document.getElementById("communityFeedContainer").innerHTML = `
+              <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+                Please sign in to view and post to the Neighborhood Hub.
+              </div>
+            `;
+          }
+        } else {
+          trigger.classList.remove("active");
+          modal.classList.remove("active");
+        }
+      };
+
+      window.toggleCommunityTooltip = function (event) {
+        if (event) event.stopPropagation();
+        const box = document.getElementById("communityTooltipBox");
+        if (box) box.classList.toggle("active");
+      };
+
+      document.addEventListener("click", function (event) {
+        const box = document.getElementById("communityTooltipBox");
+        const btn = document.querySelector("#communityModal .tooltip-icon-btn");
+        if (box && box.classList.contains("active")) {
+          if (
+            !box.contains(event.target) &&
+            (!btn || !btn.contains(event.target))
+          ) {
+            box.classList.remove("active");
+          }
+        }
+      });
+
+      window.handleCommunityImageUpload = function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = function () {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const maxW = 600;
+            const scale = img.width > maxW ? maxW / img.width : 1;
+
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            window.communityPendingImage = canvas.toDataURL("image/jpeg", 0.6);
+
+            document.getElementById("communityImagePreview").src =
+              window.communityPendingImage;
+            document.getElementById(
+              "communityImagePreviewContainer"
+            ).style.display = "block";
+
+            const inputLabel = document.querySelector(
+              "#communityInputArea label"
+            );
+            inputLabel.style.background = "var(--accent)";
+            inputLabel.querySelector("svg").style.fill = "white";
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = "";
+      };
+
+      window.removeCommunityImage = function (event) {
+        if (event) event.preventDefault();
+
+        window.communityPendingImage = null;
+        document.getElementById(
+          "communityImagePreviewContainer"
+        ).style.display = "none";
+        document.getElementById("communityImagePreview").src = "";
+        document.getElementById("communityImageInput").value = "";
+
+        const inputLabel = document.querySelector("#communityInputArea label");
+        inputLabel.style.background = "var(--surface-elevated)";
+        inputLabel.querySelector("svg").style.fill = "var(--text-muted)";
+      };
+
+      window.communityUnsubscribe = null;
+      window.postToDeleteId = null;
+
+      window.promptDeletePost = function (postId) {
+        window.postToDeleteId = postId;
+        document.getElementById("deletePostConfirmModal").style.display =
+          "flex";
+      };
+
+      window.cancelDeletePost = function () {
+        window.postToDeleteId = null;
+        document.getElementById("deletePostConfirmModal").style.display =
+          "none";
+      };
+
+      window.confirmDeletePost = async function () {
+        if (!window.postToDeleteId) return;
+
+        try {
+          await window.updateDoc(
+            window.doc(window.db, "community_posts", window.postToDeleteId),
+            { status: "hidden" }
+          );
+          window.cancelDeletePost();
+        } catch (e) {
+          console.error("Failed to delete post:", e);
+          window.showCustomAlert(
+            "Error",
+            "Failed to delete post. Please try again."
+          );
+        }
+      };
+
+      window.initCommunityListener = function () {
+        if (window.communityUnsubscribe) window.communityUnsubscribe();
+
+        const q = window.query(
+          window.collection(window.db, "community_posts"),
+          window.orderBy("timestamp", "desc")
+        );
+
+        window.communityUnsubscribe = window.onSnapshot(
+          q,
+          (snapshot) => {
+            const container = document.getElementById("communityFeedContainer");
+            let html = "";
+            let validPostsFound = false;
+
+            snapshot.docs.forEach((docSnap) => {
+              const post = docSnap.data();
+
+              if (post.status !== "active") return;
+              validPostsFound = true;
+
+              const timeString = post.timestamp
+                ? new Date(post.timestamp.toDate()).toLocaleDateString([], {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Posting...";
+
+              const isAuthor = post.userId === DRIVER_DOC_ID;
+
+              const deleteBtnHtml = isAuthor
+                ? `
+                <button onclick="promptDeletePost('${docSnap.id}')" style="background: transparent; border: none; padding: 4px; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center;">
+                  <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor; transition: fill 0.2s;" onmouseover="this.style.fill='var(--danger)'" onmouseout="this.style.fill='currentColor'">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                  </svg>
+                </button>
+              `
+                : "";
+
+              html += `
+              <div class="community-post">
+                <div class="community-post-header">
+                  <div style="display: flex; align-items: baseline; gap: 8px;">
+                    <span class="community-post-author">${
+                      post.authorName || "Hero"
+                    }</span>
+                    <span class="community-post-time">${timeString}</span>
+                  </div>
+                  ${deleteBtnHtml}
+                </div>
+                ${
+                  post.imageUrl
+                    ? `<img src="${post.imageUrl}" class="community-post-image">`
+                    : ""
+                }
+                ${
+                  post.text
+                    ? `<div class="community-post-text">${post.text}</div>`
+                    : ""
+                }
+              </div>
+            `;
+            });
+
+            container.innerHTML = validPostsFound
+              ? html
+              : `
+            <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+              Be the first to post in the Neighborhood Hub!
+            </div>
+          `;
+
+            container.scrollTop = 0;
+          },
+          (error) => {
+            console.error("Error loading community feed:", error);
+          }
+        );
       };
 
       // --- PWA INSTALLATION PROMPT ---
