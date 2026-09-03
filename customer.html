@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Pick Up Hero - Delivery</title>
+    <title>Pick Up Hero - Delivery</title> 
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -782,6 +782,7 @@
         border-top: 1px solid var(--border);
         align-items: center;
         padding-bottom: calc(15px + env(safe-area-inset-bottom));
+        padding-right: 15%;
       }
       .chat-input-area input {
         flex: 1;
@@ -992,11 +993,117 @@
         cursor: pointer;
         padding: 0;
       }
+
+      /* --- COMMUNITY HUB UI --- */
+      .community-triangle-wrapper {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 90px;
+        height: 90px;
+        z-index: 2500;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+      }
+      .community-triangle-wrapper::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        border-top: 90px solid var(--accent);
+        border-right: 90px solid transparent;
+      }
+
+      .community-triangle-wrapper.active {
+        transform: translate(
+            calc(100vw - 90px),
+            calc(100dvh - 90px - env(safe-area-inset-bottom, 15px))
+          )
+          rotate(180deg);
+      }
+
+      .community-triangle-icon {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        width: 34px;
+        height: 34px;
+        z-index: 2501;
+        object-fit: contain;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .community-triangle-wrapper.active .community-triangle-icon {
+        transform: rotate(-180deg);
+      }
+      .community-tooltip-anchor {
+        position: fixed;
+        top: 100px;
+        left: 15px;
+        z-index: 2400;
+        transition: opacity 0.3s ease;
+      }
+      .community-tooltip-anchor.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .community-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .community-post {
+        background: var(--surface-elevated);
+        padding: 15px;
+        border-radius: 12px;
+        border-left: 4px solid var(--accent);
+      }
+      .community-post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .community-post-author {
+        font-weight: bold;
+        color: var(--accent);
+        font-size: 0.95rem;
+      }
+      .community-post-time {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+      .community-post-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+        color: var(--text);
+      }
+      .community-post-image {
+        max-width: 100%;
+        border-radius: 8px;
+        margin-top: 10px;
+        border: 1px solid var(--border);
+      }
     </style>
   </head>
   <body>
     <!-- GLOBAL ACTIVITY RIBBON -->
     <div id="globalActivityRibbon" class="activity-ribbon"></div>
+
+    <!-- COMMUNITY HUB TRIGGER -->
+    <div
+      class="community-triangle-wrapper"
+      id="communityTriggerBtn"
+      onclick="toggleCommunityFeed()"
+    >
+      <img
+        src="socialicon.PNG"
+        class="community-triangle-icon"
+        alt="Community"
+      />
+    </div>
 
     <!-- PWA INSTALL PROMPT -->
     <div
@@ -2090,7 +2197,59 @@
         <!-- Messages populate here -->
       </div>
 
-      <div class="chat-input-area">
+      <div
+        class="chat-input-area"
+        id="chatInputArea"
+        style="position: relative"
+      >
+        <!-- FLOATING THUMBNAIL PREVIEW -->
+        <div
+          id="chatImagePreviewContainer"
+          style="
+            display: none;
+            position: absolute;
+            bottom: 75px;
+            left: 15px;
+            z-index: 2100;
+          "
+        >
+          <img
+            id="chatImagePreview"
+            src=""
+            style="
+              width: 65px;
+              height: 65px;
+              object-fit: cover;
+              border-radius: 8px;
+              border: 2px solid var(--accent);
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            "
+          />
+          <button
+            onclick="removeChatImage(event)"
+            style="
+              position: absolute;
+              top: -8px;
+              right: -8px;
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              background: var(--danger);
+              color: white;
+              border: none;
+              font-size: 0.8rem;
+              font-weight: bold;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            "
+          >
+            ✕
+          </button>
+        </div>
+
         <label
           style="
             cursor: pointer;
@@ -2102,6 +2261,7 @@
             background: var(--surface-elevated);
             border-radius: 50%;
             flex-shrink: 0;
+            transition: background 0.2s;
           "
         >
           <svg
@@ -2125,7 +2285,7 @@
         <input
           type="text"
           id="chatTextInput"
-          placeholder="Message your Hero..."
+          placeholder="Your Message..."
           disabled
         />
         <button
@@ -2134,6 +2294,187 @@
           onclick="sendChatMessage()"
           disabled
         >
+          <svg viewBox="0 0 24 24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- COMMUNITY FEED MODAL -->
+    <div id="communityModal" class="modal">
+      <!-- DELETE POST CONFIRMATION MODAL -->
+      <div class="soft-prompt-overlay" id="deletePostConfirmModal">
+        <div class="soft-prompt-box">
+          <h3 style="color: var(--danger)">Delete Post?</h3>
+          <p>
+            Are you sure you want to remove this post? This action cannot be
+            undone.
+          </p>
+          <div class="prompt-actions">
+            <button
+              class="btn btn-secondary"
+              style="flex: 1"
+              onclick="cancelDeletePost()"
+            >
+              Cancel
+            </button>
+            <button
+              class="btn btn-primary"
+              style="
+                flex: 1;
+                background: var(--danger);
+                border-color: var(--danger);
+              "
+              onclick="confirmDeletePost()"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-header">
+        <div>
+          <h2 id="communityHeaderTitle">Neighborhood Hub</h2>
+          <span style="font-size: 0.8rem; color: var(--text-muted)"
+            >Local community feed</span
+          >
+        </div>
+
+        <div style="position: relative; display: flex; align-items: center">
+          <div
+            class="tooltip-icon-btn glowing-pin"
+            onclick="toggleCommunityTooltip(event)"
+            style="margin: 0; width: 32px; height: 32px"
+          >
+            ?
+          </div>
+          <div
+            id="communityTooltipBox"
+            class="tooltip-box"
+            style="
+              top: 45px;
+              right: 0;
+              bottom: auto;
+              left: auto;
+              transform-origin: top right;
+              z-index: 2100;
+            "
+          >
+            <h4>
+              Neighborhood Hub
+              <button
+                class="tooltip-close-icon"
+                onclick="toggleCommunityTooltip(event)"
+              >
+                ✕
+              </button>
+            </h4>
+            <p>
+              Welcome to the Neighborhood Hub! This is your local space to
+              connect with Pickup Hero drivers, share delivery reviews, ask
+              questions, or even drop digital coupons for the community. Keep it
+              friendly and local!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="community-messages" id="communityFeedContainer">
+        <!-- Messages populate here -->
+      </div>
+
+      <div
+        class="chat-input-area"
+        id="communityInputArea"
+        style="position: relative"
+      >
+        <!-- FLOATING THUMBNAIL PREVIEW -->
+        <div
+          id="communityImagePreviewContainer"
+          style="
+            display: none;
+            position: absolute;
+            bottom: 75px;
+            left: 15px;
+            z-index: 2100;
+          "
+        >
+          <img
+            id="communityImagePreview"
+            src=""
+            style="
+              width: 65px;
+              height: 65px;
+              object-fit: cover;
+              border-radius: 8px;
+              border: 2px solid var(--accent);
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            "
+          />
+          <button
+            onclick="removeCommunityImage(event)"
+            style="
+              position: absolute;
+              top: -8px;
+              right: -8px;
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              background: var(--danger);
+              color: white;
+              border: none;
+              font-size: 0.8rem;
+              font-weight: bold;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            "
+          >
+            ✕
+          </button>
+        </div>
+
+        <label
+          style="
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: var(--surface-elevated);
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: background 0.2s;
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 22px; height: 22px; fill: var(--text-muted)"
+          >
+            <path
+              d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+            />
+          </svg>
+          <input
+            type="file"
+            id="communityImageInput"
+            accept="image/*"
+            style="display: none"
+            onchange="handleCommunityImageUpload(event)"
+          />
+        </label>
+
+        <input
+          type="text"
+          id="communityTextInput"
+          placeholder="Share a message..."
+        />
+        <button class="chat-send-btn" onclick="sendCommunityMessage()">
           <svg viewBox="0 0 24 24">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
           </svg>
@@ -2874,19 +3215,19 @@
 
         const style = document.createElement("style");
         style.innerHTML = `
-          .live-pin-override {
-            display: none !important;
-            background: #000000 !important;
-            border-color: #ffffff !important;
-            color: #ffffff !important; 
-            font-size: 1.1rem !important;
-            transform: rotate(-45deg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
-          }
-        `;
+                .live-pin-override {
+                  display: none !important;
+                  background: #000000 !important;
+                  border-color: #ffffff !important;
+                  color: #ffffff !important;
+                  font-size: 1.1rem !important;
+                  transform: rotate(-45deg);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+                }
+              `;
         document.head.appendChild(style);
 
         driverMarker.on("click", function () {
@@ -3153,17 +3494,17 @@
           marker
             .bindPopup(
               `
-            <div style="text-align:center;">
-              <strong>${val}</strong><br>
-              <span style="font-size:0.8rem;color:var(--text-muted);">${
-                preselectedPlace.formatted_address || ""
-              }</span><br>
-              <button onclick="confirmStoreSelection('${val.replace(
-                /'/g,
-                "\\'"
-              )}', ${lat}, ${lng})" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">ADD STOP</button>
-            </div>
-          `
+                  <div style="text-align:center;">
+                    <strong>${val}</strong><br>
+                    <span style="font-size:0.8rem;color:var(--text-muted);">${
+                      preselectedPlace.formatted_address || ""
+                    }</span><br>
+                    <button onclick="confirmStoreSelection('${val.replace(
+                      /'/g,
+                      "\\'"
+                    )}', ${lat}, ${lng})" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">ADD STOP</button>
+                  </div>
+                `
             )
             .openPopup();
 
@@ -3193,17 +3534,17 @@
                 map
               );
               marker.bindPopup(`
-                <div style="text-align:center;">
-                  <strong>${place.name}</strong><br>
-                  <span style="font-size:0.8rem;color:var(--text-muted);">${
-                    place.formatted_address || place.vicinity
-                  }</span><br>
-                  <button onclick="confirmStoreSelection('${place.name.replace(
-                    /'/g,
-                    "\\'"
-                  )}', ${lat}, ${lng})" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">ADD STOP</button>
-                </div>
-              `);
+                      <div style="text-align:center;">
+                        <strong>${place.name}</strong><br>
+                        <span style="font-size:0.8rem;color:var(--text-muted);">${
+                          place.formatted_address || place.vicinity
+                        }</span><br>
+                        <button onclick="confirmStoreSelection('${place.name.replace(
+                          /'/g,
+                          "\\'"
+                        )}', ${lat}, ${lng})" style="margin-top:8px; padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px;">ADD STOP</button>
+                      </div>
+                    `);
 
               searchMarkers.push(marker);
               bounds.extend([lat, lng]);
@@ -3920,6 +4261,8 @@
 
       // --- SESSION & MULTI-STOP LOGIC ---
 
+      window.chatPendingImage = null;
+
       window.handleChatImageUpload = function (event) {
         const file = event.target.files[0];
         if (!file || !window.appState.currentOrderId) return;
@@ -3927,7 +4270,7 @@
         const reader = new FileReader();
         reader.onload = function (e) {
           const img = new Image();
-          img.onload = async function () {
+          img.onload = function () {
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
 
@@ -3937,34 +4280,36 @@
             canvas.height = img.height * scale;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
+            window.chatPendingImage = canvas.toDataURL("image/jpeg", 0.6);
 
-            try {
-              await window.addDoc(
-                window.collection(
-                  window.db,
-                  "orders",
-                  window.appState.currentOrderId,
-                  "messages"
-                ),
-                {
-                  senderId: window.appState.userId,
-                  text: "📷 Image attached",
-                  imageUrl: compressedBase64,
-                  timestamp: window.serverTimestamp(),
-                  read: false,
-                }
-              );
-            } catch (err) {
-              console.error("Failed to send image:", err);
-              alert("Failed to send image.");
-            }
+            document.getElementById("chatImagePreview").src =
+              window.chatPendingImage;
+            document.getElementById("chatImagePreviewContainer").style.display =
+              "block";
+
+            const inputLabel = document.querySelector("#chatInputArea label");
+            inputLabel.style.background = "var(--accent)";
+            inputLabel.querySelector("svg").style.fill = "white";
           };
 
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
-        event.target.value = ""; // Reset file path to allow repeat identical uploads
+        event.target.value = "";
+      };
+
+      window.removeChatImage = function (event) {
+        if (event) event.preventDefault();
+
+        window.chatPendingImage = null;
+        document.getElementById("chatImagePreviewContainer").style.display =
+          "none";
+        document.getElementById("chatImagePreview").src = "";
+        document.getElementById("chatImageInput").value = "";
+
+        const inputLabel = document.querySelector("#chatInputArea label");
+        inputLabel.style.background = "var(--surface-elevated)";
+        inputLabel.querySelector("svg").style.fill = "var(--text-muted)";
       };
 
       window.checkActiveSession = function () {
@@ -4462,21 +4807,21 @@
             const deliveryIcon = L.divIcon({
               className: "custom-orange-pin",
               html: `
-                <div style="
-                  width: 32px;
-                  height: 32px;
-                  background: #22c55e;
-                  border: 3px solid #ffffff;
-                  border-radius: 50%;
-                  box-shadow: 0 0 12px rgba(0,0,0,0.7);
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  color: #ffffff;
-                  font-size: 16px;
-                  font-weight: bold;
-                ">⌂</div>
-              `,
+                      <div style="
+                        width: 32px;
+                        height: 32px;
+                        background: #22c55e;
+                        border: 3px solid #ffffff;
+                        border-radius: 50%;
+                        box-shadow: 0 0 12px rgba(0,0,0,0.7);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #ffffff;
+                        font-size: 16px;
+                        font-weight: bold;
+                      ">⌂</div>
+                    `,
               iconSize: [32, 32],
               iconAnchor: [16, 16],
             });
@@ -4552,16 +4897,16 @@
                 icon: pickupIcon,
                 zIndexOffset: 500,
               }).addTo(map).bindPopup(`
-                  <div style="text-align:center;">
-                    <strong>Pickup ${index + 1}</strong><br>
-                    <span style="
-                      font-size:0.85rem;
-                      color:var(--text-muted);
-                    ">
-                      ${stop.storeName || "Pickup Location"}
-                    </span>
-                  </div>
-                `);
+                        <div style="text-align:center;">
+                          <strong>Pickup ${index + 1}</strong><br>
+                          <span style="
+                            font-size:0.85rem;
+                            color:var(--text-muted);
+                          ">
+                            ${stop.storeName || "Pickup Location"}
+                          </span>
+                        </div>
+                      `);
 
               window.recoveredMapMarkers.push(marker);
 
@@ -4583,16 +4928,16 @@
                 icon: deliveryIcon,
                 zIndexOffset: 600,
               }).addTo(map).bindPopup(`
-                  <div style="text-align:center;">
-                    <strong>Final Delivery</strong><br>
-                    <span style="
-                      font-size:0.85rem;
-                      color:var(--text-muted);
-                    ">
-                      ${order.deliveryAddress || "Delivery Location"}
-                    </span>
-                  </div>
-                `);
+                        <div style="text-align:center;">
+                          <strong>Final Delivery</strong><br>
+                          <span style="
+                            font-size:0.85rem;
+                            color:var(--text-muted);
+                          ">
+                            ${order.deliveryAddress || "Delivery Location"}
+                          </span>
+                        </div>
+                      `);
 
               window.recoveredMapMarkers.push(deliveryMarker);
 
@@ -4687,11 +5032,11 @@
         if (order.status === "completed") heroStatusStr = "Delivery Complete!";
 
         let timelineHTML = `
-          <div class="timeline-item">
-            <div class="timeline-title">Hero Status</div>
-            <div class="timeline-subtitle" style="color: var(--accent); font-weight: bold;">${heroStatusStr}</div>
-          </div>
-        `;
+                <div class="timeline-item">
+                  <div class="timeline-title">Hero Status</div>
+                  <div class="timeline-subtitle" style="color: var(--accent); font-weight: bold;">${heroStatusStr}</div>
+                </div>
+              `;
 
         if (order.stops && Array.isArray(order.stops)) {
           order.stops.forEach((stop, index) => {
@@ -4705,33 +5050,33 @@
               ].includes(order.status);
 
             timelineHTML += `
-              <div class="timeline-item">
-                <div class="timeline-title">Pickup Stop ${index + 1} ${
+                    <div class="timeline-item">
+                      <div class="timeline-title">Pickup Stop ${index + 1} ${
               isDone ? "✓" : ""
             }</div>
-                <div class="timeline-subtitle" style="${
-                  isDone
-                    ? "color: var(--success); font-weight: bold;"
-                    : "color: var(--text-muted);"
-                }">${stop.storeName}</div>
-              </div>
-            `;
+                      <div class="timeline-subtitle" style="${
+                        isDone
+                          ? "color: var(--success); font-weight: bold;"
+                          : "color: var(--text-muted);"
+                      }">${stop.storeName}</div>
+                    </div>
+                  `;
           });
         }
 
         const isDelivered = order.status === "completed";
         timelineHTML += `
-          <div class="timeline-item">
-            <div class="timeline-title">Final Delivery ${
-              isDelivered ? "✓" : ""
-            }</div>
-            <div class="timeline-subtitle" style="${
-              isDelivered
-                ? "color: var(--success); font-weight: bold;"
-                : "color: var(--text-muted);"
-            }">${order.deliveryAddress || "Your Location"}</div>
-          </div>
-        `;
+                <div class="timeline-item">
+                  <div class="timeline-title">Final Delivery ${
+                    isDelivered ? "✓" : ""
+                  }</div>
+                  <div class="timeline-subtitle" style="${
+                    isDelivered
+                      ? "color: var(--success); font-weight: bold;"
+                      : "color: var(--text-muted);"
+                  }">${order.deliveryAddress || "Your Location"}</div>
+                </div>
+              `;
 
         if (
           order.status !== "picked_up" &&
@@ -4809,59 +5154,59 @@
           "padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 15px;";
 
         newBlock.innerHTML = `
-          <div class="stop-summary" onclick="toggleStop(${newIndex})">
-            <strong id="summaryText_${newIndex}"> Stop ${newIndex}</strong>
-            <span style="color: var(--accent); font-size: 0.8rem;">Edit</span>
-          </div>
+                <div class="stop-summary" onclick="toggleStop(${newIndex})">
+                  <strong id="summaryText_${newIndex}"> Stop ${newIndex}</strong>
+                  <span style="color: var(--accent); font-size: 0.8rem;">Edit</span>
+                </div>
 
-          <div class="stop-details" id="stopDetails_${newIndex}">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-              <h4 style="color: var(--accent)">Pickup Stop ${newIndex}</h4>
-              <button class="btn btn-emergency" style="width: auto; padding: 6px 12px; font-size: 0.8rem;" onclick="removeStopBlock(${newIndex})">Remove</button>
-            </div>
+                <div class="stop-details" id="stopDetails_${newIndex}">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="color: var(--accent)">Pickup Stop ${newIndex}</h4>
+                    <button class="btn btn-emergency" style="width: auto; padding: 6px 12px; font-size: 0.8rem;" onclick="removeStopBlock(${newIndex})">Remove</button>
+                  </div>
 
-            <div class="form-group">
-              <label>Search Store Location</label>
-              <input type="text" id="storeSearchInput_${newIndex}" placeholder="Walmart, Target, etc..." />
-              <button class="btn btn-secondary" style="margin-top: 8px" onclick="triggerStoreSearch(${newIndex})">Search Map</button>
-            </div>
+                  <div class="form-group">
+                    <label>Search Store Location</label>
+                    <input type="text" id="storeSearchInput_${newIndex}" placeholder="Walmart, Target, etc..." />
+                    <button class="btn btn-secondary" style="margin-top: 8px" onclick="triggerStoreSearch(${newIndex})">Search Map</button>
+                  </div>
 
-            <div id="selectedStoreDisplay_${newIndex}" style="display: none; padding: 15px; background: var(--surface-elevated); border-radius: 12px; border-left: 4px solid var(--accent); margin-top: 10px; margin-bottom: 15px;">
-              <strong id="storeNameDisplay_${newIndex}">Pending...</strong>
-              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Location Confirmed</p>
-            </div>
+                  <div id="selectedStoreDisplay_${newIndex}" style="display: none; padding: 15px; background: var(--surface-elevated); border-radius: 12px; border-left: 4px solid var(--accent); margin-top: 10px; margin-bottom: 15px;">
+                    <strong id="storeNameDisplay_${newIndex}">Pending...</strong>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Location Confirmed</p>
+                  </div>
 
-            <div style="display: flex; gap: 10px;">
-              <div class="form-group" style="flex: 2;">
-                <label>Store Order Number *</label>
-                <input type="text" id="pickupNumberInput_${newIndex}" placeholder="e.g., #98765432" />
-              </div>
-              <div class="form-group" style="flex: 1;">
-                <label>PIN <span class="tooltip-icon" onclick="openInfoTooltip()">?</span></label>
-                <input type="text" id="pickupPinInput_${newIndex}" placeholder="1234" />
-              </div>
-            </div>
+                  <div style="display: flex; gap: 10px;">
+                    <div class="form-group" style="flex: 2;">
+                      <label>Store Order Number *</label>
+                      <input type="text" id="pickupNumberInput_${newIndex}" placeholder="e.g., #98765432" />
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                      <label>PIN <span class="tooltip-icon" onclick="openInfoTooltip()">?</span></label>
+                      <input type="text" id="pickupPinInput_${newIndex}" placeholder="1234" />
+                    </div>
+                  </div>
 
-            <div class="form-group">
-              <label>Order Screenshot (Optional)</label>
-              
-              
-<label for="screenshotInput_${newIndex}" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; border: 2px dashed var(--border); border-radius: 12px; background: var(--surface); cursor: pointer; color: var(--text-muted); transition: all 0.2s ease;">
-                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: currentColor;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg>
-                <span id="screenshotLabelText_${newIndex}" style="font-size: 0.95rem; font-weight: 600;">Tap to Upload Image</span>
-                <input type="file" id="screenshotInput_${newIndex}" accept="image/*" onchange="handleImageCompress(event, ${newIndex})" style="display: none;" />
-              </label>
-              <img id="screenshotThumbnail_${newIndex}" style="display: none; width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border);" />
-            </div>
+                  <div class="form-group">
+                    <label>Order Screenshot (Optional)</label>
 
 
+      <label for="screenshotInput_${newIndex}" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; border: 2px dashed var(--border); border-radius: 12px; background: var(--surface); cursor: pointer; color: var(--text-muted); transition: all 0.2s ease;">
+                      <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: currentColor;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg>
+                      <span id="screenshotLabelText_${newIndex}" style="font-size: 0.95rem; font-weight: 600;">Tap to Upload Image</span>
+                      <input type="file" id="screenshotInput_${newIndex}" accept="image/*" onchange="handleImageCompress(event, ${newIndex})" style="display: none;" />
+                    </label>
+                    <img id="screenshotThumbnail_${newIndex}" style="display: none; width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border);" />
+                  </div>
 
-            <div class="form-group">
-              <label>Curbside Instructions (Optional)</label>
-              <textarea id="curbsideInstructionsInput_${newIndex}" rows="2" placeholder="Spot 4, blue Honda..."></textarea>
-            </div>
-          </div>
-        `;
+
+
+                  <div class="form-group">
+                    <label>Curbside Instructions (Optional)</label>
+                    <textarea id="curbsideInstructionsInput_${newIndex}" rows="2" placeholder="Spot 4, blue Honda..."></textarea>
+                  </div>
+                </div>
+              `;
 
         container.appendChild(newBlock);
         bindStoreAutocomplete(newIndex);
@@ -5097,23 +5442,23 @@
 
           if (isClosed) {
             card.innerHTML = `
-              <div class="wave-header disabled">
-                <span>${timeLabel} Run</span>
-                <span style="font-size:0.8rem; font-weight:normal; color:var(--danger);">Closed</span>
-              </div>
-            `;
+                    <div class="wave-header disabled">
+                      <span>${timeLabel} Run</span>
+                      <span style="font-size:0.8rem; font-weight:normal; color:var(--danger);">Closed</span>
+                    </div>
+                  `;
           } else {
             card.innerHTML = `
-              <div class="wave-header" onclick="window.expandWave(this, '${shiftId}', ${
+                    <div class="wave-header" onclick="window.expandWave(this, '${shiftId}', ${
               wave.capacity
             }, '${dowStr}, ${dateObj.toLocaleString("default", {
               month: "short",
             })} ${dateObj.getDate()} @ ${timeLabel}')">
-                <span>${timeLabel} Run</span>
-                <span style="font-size:0.8rem; font-weight:normal; color:var(--accent);">Select Slot ▼</span>
-              </div>
-              <div class="wave-blocks" id="blocks_${shiftId}"></div>
-            `;
+                      <span>${timeLabel} Run</span>
+                      <span style="font-size:0.8rem; font-weight:normal; color:var(--accent);">Select Slot ▼</span>
+                    </div>
+                    <div class="wave-blocks" id="blocks_${shiftId}"></div>
+                  `;
           }
           container.appendChild(card);
         });
@@ -5156,17 +5501,17 @@
           }
 
           let blocksHtml = `
-            <div style="grid-column: 1 / -1; display: flex; justify-content: center; gap: 20px; padding-bottom: 5px; font-size: 0.8rem; color: var(--text-muted);">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 14px; height: 14px; border-radius: 3px; background: var(--success);"></div>
-                <span>= Available</span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 14px; height: 14px; border-radius: 3px; background: var(--surface); border: 1px solid var(--border);"></div>
-                <span>= Unavailable</span>
-              </div>
-            </div>
-          `;
+                  <div style="grid-column: 1 / -1; display: flex; justify-content: center; gap: 20px; padding-bottom: 5px; font-size: 0.8rem; color: var(--text-muted);">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <div style="width: 14px; height: 14px; border-radius: 3px; background: var(--success);"></div>
+                      <span>= Available</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <div style="width: 14px; height: 14px; border-radius: 3px; background: var(--surface); border: 1px solid var(--border);"></div>
+                      <span>= Unavailable</span>
+                    </div>
+                  </div>
+                `;
           for (let i = 0; i < capacity; i++) {
             if (i < bookedCount) {
               blocksHtml += `<div class="capacity-block booked"></div>`;
@@ -5276,10 +5621,10 @@
         document.getElementById("chatHeaderSubtitle").style.color =
           "var(--text-muted)";
         document.getElementById("chatMessageContainer").innerHTML = `
-          <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
-            Chat is strictly locked.<br>There is no active delivery route.
-          </div>
-        `;
+                <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+                  Chat is strictly locked.<br>There is no active delivery route.
+                </div>
+              `;
         document.getElementById("heroConnectUI").style.display = "none";
       };
 
@@ -5333,16 +5678,16 @@
               : "Sending...";
 
             html += `
-              <div class="chat-bubble ${bubbleClass}">
-                ${
-                  msg.imageUrl
-                    ? `<img src="${msg.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2);"><br>`
-                    : ""
-                }
-                ${msg.text}
-                <div class="chat-timestamp">${timeString}</div>
-              </div>
-            `;
+                    <div class="chat-bubble ${bubbleClass}">
+                      ${
+                        msg.imageUrl
+                          ? `<img src="${msg.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2);"><br>`
+                          : ""
+                      }
+                      ${msg.text}
+                      <div class="chat-timestamp">${timeString}</div>
+                    </div>
+                  `;
 
             // Actively mark read payloads to kill the notification ping loop
             if (
@@ -5359,10 +5704,10 @@
           container.innerHTML =
             html ||
             `
-            <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
-              Send a message to your Hero.
-            </div>
-          `;
+                  <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+                    Send a message to your Hero.
+                  </div>
+                `;
           container.scrollTop = container.scrollHeight;
 
           if (isNewPayload) {
@@ -5414,22 +5759,22 @@
           const driverName = window.appState.driverNameCache;
 
           html += `
-            <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid ${
-              unread > 0 ? "var(--accent)" : "var(--border)"
-            }; cursor: pointer; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;" onclick="openChatModal()">
-              <div>
-                <strong style="color: ${
-                  unread > 0 ? "var(--accent)" : "var(--text)"
-                };">💬 Chat with ${driverName}</strong>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Active Delivery</p>
-              </div>
-              ${
-                unread > 0
-                  ? `<div style="background: var(--accent); color: white; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold;">${unread}</div>`
-                  : ""
-              }
-            </div>
-          `;
+                  <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid ${
+                    unread > 0 ? "var(--accent)" : "var(--border)"
+                  }; cursor: pointer; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;" onclick="openChatModal()">
+                    <div>
+                      <strong style="color: ${
+                        unread > 0 ? "var(--accent)" : "var(--text)"
+                      };">💬 Chat with ${driverName}</strong>
+                      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Active Delivery</p>
+                    </div>
+                    ${
+                      unread > 0
+                        ? `<div style="background: var(--accent); color: white; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold;">${unread}</div>`
+                        : ""
+                    }
+                  </div>
+                `;
         }
 
         if (html === "") {
@@ -5448,9 +5793,14 @@
       window.sendChatMessage = async function () {
         const input = document.getElementById("chatTextInput");
         const text = input.value.trim();
-        if (!text || !window.appState.currentOrderId) return;
 
-        input.value = "";
+        if (
+          (!text && !window.chatPendingImage) ||
+          !window.appState.currentOrderId
+        )
+          return;
+
+        input.disabled = true;
 
         try {
           await window.addDoc(
@@ -5462,15 +5812,251 @@
             ),
             {
               senderId: window.appState.userId,
-              text: text,
+              text: text || "📷 Image attached",
+              imageUrl: window.chatPendingImage || null,
               timestamp: window.serverTimestamp(),
               read: false,
             }
           );
+
+          input.value = "";
+          window.chatPendingImage = null;
+
+          document.getElementById("chatImagePreviewContainer").style.display =
+            "none";
+          document.getElementById("chatImagePreview").src = "";
+          document.getElementById("chatImageInput").value = "";
+
+          const inputLabel = document.querySelector("#chatInputArea label");
+          inputLabel.style.background = "var(--surface-elevated)";
+          inputLabel.querySelector("svg").style.fill = "var(--text-muted)";
         } catch (e) {
           console.error("Failed to send message:", e);
           alert("Failed to send message.");
+        } finally {
+          input.disabled = false;
+          input.focus();
         }
+      };
+
+      // --- COMMUNITY HUB LOGIC ---
+      window.communityUnsubscribe = null;
+      window.communityPendingImage = null;
+
+      window.toggleCommunityFeed = function () {
+        const trigger = document.getElementById("communityTriggerBtn");
+        const modal = document.getElementById("communityModal");
+        const isActive = trigger.classList.contains("active");
+
+        if (!isActive) {
+          trigger.classList.add("active");
+          modal.classList.add("active");
+
+          if (
+            !window.communityUnsubscribe &&
+            window.appState &&
+            window.appState.userId
+          ) {
+            window.initCommunityListener();
+          } else if (!window.appState || !window.appState.userId) {
+            document.getElementById("communityFeedContainer").innerHTML = `
+                    <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+                      Please tap "Settings" and Sign In to view and post to the Neighborhood Hub.
+                    </div>
+                  `;
+          }
+        } else {
+          trigger.classList.remove("active");
+          modal.classList.remove("active");
+        }
+      };
+
+      window.toggleCommunityTooltip = function (event) {
+        if (event) event.stopPropagation();
+        const box = document.getElementById("communityTooltipBox");
+        if (box) box.classList.toggle("active");
+      };
+
+      document.addEventListener("click", function (event) {
+        const box = document.getElementById("communityTooltipBox");
+        // Target the button inside the modal header instead of the deleted anchor
+        const btn = document.querySelector("#communityModal .tooltip-icon-btn");
+        if (box && box.classList.contains("active")) {
+          if (
+            !box.contains(event.target) &&
+            (!btn || !btn.contains(event.target))
+          ) {
+            box.classList.remove("active");
+          }
+        }
+      });
+
+      window.handleCommunityImageUpload = function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = function () {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const maxW = 600;
+            const scale = img.width > maxW ? maxW / img.width : 1;
+
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            window.communityPendingImage = canvas.toDataURL("image/jpeg", 0.6);
+
+            document.getElementById("communityImagePreview").src =
+              window.communityPendingImage;
+            document.getElementById(
+              "communityImagePreviewContainer"
+            ).style.display = "block";
+
+            const inputLabel = document.querySelector(
+              "#communityInputArea label"
+            );
+            inputLabel.style.background = "var(--accent)";
+            inputLabel.querySelector("svg").style.fill = "white";
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = "";
+      };
+
+      window.removeCommunityImage = function (event) {
+        if (event) event.preventDefault();
+
+        window.communityPendingImage = null;
+        document.getElementById(
+          "communityImagePreviewContainer"
+        ).style.display = "none";
+        document.getElementById("communityImagePreview").src = "";
+        document.getElementById("communityImageInput").value = "";
+
+        const inputLabel = document.querySelector("#communityInputArea label");
+        inputLabel.style.background = "var(--surface-elevated)";
+        inputLabel.querySelector("svg").style.fill = "var(--text-muted)";
+      };
+
+      window.communityUnsubscribe = null;
+      window.postToDeleteId = null;
+
+      window.promptDeletePost = function (postId) {
+        window.postToDeleteId = postId;
+        document.getElementById("deletePostConfirmModal").style.display =
+          "flex";
+      };
+
+      window.cancelDeletePost = function () {
+        window.postToDeleteId = null;
+        document.getElementById("deletePostConfirmModal").style.display =
+          "none";
+      };
+
+      window.confirmDeletePost = async function () {
+        if (!window.postToDeleteId) return;
+
+        try {
+          await window.updateDoc(
+            window.doc(window.db, "community_posts", window.postToDeleteId),
+            { status: "hidden" }
+          );
+          window.cancelDeletePost();
+        } catch (e) {
+          console.error("Failed to delete post:", e);
+          alert("Failed to delete post. Please try again.");
+        }
+      };
+
+      window.initCommunityListener = function () {
+        if (window.communityUnsubscribe) window.communityUnsubscribe();
+
+        const q = window.query(
+          window.collection(window.db, "community_posts"),
+          window.orderBy("timestamp", "desc")
+        );
+
+        window.communityUnsubscribe = window.onSnapshot(
+          q,
+          (snapshot) => {
+            const container = document.getElementById("communityFeedContainer");
+            let html = "";
+            let validPostsFound = false;
+
+            snapshot.docs.forEach((docSnap) => {
+              const post = docSnap.data();
+
+              if (post.status !== "active") return;
+              validPostsFound = true;
+
+              const timeString = post.timestamp
+                ? new Date(post.timestamp.toDate()).toLocaleDateString([], {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Posting...";
+
+              const currentUserId = window.appState
+                ? window.appState.userId
+                : null;
+              const isAuthor = post.userId === currentUserId;
+
+              const deleteBtnHtml = isAuthor
+                ? `
+                <button onclick="promptDeletePost('${docSnap.id}')" style="background: transparent; border: none; padding: 4px; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center;">
+                  <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor; transition: fill 0.2s;" onmouseover="this.style.fill='var(--danger)'" onmouseout="this.style.fill='currentColor'">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                  </svg>
+                </button>
+              `
+                : "";
+
+              html += `
+              <div class="community-post">
+                <div class="community-post-header">
+                  <div style="display: flex; align-items: baseline; gap: 8px;">
+                    <span class="community-post-author">${
+                      post.authorName || "Neighbor"
+                    }</span>
+                    <span class="community-post-time">${timeString}</span>
+                  </div>
+                  ${deleteBtnHtml}
+                </div>
+                ${
+                  post.imageUrl
+                    ? `<img src="${post.imageUrl}" class="community-post-image">`
+                    : ""
+                }
+                ${
+                  post.text
+                    ? `<div class="community-post-text">${post.text}</div>`
+                    : ""
+                }
+              </div>
+            `;
+            });
+
+            container.innerHTML = validPostsFound
+              ? html
+              : `
+            <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+              Be the first to post in the Neighborhood Hub!
+            </div>
+          `;
+
+            container.scrollTop = 0;
+          },
+          (error) => {
+            console.error("Error loading community feed:", error);
+          }
+        );
       };
 
       // --- PWA INSTALLATION PROMPT ---
