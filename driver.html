@@ -1,1 +1,5825 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pick Up Hero - Driver Command</title>
 
+    <link rel="icon" href="hero.ico" type="image/x-icon" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <link rel="manifest" href="manifest-driver.json" />
+    <meta name="theme-color" content="#ee611c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Hero Driver" />
+    <link rel="apple-touch-icon" href="heroimg192.png" />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <style>
+      :root {
+        --bg: #121212;
+        --surface: #1e1e1e;
+        --surface-elevated: #2c2c2c;
+        --accent: #ee611c;
+        --accent-hover: #d95314;
+        --text: #ffffff;
+        --text-muted: #94a3b8;
+        --border: #333333;
+        --success: #22c55e;
+        --danger: #ef4444;
+        --shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+      }
+
+      body,
+      html {
+        background-color: var(--bg);
+        color: var(--text);
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
+      }
+
+      /* --- MAP LAYER --- */
+      #map {
+        width: 100vw;
+        height: 100vh;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;
+      }
+
+      /* --- TOP NOTIFICATION BELL --- */
+      .top-controls {
+        position: absolute;
+        top: env(safe-area-inset-top, 20px);
+        right: 20px;
+        z-index: 1000;
+      }
+
+      .bell-btn {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        position: relative;
+      }
+
+      .bell-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: var(--text);
+      }
+
+      .badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: var(--accent);
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 800;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--bg);
+        display: none;
+      }
+
+      /* --- DRAGGABLE BOTTOM SHEET (ACTIVE QUEUE) --- */
+      .bottom-sheet {
+        position: absolute;
+        bottom: 80px; /* Above Nav Bar */
+        left: 0;
+        width: 100%;
+        height: 75vh;
+        background: rgba(30, 30, 30, 0.95);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 24px 24px 0 0;
+        z-index: 900;
+        border-top: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(calc(100% - 130px)); /* Minimized state */
+        display: flex;
+        flex-direction: column;
+      }
+
+      .bottom-sheet.expanded {
+        transform: translateY(0);
+      }
+
+      .drag-handle-area {
+        width: 100%;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: grab;
+        border-bottom: 1px solid transparent;
+      }
+
+      .bottom-sheet.expanded .drag-handle-area {
+        border-bottom: 1px solid var(--border);
+      }
+
+      .drag-handle {
+        width: 40px;
+        height: 5px;
+        background: var(--text-muted);
+        border-radius: 5px;
+        margin-bottom: 15px;
+      }
+
+      .glance-status {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+      }
+
+      .glance-status h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      .glance-status p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
+      .sheet-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: none;
+      }
+
+      .bottom-sheet.expanded .sheet-content {
+        display: block;
+      }
+
+      /* --- FINANCIAL GRID --- */
+      .financial-grid {
+        display: flex;
+        gap: 15px;
+        overflow-x: auto;
+        padding-bottom: 15px;
+        margin-bottom: 25px;
+        scrollbar-width: none;
+      }
+      .financial-grid::-webkit-scrollbar {
+        display: none;
+      }
+      .finance-card {
+        min-width: 170px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 15px;
+        flex-shrink: 0;
+      }
+      .finance-card.master {
+        background: var(--accent);
+        border-color: var(--accent-hover);
+        color: white;
+      }
+      .finance-card h5 {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        color: var(--text-muted);
+      }
+      .finance-card.master h5 {
+        color: rgba(255, 255, 255, 0.9);
+      }
+      .finance-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+      }
+      .finance-total {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
+        font-size: 1.1rem;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+      }
+      .finance-card.master .finance-total {
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      /* Vertical Timeline */
+      .timeline {
+        border-left: 2px solid var(--border);
+        margin-left: 10px;
+        padding-left: 25px;
+        list-style: none;
+      }
+
+      .timeline-item {
+        position: relative;
+        margin-bottom: 25px;
+      }
+
+      .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: -32px;
+        top: 4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--surface-elevated);
+        border: 2px solid var(--border);
+        z-index: 2;
+      }
+
+      .timeline-item.active::before {
+        background: var(--accent);
+        border-color: var(--surface);
+        box-shadow: 0 0 10px rgba(238, 97, 28, 0.5);
+      }
+
+      .timeline-item.completed::before {
+        background: var(--success);
+        border-color: var(--surface);
+      }
+
+      .node-card {
+        background: var(--surface-elevated);
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+      }
+
+      .node-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      /* --- BOTTOM NAVIGATION BAR --- */
+      .bottom-nav {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 80px;
+        background: rgba(18, 18, 18, 0.98);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 1000;
+        border-top: 1px solid var(--border);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+
+      .nav-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        width: 60px;
+      }
+
+      .nav-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+      }
+      .nav-btn.active {
+        color: var(--accent);
+      }
+      .nav-btn span {
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
+
+      .fab-container {
+        position: relative;
+        top: -25px;
+      }
+
+      .fab-btn {
+        width: 60px;
+        height: 60px;
+        background: var(--accent);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: none;
+        box-shadow: 0 4px 20px rgba(238, 97, 28, 0.4);
+        cursor: pointer;
+      }
+
+      .fab-btn svg {
+        width: 28px;
+        height: 28px;
+        fill: white;
+      }
+
+      /* --- MODALS --- */
+
+      .modal {
+        position: fixed;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg);
+        z-index: 2000;
+        transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .modal.active {
+        top: 0;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+
+      .modal-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+      }
+
+      .close-btn {
+        background: var(--surface-elevated);
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        color: var(--text);
+        font-size: 1.2rem;
+        cursor: pointer;
+      }
+
+      /* --- FORMS & BUTTONS --- */
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        font-size: 1rem;
+        outline: none;
+      }
+      .form-group input:focus,
+      .form-group textarea:focus {
+        border-color: var(--accent);
+      }
+
+      .password-toggle-btn {
+        position: absolute;
+        right: 15px;
+        bottom: 16px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .password-toggle-btn svg {
+        width: 22px;
+        height: 22px;
+        fill: currentColor;
+        transition: fill 0.2s;
+      }
+      .password-toggle-btn:hover svg {
+        fill: var(--accent);
+      }
+
+      .btn {
+        width: 100%;
+        padding: 16px;
+        border-radius: 12px;
+        border: none;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        text-align: center;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: white;
+      }
+      .btn-secondary {
+        background: var(--surface-elevated);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      .btn-success {
+        background: var(--success);
+        color: white;
+      }
+      .btn-emergency {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+
+      /* Custom Toggles */
+      .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 28px;
+        background: var(--surface-elevated);
+        border-radius: 30px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .toggle-switch.on {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .toggle-knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 22px;
+        height: 22px;
+        background: white;
+        border-radius: 50%;
+        transition: left 0.2s;
+      }
+      .toggle-switch.on .toggle-knob {
+        left: 24px;
+      }
+
+      /* --- WEEKLY ROUTINE BUILDER --- */
+      .day-toggles {
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+        margin-bottom: 15px;
+      }
+      .day-btn {
+        flex: 1;
+        padding: 12px 0;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .day-btn.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+
+      /* Map Cluster Badges */
+      .cluster-pin {
+        background: var(--accent);
+        border: 3px solid var(--surface);
+        border-radius: 50%;
+        color: white;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        font-size: 0.9rem;
+      }
+
+      .leaflet-popup-content-wrapper,
+      .leaflet-popup-tip {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+
+      /* --- CUSTOM MAP PINS --- */
+      .custom-store-pin {
+        background-color: var(--accent);
+        width: 28px;
+        height: 28px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid #ffffff;
+        box-shadow: -3px 3px 10px rgba(0, 0, 0, 0.5);
+        position: relative;
+      }
+      .custom-store-pin::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 10px;
+        height: 10px;
+        background-color: #ffffff;
+        border-radius: 50%;
+      }
+
+      .custom-sos-pin {
+        background-color: var(--danger);
+        width: 28px;
+        height: 28px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid #ffffff;
+        box-shadow: -3px 3px 15px rgba(239, 68, 68, 0.6);
+        position: relative;
+      }
+      .custom-sos-pin::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 10px;
+        height: 10px;
+        background-color: #ffffff;
+        border-radius: 50%;
+      }
+
+      .custom-orange-pin {
+        background-color: var(--accent);
+        border: 3px solid var(--surface);
+        border-radius: 50%;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+      }
+
+      .custom-delivery-pin {
+        background-color: var(--success);
+        border: 3px solid #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      /* --- DUTY STATUS UI --- */
+      .duty-toggle-container {
+        position: absolute;
+        top: env(safe-area-inset-top, 20px);
+        left: 20px;
+        z-index: 1000;
+      }
+
+      .duty-btn {
+        background-color: #808080;
+        color: #ffffff;
+        border: 2px solid #ffffff;
+        padding: 10px 18px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+        padding-left: 60px;
+      }
+
+      .duty-btn.active {
+        background-color: var(--success);
+        border-color: var(--success);
+      }
+
+      /* --- GOOGLE AUTOCOMPLETE OVERRIDES --- */
+      .pac-container {
+        z-index: 3000 !important;
+        background-color: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-top: 4px;
+        box-shadow: var(--shadow);
+      }
+      .pac-item {
+        color: var(--text-muted);
+        border-top: 1px solid var(--border);
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      .pac-item:hover {
+        background-color: var(--surface-elevated);
+      }
+      .pac-item-query {
+        color: var(--text);
+        font-size: 1rem;
+      }
+
+      /* --- AUTHENTICATION OVERLAY --- */
+      #authOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(18, 18, 18, 0.98);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      }
+
+      .auth-card {
+        background: var(--surface);
+        width: 90%;
+        max-width: 400px;
+        padding: 35px 25px;
+        border-radius: 24px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+      }
+
+      .auth-card h2 {
+        color: var(--accent);
+        text-align: center;
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+      }
+
+      .auth-card p {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin-bottom: 30px;
+      }
+
+      .auth-toggle-link {
+        color: var(--accent);
+        cursor: pointer;
+        font-weight: 700;
+        text-align: center;
+        display: block;
+        margin-top: 25px;
+        font-size: 0.9rem;
+      }
+
+      /* --- CUSTOM ALERT MODAL --- */
+      .soft-prompt-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 4000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+      }
+
+      .soft-prompt-box {
+        background: var(--surface);
+        padding: 24px;
+        border-radius: 16px;
+        width: 85%;
+        max-width: 340px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        text-align: center;
+      }
+
+      .soft-prompt-box h3 {
+        margin-bottom: 12px;
+        color: var(--text);
+      }
+
+      .soft-prompt-box p {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+        line-height: 1.4;
+      }
+
+      .glowing-pin {
+        box-shadow: 0 0 20px 5px var(--accent) !important;
+        animation: pulse-glow 1.5s infinite alternate;
+      }
+
+      @keyframes pulse-glow {
+        from {
+          box-shadow: 0 0 10px 2px var(--accent);
+        }
+        to {
+          box-shadow: 0 0 25px 8px var(--accent);
+        }
+      }
+
+      .floating-lock-btn {
+        position: absolute;
+        bottom: 110px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 4000;
+        display: none;
+        padding: 14px 28px;
+        border-radius: 30px;
+        font-weight: 800;
+        font-size: 1.1rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      }
+
+      /* --- CHAT MODAL --- */
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .chat-bubble {
+        max-width: 80%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        font-size: 0.95rem;
+        line-height: 1.4;
+      }
+      .chat-bubble.hero {
+        background: var(--accent);
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+      }
+      .chat-bubble.customer {
+        background: var(--surface-elevated);
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+      }
+      .chat-timestamp {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+        text-align: right;
+      }
+      .chat-input-area {
+        display: flex;
+        gap: 10px;
+        padding: 15px;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        align-items: center;
+        padding-bottom: calc(15px + env(safe-area-inset-bottom));
+      }
+      .chat-input-area input {
+        flex: 1;
+        padding: 14px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+        outline: none;
+      }
+      .chat-input-area input:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .chat-send-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .chat-send-btn:disabled {
+        background: var(--surface-elevated);
+        cursor: not-allowed;
+      }
+      .chat-send-btn svg {
+        width: 20px;
+        height: 20px;
+        fill: white;
+      }
+
+      /* --- SETTINGS HAMBURGER DROPDOWN --- */
+      .settings-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+        z-index: 2500;
+        width: 200px;
+      }
+      .settings-dropdown.active {
+        display: flex;
+      }
+      .settings-dropdown button {
+        background: none;
+        border: none;
+        padding: 15px;
+        text-align: left;
+        color: var(--text);
+        font-size: 0.95rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border);
+      }
+      .settings-dropdown button:last-child {
+        border-bottom: none;
+      }
+      .settings-dropdown button:hover {
+        background: var(--surface);
+      }
+
+      /* --- GLOBAL ACTIVITY INDICATORS --- */
+      .top-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .activity-ribbon {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 2px;
+        background: rgba(238, 97, 28, 0.2);
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        overflow: hidden;
+      }
+
+      .activity-ribbon::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -50%;
+        width: 50%;
+        height: 100%;
+        background: var(--accent);
+        animation: ribbon-slide 1s infinite linear;
+      }
+
+      @keyframes ribbon-slide {
+        0% {
+          left: -50%;
+        }
+        100% {
+          left: 100%;
+        }
+      }
+
+      .activity-spinner {
+        width: 22px;
+        height: 22px;
+        border: 3px solid rgba(238, 97, 28, 0.3);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 1s infinite linear;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+
+      .activity-active {
+        opacity: 1 !important;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* --- TOOLTIP UI --- */
+      .tooltip-icon-btn {
+        width: 25px;
+        height: 25px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--accent);
+        color: var(--text);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+
+      .tooltip-box {
+        position: absolute;
+        bottom: 20px;
+        right: 5px;
+        width: 290px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+        transform-origin: bottom right;
+        transform: scale(0);
+        opacity: 0;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+          opacity 0.2s ease;
+        pointer-events: none;
+      }
+
+      .tooltip-box.active {
+        transform: scale(1);
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .tooltip-box h4 {
+        color: var(--accent);
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .tooltip-box p {
+        color: #f5f5f5;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        text-align: left;
+        margin: 0;
+      }
+
+      .tooltip-close-icon {
+        background: transparent;
+        border: none;
+        color: #f5f5f5;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      /* --- COMMUNITY HUB UI --- */
+      .community-triangle-wrapper {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 90px;
+        height: 90px;
+        z-index: 2500;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        clip-path: polygon(0 0, 100% 0, 0 100%);
+      }
+      .community-triangle-wrapper::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        border-top: 90px solid var(--accent);
+        border-right: 90px solid transparent;
+      }
+      .community-triangle-wrapper.active {
+        transform: translate(
+            calc(100vw - 90px),
+            calc(100dvh - 90px - env(safe-area-inset-bottom, 15px))
+          )
+          rotate(180deg);
+      }
+      .community-triangle-icon {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 30px;
+        height: 30px;
+        z-index: 2501;
+        object-fit: contain;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .community-triangle-wrapper.active .community-triangle-icon {
+        transform: rotate(-180deg);
+      }
+
+      #communityTooltipBox {
+        opacity: 0;
+        transform: scale(0);
+        pointer-events: none;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+          opacity 0.2s ease;
+      }
+      #communityTooltipBox.active {
+        opacity: 1;
+        transform: scale(1);
+        pointer-events: auto;
+      }
+
+      .community-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .community-post {
+        background: var(--surface-elevated);
+        padding: 15px;
+        border-radius: 12px;
+        border-left: 4px solid var(--accent);
+      }
+
+      .community-post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .community-post-author {
+        font-weight: bold;
+        color: var(--accent);
+        font-size: 0.95rem;
+      }
+      .community-post-time {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+      .community-post-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+        color: var(--text);
+      }
+      .community-post-image {
+        max-width: 100%;
+        border-radius: 8px;
+        margin-top: 10px;
+        border: 1px solid var(--border);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- GLOBAL ACTIVITY RIBBON -->
+    <div id="globalActivityRibbon" class="activity-ribbon"></div>
+
+    <!-- COMMUNITY HUB TRIGGER -->
+    <div
+      class="community-triangle-wrapper"
+      id="communityTriggerBtn"
+      onclick="toggleCommunityFeed()"
+    >
+      <img
+        src="socialicon.PNG"
+        class="community-triangle-icon"
+        alt="Community"
+      />
+    </div>
+
+    <!-- PWA INSTALL PROMPT -->
+    <div
+      id="pwaInstallPrompt"
+      style="
+        position: fixed;
+        top: -150px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 400px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--accent);
+        border-radius: 16px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+        z-index: 9999;
+        transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      "
+    >
+      <div style="display: flex; align-items: center; gap: 12px">
+        <img
+          src="heroimg512.png"
+          style="
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;
+          "
+          alt="App Icon"
+        />
+        <div style="display: flex; flex-direction: column">
+          <strong style="color: var(--text); font-size: 0.95rem"
+            >Hero Command</strong
+          >
+          <span style="color: var(--text-muted); font-size: 0.75rem"
+            >Add to home screen</span
+          >
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <button
+          id="pwaInstallBtn"
+          class="btn btn-primary"
+          style="padding: 8px 16px; font-size: 0.85rem; width: auto; margin: 0"
+        >
+          Install Now
+        </button>
+        <button
+          onclick="dismissPwaPrompt()"
+          style="
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+          "
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- AUTHENTICATION OVERLAY -->
+    <div id="authOverlay">
+      <div class="auth-card">
+        <h2 id="authTitle">Driver Login</h2>
+        <p id="authSubtitle">Welcome back, Hero.</p>
+
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="authEmail" placeholder="hero@example.com" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 30px; position: relative">
+          <label>Password</label>
+          <input
+            type="password"
+            id="authPassword"
+            placeholder="••••••••"
+            style="padding-right: 45px"
+          />
+          <button
+            type="button"
+            class="password-toggle-btn"
+            onclick="togglePasswordVisibility()"
+            aria-label="Toggle password visibility"
+          >
+            <svg id="eyeIcon" viewBox="0 0 24 24">
+              <path
+                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <button
+          class="btn btn-primary"
+          id="authSubmitBtn"
+          onclick="handleAuthAction()"
+        >
+          Sign In
+        </button>
+
+        <span
+          class="auth-toggle-link"
+          onclick="toggleAuthMode()"
+          id="authToggleText"
+          >Need an account? Sign Up</span
+        >
+      </div>
+    </div>
+
+    <!-- Audio Alert Engine -->
+    <audio id="alertSound" src="Roadwatchero.mp3" preload="auto"></audio>
+
+    <audio
+      id="sosAlarmSound"
+      src="Roadwatchero.mp3"
+      loop
+      preload="auto"
+    ></audio>
+
+    <!-- SOS FULL SCREEN ALERT MODAL -->
+    <div
+      id="sosAlertModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(239, 68, 68, 0.95);
+        z-index: 9999;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(10px);
+      "
+    >
+      <div
+        style="
+          background: var(--surface);
+          width: 90%;
+          max-width: 400px;
+          padding: 30px;
+          border-radius: 20px;
+          text-align: center;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+          border: 2px solid #fff;
+        "
+      >
+        <div
+          style="
+            width: 80px;
+            height: 80px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.2);
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 40px; height: 40px; fill: #fff"
+          >
+            <path
+              d="M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2"
+            />
+          </svg>
+        </div>
+        <h2
+          style="
+            color: var(--danger);
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+          "
+        >
+          Priority SOS Run
+        </h2>
+
+        <p
+          id="sosAlertText"
+          style="
+            color: var(--text);
+            font-size: 1rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+          "
+        >
+          A customer just paid a premium to skip the line. They have confirmed
+          this order is <strong>ready for pickup right now</strong>.
+        </p>
+
+        <button
+          class="btn btn-primary"
+          onclick="acknowledgeSOS()"
+          style="
+            background: var(--danger);
+            color: white;
+            font-size: 1.1rem;
+            padding: 18px;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5);
+          "
+        >
+          Acknowledge & Route
+        </button>
+      </div>
+    </div>
+
+    <!-- MAP LAYER -->
+    <div id="map"></div>
+
+    <button
+      id="lockPinBtn"
+      class="btn btn-primary floating-lock-btn"
+      onclick="lockHomePin()"
+    >
+      Save Location
+    </button>
+
+    <button
+      id="finishZoneBtn"
+      class="btn btn-success floating-lock-btn"
+      onclick="finishDrawingZone()"
+      style="display: none"
+    >
+      Save Zone Shape
+    </button>
+    <button
+      id="clearZoneBtn"
+      class="btn btn-emergency floating-lock-btn"
+      onclick="clearZone()"
+      style="display: none; bottom: 50px"
+    >
+      Clear Zone
+    </button>
+
+    <!-- DUTY STATUS LAYER -->
+    <div class="duty-toggle-container">
+      <button id="dutyToggleBtn" class="duty-btn" onclick="toggleDutyStatus()">
+        Off Duty
+      </button>
+
+      <div
+        id="mapLegend"
+        style="
+          margin-top: 15px;
+          background: var(--surface-elevated);
+          padding: 12px;
+          border-radius: 12px;
+          border: 1px solid var(--border);
+          box-shadow: var(--shadow);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        "
+      >
+        <div style="display: flex; align-items: center; gap: 8px">
+          <div
+            style="
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              background: var(--accent);
+              border: 2px solid #ffffff;
+              box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            "
+          ></div>
+          <span style="font-size: 0.85rem; font-weight: 700; color: var(--text)"
+            >Pickups</span
+          >
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px">
+          <div
+            style="
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              background: var(--success);
+              border: 2px solid #ffffff;
+              box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 11px;
+              font-weight: bold;
+            "
+          >
+            ⌂
+          </div>
+          <span style="font-size: 0.85rem; font-weight: 700; color: var(--text)"
+            >Deliveries</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP COMMAND CENTER -->
+    <div class="top-controls">
+      <!-- GLOBAL ACTIVITY SPINNER -->
+      <div id="globalActivitySpinner" class="activity-spinner"></div>
+
+      <button class="bell-btn" onclick="openNotificationModal()">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
+          />
+        </svg>
+        <div class="badge" id="driverNotificationBadge">0</div>
+      </button>
+    </div>
+
+    <!-- DRAGGABLE TIMELINE QUEUE -->
+    <div class="bottom-sheet" id="activeQueueSheet">
+      <div class="drag-handle-area" onclick="toggleBottomSheet()">
+        <div class="drag-handle"></div>
+        <div class="glance-status">
+          <div>
+            <h3 id="glanceTitle">Idle / No Active Route</h3>
+            <p id="glanceSubtitle">Awaiting scheduled runs.</p>
+          </div>
+          <button
+            id="workflowBtn"
+            class="btn btn-primary"
+            style="width: auto; padding: 10px 20px; display: none"
+            onclick="advanceWorkflow()"
+          >
+            Start Route
+          </button>
+        </div>
+      </div>
+
+      <div class="sheet-content">
+        <h2
+          id="deliveryTimelineHeader"
+          style="
+            display: none;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-weight: 800;
+            font-size: 1.4rem;
+            text-transform: uppercase;
+            border-left: 4px solid var(--accent);
+            padding-left: 10px;
+          "
+        >
+          Delivery for Tomorrow
+        </h2>
+
+        <div id="financialSummaryContainer" style="display: none">
+          <h4
+            style="
+              margin-bottom: 15px;
+              color: var(--text-muted);
+              text-transform: uppercase;
+              font-size: 0.85rem;
+              letter-spacing: 1px;
+            "
+          >
+            Financial Breakdown
+          </h4>
+          <div class="financial-grid" id="financialGrid">
+            <!-- Dynamic finance cards injected here -->
+          </div>
+        </div>
+
+        <h4
+          style="
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+          "
+        >
+          Route Timeline
+        </h4>
+        <ul class="timeline" id="timelineList">
+          <!-- Injected via JS based on state -->
+          <p style="color: var(--text-muted)">Queue is empty.</p>
+        </ul>
+      </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" id="navHome" onclick="closeAllModals()">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 3l10 9h-3v9h-14v-9h-3l10-9z" />
+        </svg>
+        <span>Map</span>
+      </button>
+
+      <div class="fab-container">
+        <button class="fab-btn" onclick="openModal('scheduleModal')">
+          <!-- Calendar Icon -->
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <button
+        class="nav-btn"
+        id="navProfile"
+        onclick="openModal('settingsModal')"
+      >
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49-.12-.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"
+          />
+        </svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <!-- MODAL: SCHEDULE ROUTE (+) -->
+    <div id="scheduleModal" class="modal">
+      <div class="modal-header">
+        <h2>Home Base Schedule</h2>
+        <button class="close-btn" onclick="closeAllModals()">✕</button>
+      </div>
+      <div class="modal-content">
+        <div class="form-group">
+          <label>Global Order Cutoff (Minutes Before Departure)</label>
+          <input type="number" id="globalCutoffInput" value="30" />
+        </div>
+
+        <div class="form-group">
+          <label>Active Days</label>
+
+          <div class="day-toggles">
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Sun"
+              onclick="toggleRoutineDay('Sun')"
+            >
+              Sun
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Mon"
+              onclick="toggleRoutineDay('Mon')"
+            >
+              Mon
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Tue"
+              onclick="toggleRoutineDay('Tue')"
+            >
+              Tue
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Wed"
+              onclick="toggleRoutineDay('Wed')"
+            >
+              Wen
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Thu"
+              onclick="toggleRoutineDay('Thu')"
+            >
+              Thu
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Fri"
+              onclick="toggleRoutineDay('Fri')"
+            >
+              Fri
+            </button>
+            <button
+              type="button"
+              class="day-btn"
+              id="dayBtn_Sat"
+              onclick="toggleRoutineDay('Sat')"
+            >
+              Sat
+            </button>
+          </div>
+        </div>
+
+        <div id="waveBuilderContainer" style="margin-bottom: 25px">
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 0.85rem;
+              text-align: center;
+            "
+          >
+            Select a day above to configure waves.
+          </p>
+        </div>
+
+        <hr
+          style="
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 0 0 25px 0;
+          "
+        />
+
+        <div class="form-group" style="margin-bottom: 20px">
+          <label id="basePinCountLabel">Base Locations (0 / 5)</label>
+          <div
+            id="baseLocationsList"
+            style="
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+              margin-bottom: 12px;
+            "
+          ></div>
+          <button
+            class="btn btn-secondary"
+            id="addPinBtn"
+            onclick="addNewBasePin()"
+          >
+            + Add Location Pin (Max 5)
+          </button>
+
+          <button
+            class="btn btn-secondary"
+            id="drawZoneBtn"
+            onclick="startDrawingZone()"
+            style="margin-top: 10px"
+          >
+            + Draw Visual Delivery Zone
+          </button>
+        </div>
+
+        <button
+          class="btn btn-primary"
+          id="saveScheduleBtn"
+          onclick="saveScheduleBlock()"
+        >
+          Save Schedule
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL: MASTER SETTINGS -->
+    <div id="settingsModal" class="modal">
+      <div class="modal-header" style="position: relative">
+        <h2>Driver Settings</h2>
+        <div style="display: flex; gap: 15px; align-items: center">
+          <button
+            class="close-btn"
+            style="background: transparent"
+            onclick="toggleSettingsDropdown()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              style="width: 24px; height: 24px; fill: var(--text)"
+            >
+              <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+            </svg>
+          </button>
+          <button class="close-btn" onclick="closeAllModals()">✕</button>
+        </div>
+
+        <div class="settings-dropdown" id="settingsDropdownMenu">
+          <button
+            onclick="window.location.href='mailto:roadwatchero@gmail.com?subject=Driver Support Request'"
+          >
+            Contact Support
+          </button>
+
+          <button
+            id="signOutBtn"
+            style="color: var(--accent)"
+            onclick="confirmSignOut()"
+          >
+            Sign Out
+          </button>
+          <button style="color: var(--danger)" onclick="confirmDeleteAccount()">
+            Delete Account
+          </button>
+        </div>
+      </div>
+      <div class="modal-content">
+        <!-- Profile Block with Circular Uploader -->
+        <div
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 25px;
+          "
+        >
+          <label style="position: relative; cursor: pointer; display: block">
+            <img
+              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>"
+              id="profileImagePreview"
+              style="
+                width: 110px;
+                height: 110px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 3px solid var(--surface-elevated);
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+                background-color: var(--surface);
+              "
+            />
+            <div
+              style="
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                background: var(--accent);
+                color: white;
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 3px solid var(--surface);
+                font-weight: bold;
+                font-size: 1.4rem;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+              "
+            >
+              +
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              style="display: none"
+              onchange="previewProfileImage(event)"
+            />
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Account Email</label>
+          <input
+            type="text"
+            id="driverEmailDisplay"
+            disabled
+            style="
+              background: var(--surface-elevated);
+              color: var(--text-muted);
+              cursor: not-allowed;
+              border-style: dashed;
+            "
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Phone Number *</label>
+          <input
+            type="tel"
+            id="driverPhoneInput"
+            placeholder="(555) 555-5555"
+            oninput="markProfileDirty()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Display Name *</label>
+          <input
+            type="text"
+            id="driverNameInput"
+            value="Hero Driver"
+            oninput="markProfileDirty()"
+          />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 35px">
+          <label>Driver Bio (Visible to Customers) *</label>
+          <textarea
+            id="driverBioInput"
+            rows="3"
+            placeholder="Write a short bio..."
+            oninput="markProfileDirty()"
+          >
+Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursday mornings.</textarea
+          >
+        </div>
+
+        <!-- System Controls -->
+        <h4
+          style="
+            color: var(--accent);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+          "
+        >
+          System Controls
+        </h4>
+
+        <div
+          class="node-card"
+          style="
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <div>
+            <strong>Global Kill Switch</strong>
+            <p
+              style="
+                font-size: 0.8rem;
+                color: var(--text-muted);
+                margin-top: 4px;
+              "
+            >
+              Stop accepting orders instantly
+            </p>
+          </div>
+
+          <div
+            class="toggle-switch"
+            id="killSwitchToggle"
+            onclick="this.classList.toggle('on'); markProfileDirty();"
+          >
+            <div class="toggle-knob"></div>
+          </div>
+        </div>
+
+        <div class="node-card" style="margin-bottom: 30px">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 15px;
+            "
+          >
+            <div>
+              <strong style="color: var(--danger)"
+                >SOS Emergency Deliveries</strong
+              >
+              <p
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  margin-top: 4px;
+                "
+              >
+                Accept immediate, high-paying runs
+              </p>
+            </div>
+            <div
+              class="toggle-switch on"
+              id="sosToggle"
+              onclick="this.classList.toggle('on'); markProfileDirty();"
+            >
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 0">
+            <label>Current Premium Rate ($)</label>
+            <input
+              type="number"
+              id="premiumRateInput"
+              value="50.00"
+              oninput="markProfileDirty()"
+            />
+          </div>
+        </div>
+
+        <!-- Financials -->
+
+        <div
+          class="node-card"
+          style="margin-bottom: 30px; border-color: var(--danger)"
+        >
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <div>
+              <strong style="color: var(--danger)"
+                >Emergency Route Abort</strong
+              >
+              <p
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  margin-top: 4px;
+                "
+              >
+                Vehicle breakdown or emergency.
+              </p>
+            </div>
+            <button
+              id="emergencyAbortBtn"
+              class="btn btn-emergency"
+              style="width: auto; padding: 10px 16px; font-size: 0.85rem"
+              onclick="emergencyAbortActiveRoute()"
+            >
+              Abort Run
+            </button>
+          </div>
+        </div>
+
+        <h4
+          style="
+            color: var(--accent);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+          "
+        >
+          Financials
+        </h4>
+
+        <div
+          class="node-card"
+          style="
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 25px;
+          "
+        >
+          <p style="margin-bottom: 15px">Stripe Connect Dashboard</p>
+          <button class="btn btn-secondary">View Payouts & Bank</button>
+        </div>
+
+        <button
+          class="btn btn-primary"
+          id="saveSettingsBtn"
+          onclick="saveDriverSettings()"
+        >
+          Save Changes
+        </button>
+      </div>
+    </div>
+
+    <!-- NOTIFICATION CENTER MODAL -->
+    <div id="notificationModal" class="modal">
+      <div class="modal-header">
+        <h2>Notifications</h2>
+        <button class="close-btn" onclick="closeNotificationModal()">✕</button>
+      </div>
+      <div class="modal-content" id="notificationList">
+        <p
+          style="color: var(--text-muted); text-align: center; margin-top: 20px"
+        >
+          No new notifications.
+        </p>
+      </div>
+    </div>
+
+    <!-- CHAT MODAL -->
+    <div id="chatModal" class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="chatHeaderTitle">Customer Connect</h2>
+          <span
+            id="chatHeaderSubtitle"
+            style="font-size: 0.8rem; color: var(--text-muted)"
+            >Waiting for route</span
+          >
+        </div>
+        <button
+          class="close-btn"
+          style="color: var(--accent)"
+          onclick="closeChatModal()"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="chat-messages" id="chatMessageContainer">
+        <!-- Messages populate here -->
+      </div>
+      <div class="chat-input-area">
+        <label
+          style="
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: var(--surface-elevated);
+            border-radius: 50%;
+            flex-shrink: 0;
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 22px; height: 22px; fill: var(--text-muted)"
+          >
+            <path
+              d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+            />
+          </svg>
+          <input
+            type="file"
+            id="chatImageInput"
+            accept="image/*"
+            style="display: none"
+            onchange="handleChatImageUpload(event)"
+            disabled
+          />
+        </label>
+
+        <input
+          type="text"
+          id="chatTextInput"
+          placeholder="Message your customer..."
+          disabled
+        />
+        <button
+          class="chat-send-btn"
+          id="chatSendBtn"
+          onclick="sendChatMessage()"
+          disabled
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CUSTOM ALERT PROMPT -->
+    <div class="soft-prompt-overlay" id="customAlertModal">
+      <div class="soft-prompt-box">
+        <h3 id="customAlertTitle">Alert</h3>
+        <p id="customAlertText">Message goes here.</p>
+        <button class="btn btn-primary" onclick="closeCustomAlert()">
+          Understood
+        </button>
+      </div>
+    </div>
+
+    <!-- COMMUNITY FEED MODAL -->
+    <div id="communityModal" class="modal">
+      <!-- DELETE POST CONFIRMATION MODAL -->
+      <div class="soft-prompt-overlay" id="deletePostConfirmModal">
+        <div class="soft-prompt-box">
+          <h3 style="color: var(--danger)">Delete Post?</h3>
+          <p>
+            Are you sure you want to remove this post? This action cannot be
+            undone.
+          </p>
+          <div class="prompt-actions">
+            <button
+              class="btn btn-secondary"
+              style="flex: 1"
+              onclick="cancelDeletePost()"
+            >
+              Cancel
+            </button>
+            <button
+              class="btn btn-primary"
+              style="
+                flex: 1;
+                background: var(--danger);
+                border-color: var(--danger);
+              "
+              onclick="confirmDeletePost()"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-header">
+        <div>
+          <h2 id="communityHeaderTitle">Neighborhood Hub</h2>
+          <span style="font-size: 0.8rem; color: var(--text-muted)"
+            >Local community feed</span
+          >
+        </div>
+
+        <div style="position: relative; display: flex; align-items: center">
+          <div
+            class="tooltip-icon-btn glowing-pin"
+            onclick="toggleCommunityTooltip(event)"
+            style="margin: 0; width: 32px; height: 32px"
+          >
+            ?
+          </div>
+          <div
+            id="communityTooltipBox"
+            class="tooltip-box"
+            style="
+              top: 45px;
+              right: 0;
+              bottom: auto;
+              left: auto;
+              transform-origin: top right;
+              z-index: 2100;
+            "
+          >
+            <h4>
+              Neighborhood Hub
+              <button
+                class="tooltip-close-icon"
+                onclick="toggleCommunityTooltip(event)"
+              >
+                ✕
+              </button>
+            </h4>
+            <p>
+              Welcome to the Neighborhood Hub! This is your local space to
+              connect with Pickup Hero drivers, share delivery reviews, ask
+              questions, or even drop digital coupons for the community. Keep it
+              friendly and local!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="community-messages" id="communityFeedContainer">
+        <!-- Messages populate here -->
+      </div>
+
+      <div
+        class="chat-input-area"
+        id="communityInputArea"
+        style="position: relative; padding-right: 90px !important"
+      >
+        <!-- FLOATING THUMBNAIL PREVIEW -->
+        <div
+          id="communityImagePreviewContainer"
+          style="
+            display: none;
+            position: absolute;
+            bottom: 75px;
+            left: 15px;
+            z-index: 2100;
+          "
+        >
+          <img
+            id="communityImagePreview"
+            src=""
+            style="
+              width: 65px;
+              height: 65px;
+              object-fit: cover;
+              border-radius: 8px;
+              border: 2px solid var(--accent);
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            "
+          />
+          <button
+            onclick="removeCommunityImage(event)"
+            style="
+              position: absolute;
+              top: -8px;
+              right: -8px;
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              background: var(--danger);
+              color: white;
+              border: none;
+              font-size: 0.8rem;
+              font-weight: bold;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            "
+          >
+            ✕
+          </button>
+        </div>
+
+        <label
+          style="
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: var(--surface-elevated);
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: background 0.2s;
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 22px; height: 22px; fill: var(--text-muted)"
+          >
+            <path
+              d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+            />
+          </svg>
+          <input
+            type="file"
+            id="communityImageInput"
+            accept="image/*"
+            style="display: none"
+            onchange="handleCommunityImageUpload(event)"
+          />
+        </label>
+
+        <input
+          type="text"
+          id="communityTextInput"
+          placeholder="Share a message..."
+        />
+        <button class="chat-send-btn" onclick="sendCommunityMessage()">
+          <svg viewBox="0 0 24 24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- LEAFLET MAP JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script
+      async
+      defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqlDSF6sSZqagHDlFCw2K-v4lRQQCK6Ew&libraries=places&loading=async"
+    ></script>
+    <!-- FIREBASE SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+
+      import {
+        getAuth,
+        signInWithEmailAndPassword,
+        createUserWithEmailAndPassword,
+        signOut,
+        setPersistence,
+        browserSessionPersistence,
+        deleteUser,
+      } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
+      import {
+        getFirestore,
+        collection,
+        query,
+        where,
+        onSnapshot,
+        doc,
+        updateDoc,
+        setDoc,
+        getDoc,
+        serverTimestamp,
+        orderBy,
+        deleteDoc,
+        addDoc,
+      } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyDhSqKn5eg_X-c8uNMjp7BTDWgIpV8dnvI",
+        authDomain: "pickuphero-1993f.firebaseapp.com",
+        projectId: "pickuphero-1993f",
+        storageBucket: "pickuphero-1993f.firebasestorage.app",
+        messagingSenderId: "234138921429",
+        appId: "1:234138921429:web:61071ce9b8e5e6ce70755c",
+        measurementId: "G-88L5X10BTW",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      // Attach db to window to allow global AppState functions to execute Firestore queries
+      window.db = db;
+      window.auth = auth;
+      window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+      window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+      window.signOut = signOut;
+      window.setPersistence = setPersistence;
+      window.browserSessionPersistence = browserSessionPersistence;
+      window.collection = collection;
+      window.query = query;
+      window.where = where;
+      window.onSnapshot = onSnapshot;
+      window.doc = doc;
+      window.updateDoc = updateDoc;
+      window.setDoc = setDoc;
+      window.getDoc = getDoc;
+
+      window.serverTimestamp = serverTimestamp;
+      window.orderBy = orderBy;
+      window.deleteDoc = deleteDoc;
+      window.deleteUser = deleteUser;
+      window.addDoc = addDoc;
+
+      // Fire the application boot sequence now that Firebase is guaranteed loaded
+      if (window.bootApplication) window.bootApplication();
+    </script>
+
+    <!-- APPLICATION LOGIC -->
+    <script>
+      // --- GLOBAL ACTIVITY TRACKER ---
+      let activityTimeout = null;
+
+      window.triggerGlobalActivity = function () {
+        const ribbon = document.getElementById("globalActivityRibbon");
+        const spinner = document.getElementById("globalActivitySpinner");
+
+        // UNLOCK AUDIO ENGINE ON FIRST GESTURE: Prevent browser autoplay blocking
+        if (!window.audioUnlocked) {
+          const stdAudio = document.getElementById("alertSound");
+          const sosAudio = document.getElementById("sosAlarmSound");
+          if (stdAudio) {
+            stdAudio
+              .play()
+              .then(() => stdAudio.pause())
+              .catch((e) => {});
+          }
+          if (sosAudio) {
+            sosAudio
+              .play()
+              .then(() => sosAudio.pause())
+              .catch((e) => {});
+          }
+          window.audioUnlocked = true;
+        }
+
+        if (ribbon) ribbon.classList.add("activity-active");
+        if (spinner) spinner.classList.add("activity-active");
+
+        if (activityTimeout) {
+          clearTimeout(activityTimeout);
+        }
+
+        activityTimeout = setTimeout(() => {
+          if (ribbon) ribbon.classList.remove("activity-active");
+          if (spinner) spinner.classList.remove("activity-active");
+        }, 1000);
+      };
+
+      ["touchstart", "touchend", "mousedown", "mouseup", "click"].forEach(
+        (evt) => {
+          document.addEventListener(evt, window.triggerGlobalActivity, {
+            passive: true,
+          });
+        }
+      );
+
+      // System State
+      const AppState = {
+        workflowPhase: "idle", // idle -> triage -> pickup -> delivery
+        pendingOrders: 0,
+        triageQueue: [], // The generous net array
+        activeQueue: [], // Final confirmed route
+        baseLocations: [],
+        baseMarkers: [],
+        tempMarker: null,
+        homeBase: null,
+        mapInstance: null,
+        homeMarker: null,
+        layerGroup: null, // holds dynamic pins and lines
+
+        deliveryZone: [],
+        zonePolygon: null,
+        isDrawingZone: false,
+        zoneTempLine: null,
+      };
+
+      // Initialize UI and Map
+
+      AppState.isInitialLoad = true;
+      let DRIVER_DOC_ID = null;
+
+      window.showCustomAlert = function (title, text) {
+        document.getElementById("customAlertTitle").innerText = title;
+        document.getElementById("customAlertText").innerText = text;
+        document.getElementById("customAlertModal").style.display = "flex";
+      };
+
+      window.closeCustomAlert = function () {
+        document.getElementById("customAlertModal").style.display = "none";
+      };
+
+      // --- AUTHENTICATION LOGIC ---
+      window.authMode = "signin";
+
+      window.togglePasswordVisibility = function () {
+        const passwordInput = document.getElementById("authPassword");
+        const eyeIcon = document.getElementById("eyeIcon");
+
+        if (passwordInput.type === "password") {
+          passwordInput.type = "text";
+          eyeIcon.innerHTML =
+            '<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2.01 3.87l2.68 2.68C3.06 7.83 1.77 9.53 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l4.2 4.2 1.41-1.41L3.42 2.45 2.01 3.87zm7.5 7.5l2.61 2.61c-.04.01-.08.02-.12.02-1.66 0-3-1.34-3-3 0-.04.01-.08.02-.12zm0 0"/>';
+        } else {
+          passwordInput.type = "password";
+          eyeIcon.innerHTML =
+            '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
+        }
+      };
+
+      window.toggleAuthMode = function () {
+        const title = document.getElementById("authTitle");
+        const subtitle = document.getElementById("authSubtitle");
+        const btn = document.getElementById("authSubmitBtn");
+        const toggleText = document.getElementById("authToggleText");
+
+        if (window.authMode === "signin") {
+          window.authMode = "signup";
+          title.innerText = "Apply as Hero";
+          subtitle.innerText = "Create your secure driver account.";
+          btn.innerText = "Sign Up";
+          toggleText.innerText = "Already have an account? Sign In";
+        } else {
+          window.authMode = "signin";
+          title.innerText = "Driver Login";
+          subtitle.innerText = "Welcome back, Hero.";
+          btn.innerText = "Sign In";
+          toggleText.innerText = "Need an account? Sign Up";
+        }
+      };
+
+      window.handleAuthAction = async function () {
+        const email = document.getElementById("authEmail").value.trim();
+        const password = document.getElementById("authPassword").value.trim();
+        const btn = document.getElementById("authSubmitBtn");
+
+        if (!email || !password) {
+          window.showCustomAlert(
+            "Input Required",
+            "Please enter both your email and a secure password."
+          );
+          return;
+        }
+
+        const originalText = btn.innerText;
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+
+        try {
+          await window.setPersistence(
+            window.auth,
+            window.browserSessionPersistence
+          );
+
+          if (window.authMode === "signin") {
+            await window.signInWithEmailAndPassword(
+              window.auth,
+              email,
+              password
+            );
+          } else {
+            await window.createUserWithEmailAndPassword(
+              window.auth,
+              email,
+              password
+            );
+          }
+
+          // Reset button and clear password field on success
+          btn.innerText = originalText;
+          btn.disabled = false;
+          document.getElementById("authPassword").value = "";
+        } catch (error) {
+          console.error("Auth Error:", error);
+          btn.innerText = originalText;
+          btn.disabled = false;
+
+          // Suppress the error if the background listener successfully recovered an existing session
+          if (window.auth.currentUser) return;
+
+          // Format common Firebase Auth errors into clear messages
+          let msg = error.message.replace("Firebase:", "").trim();
+          if (
+            error.code === "auth/invalid-credential" ||
+            error.code === "auth/wrong-password" ||
+            error.code === "auth/invalid-login-credentials"
+          ) {
+            msg = "Invalid email or password. Please try again.";
+          } else if (error.code === "auth/email-already-in-use") {
+            msg =
+              "An account with this email already exists. Try signing in instead.";
+          } else if (error.code === "auth/weak-password") {
+            msg = "Password should be at least 6 characters long.";
+          }
+
+          window.showCustomAlert("Authentication Failed", msg);
+        }
+      };
+
+      window.signOutState = false;
+
+      window.confirmSignOut = async function () {
+        window.confirmDeleteAccount = async function () {
+          const confirmMsg =
+            "Are you absolutely sure you want to delete your driver account? This will permanently erase your profile and active route data.";
+          if (!confirm(confirmMsg)) return;
+
+          if (!DRIVER_DOC_ID) return;
+
+          try {
+            // 1. Delete driver's profile, location, and state documents
+            await window.deleteDoc(
+              window.doc(window.db, "driver_settings", DRIVER_DOC_ID)
+            );
+            await window.deleteDoc(
+              window.doc(window.db, "driver_locations", DRIVER_DOC_ID)
+            );
+            await window.deleteDoc(
+              window.doc(window.db, "driver_state", DRIVER_DOC_ID)
+            );
+
+            // 2. Delete the Firebase Auth User
+            if (window.auth.currentUser) {
+              try {
+                await window.deleteUser(window.auth.currentUser);
+              } catch (authError) {
+                console.warn(
+                  "Auth deletion blocked by Firebase, forcing session clear instead.",
+                  authError
+                );
+                await window.signOut(window.auth);
+              }
+            }
+
+            alert("Driver account successfully deleted.");
+            window.location.reload();
+          } catch (error) {
+            console.error("Error deleting account:", error);
+            window.showCustomAlert(
+              "Error",
+              "Failed to delete account: " + error.message
+            );
+          }
+        };
+
+        const btn = document.getElementById("signOutBtn");
+
+        if (!window.signOutState) {
+          // First tap: trigger warning and start 3-second reset timer
+          window.signOutState = true;
+          btn.innerText = "Are you sure? Click to confirm logout";
+
+          setTimeout(() => {
+            window.signOutState = false;
+            btn.innerText = "Sign Out";
+          }, 3000);
+        } else {
+          // Second tap: execute logout
+          try {
+            btn.innerText = "Signing out...";
+            await window.signOut(window.auth);
+
+            // Cleanup UI
+            closeAllModals();
+            window.signOutState = false;
+            btn.innerText = "Sign Out";
+
+            // Note: The onAuthStateChanged listener will automatically detect the logout
+            // and immediately pop the login overlay back up.
+          } catch (error) {
+            console.error("Sign Out Error:", error);
+            window.showCustomAlert("Sign Out Failed", error.message);
+            window.signOutState = false;
+            btn.innerText = "Sign Out";
+          }
+        }
+      };
+
+      // --- SECURE BOOT SEQUENCE ---
+      let hasBooted = false;
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./sw-driver.js", { scope: "./driver.html" })
+            .then((reg) => console.log("Driver SW Active:", reg.scope))
+            .catch((err) => console.error("Driver SW failed:", err));
+        });
+      }
+
+      window.bootApplication = function () {
+        window.auth.onAuthStateChanged((user) => {
+          if (user) {
+            // Valid session detected. Drop the overlay and boot map.
+            document.getElementById("authOverlay").style.display = "none";
+            DRIVER_DOC_ID = user.uid;
+            document.getElementById("driverEmailDisplay").value =
+              user.email || "";
+
+            if (!hasBooted) {
+              hasBooted = true;
+              if (!AppState.mapInstance) {
+                initMap();
+              }
+              setTimeout(() => {
+                listenForPendingOrders();
+                loadDriverSettings();
+                window.initializeShiftState();
+              }, 1000);
+            }
+          } else {
+            // No authenticated user. Strictly lock the gate overlay!
+            document.getElementById("authOverlay").style.display = "flex";
+            hasBooted = false;
+          }
+        });
+      };
+
+      window.loadDriverSettings = async function () {
+        try {
+          const docSnap = await window.getDoc(
+            window.doc(window.db, "driver_settings", DRIVER_DOC_ID)
+          );
+
+          let hasSavedLocation = false;
+
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.displayName)
+              document.getElementById("driverNameInput").value =
+                data.displayName;
+
+            if (data.phoneNumber)
+              document.getElementById("driverPhoneInput").value =
+                data.phoneNumber;
+
+            if (data.bio)
+              document.getElementById("driverBioInput").value = data.bio;
+            if (data.premiumRate)
+              document.getElementById("premiumRateInput").value =
+                data.premiumRate;
+            if (data.profilePic)
+              document.getElementById("profileImagePreview").src =
+                data.profilePic;
+
+            if (
+              Array.isArray(data.baseLocations) &&
+              data.baseLocations.length > 0
+            ) {
+              AppState.baseLocations = data.baseLocations;
+              AppState.homeBase = [
+                AppState.baseLocations[0].lat,
+                AppState.baseLocations[0].lng,
+              ];
+              hasSavedLocation = true;
+            } else if (data.baseLat && data.baseLng) {
+              AppState.baseLocations = [
+                { lat: data.baseLat, lng: data.baseLng },
+              ];
+              AppState.homeBase = [data.baseLat, data.baseLng];
+              hasSavedLocation = true;
+            }
+
+            if (data.globalCutoffMinutes) {
+              document.getElementById("globalCutoffInput").value =
+                data.globalCutoffMinutes;
+            }
+
+            if (data.deliveryZone && data.deliveryZone.length > 2) {
+              AppState.deliveryZone = data.deliveryZone;
+              if (AppState.zonePolygon)
+                AppState.mapInstance.removeLayer(AppState.zonePolygon);
+              AppState.zonePolygon = L.polygon(AppState.deliveryZone, {
+                color: "var(--accent)",
+                fillOpacity: 0.1,
+                weight: 2,
+              }).addTo(AppState.mapInstance);
+            }
+
+            if (data.weeklyRoutine) {
+              AppState.weeklyRoutine = data.weeklyRoutine;
+            } else {
+              AppState.weeklyRoutine = {
+                Sun: [],
+                Mon: [],
+                Tue: [],
+                Wed: [],
+                Thu: [],
+                Fri: [],
+                Sat: [],
+              };
+            }
+
+            AppState.activeRoutineDays = [];
+            Object.keys(AppState.weeklyRoutine).forEach((day) => {
+              if (
+                AppState.weeklyRoutine[day] &&
+                AppState.weeklyRoutine[day].length > 0
+              ) {
+                AppState.activeRoutineDays.push(day);
+                const btn = document.getElementById("dayBtn_" + day);
+                if (btn) btn.classList.add("active");
+              }
+            });
+
+            window.renderWaveBuilder();
+
+            const killSwitch = document.getElementById("killSwitchToggle");
+            if (data.globalKillSwitch) killSwitch.classList.add("on");
+            else killSwitch.classList.remove("on");
+
+            const sosToggle = document.getElementById("sosToggle");
+            if (data.sosEnabled) sosToggle.classList.add("on");
+            else sosToggle.classList.remove("on");
+          }
+
+          // --- NATIVE GEOLOCATION FALLBACK ---
+
+          window.checkProfileDirty();
+
+          if (!hasSavedLocation) {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (position) => {
+                  AppState.homeBase = [
+                    position.coords.latitude,
+                    position.coords.longitude,
+                  ];
+                  if (AppState.mapInstance) {
+                    AppState.mapInstance.setView(AppState.homeBase, 12);
+                    renderHomeBase();
+                  }
+                },
+                (error) => {
+                  console.error("GPS Fallback Error:", error);
+                  alert("Please enable location access to set your Home Base.");
+                },
+                { enableHighAccuracy: true }
+              );
+            }
+          } else {
+            // Apply the saved database location
+            if (AppState.mapInstance) {
+              AppState.mapInstance.setView(AppState.homeBase, 12);
+
+              renderHomeBases();
+            }
+          }
+        } catch (e) {
+          console.error("Error loading settings:", e);
+        }
+      };
+
+      window.saveDriverSettings = async function () {
+        const btn = document.getElementById("saveSettingsBtn");
+        const originalText = btn.innerText;
+        btn.innerText = "Saving...";
+
+        try {
+          const payload = {
+            displayName: document.getElementById("driverNameInput").value,
+            phoneNumber: document
+              .getElementById("driverPhoneInput")
+              .value.trim(),
+            bio: document.getElementById("driverBioInput").value,
+            globalKillSwitch: document
+              .getElementById("killSwitchToggle")
+              .classList.contains("on"),
+            sosEnabled: document
+              .getElementById("sosToggle")
+              .classList.contains("on"),
+            premiumRate:
+              parseFloat(document.getElementById("premiumRateInput").value) ||
+              50.0,
+            profilePic: document.getElementById("profileImagePreview").src,
+          };
+
+          // Safely check if a home base exists before appending coordinates
+          if (AppState.homeBase) {
+            payload.baseLat = AppState.homeBase[0];
+            payload.baseLng = AppState.homeBase[1];
+          }
+
+          await window.setDoc(
+            window.doc(window.db, "driver_settings", DRIVER_DOC_ID),
+            payload,
+            { merge: true }
+          );
+
+          localStorage.removeItem("unsavedDriverProfile");
+          window.checkProfileDirty();
+
+          btn.innerText = "Saved!";
+          btn.classList.replace("btn-primary", "btn-success");
+          setTimeout(() => {
+            window.checkProfileDirty();
+            btn.classList.replace("btn-success", "btn-primary");
+          }, 2000);
+        } catch (e) {
+          console.error("Error saving settings:", e);
+          btn.innerText = "Error Saving";
+          // Ensure the button always resets even if it fails
+          setTimeout(() => {
+            window.checkProfileDirty();
+          }, 2500);
+        }
+      };
+
+      function initMap() {
+        AppState.mapInstance = L.map("map", { zoomControl: false }).setView(
+          [39.8283, -98.5795],
+          4
+        );
+
+        L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_2i78_1_956acc478d4317df0426707d",
+          {
+            maxZoom: 19,
+            attribution: "© OpenStreetMap, © CARTO",
+          }
+        ).addTo(AppState.mapInstance);
+
+        AppState.layerGroup = L.layerGroup().addTo(AppState.mapInstance);
+
+        const style = document.createElement("style");
+        style.innerHTML = `
+          .live-pin-override {
+            background: #000000 !important;
+            border-color: #ffffff !important;
+            color: #ffffff !important;
+            font-size: 1.1rem !important;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+          }
+        `;
+        document.head.appendChild(style);
+
+        startTelemetry();
+
+        // Hook global activity tracker to map interactions
+
+        AppState.mapInstance.on("click", function (e) {
+          if (AppState.isDrawingZone) {
+            AppState.deliveryZone.push({
+              lat: e.latlng.lat,
+              lng: e.latlng.lng,
+            });
+
+            if (AppState.zoneTempLine) {
+              AppState.zoneTempLine.setLatLngs(AppState.deliveryZone);
+            } else {
+              AppState.zoneTempLine = L.polyline(AppState.deliveryZone, {
+                color: "var(--accent)",
+                weight: 3,
+                dashArray: "5, 10",
+              }).addTo(AppState.mapInstance);
+            }
+          }
+        });
+
+        AppState.mapInstance.on(
+          "zoomstart zoomend dragstart dragend movestart moveend",
+          window.triggerGlobalActivity
+        );
+      }
+
+      function renderHomeBases() {
+        if (!AppState.mapInstance) return;
+
+        if (AppState.baseMarkers && AppState.baseMarkers.length > 0) {
+          AppState.baseMarkers.forEach((m) =>
+            AppState.mapInstance.removeLayer(m)
+          );
+        }
+        AppState.baseMarkers = [];
+
+        const listContainer = document.getElementById("baseLocationsList");
+        const countLabel = document.getElementById("basePinCountLabel");
+        if (listContainer) listContainer.innerHTML = "";
+        if (countLabel)
+          countLabel.innerText = `Base Locations (${AppState.baseLocations.length} / 5)`;
+
+        const addBtn = document.getElementById("addPinBtn");
+        if (addBtn)
+          addBtn.style.display =
+            AppState.baseLocations.length >= 5 ? "none" : "block";
+
+        AppState.baseLocations.forEach((loc, idx) => {
+          const icon = L.divIcon({
+            className: "custom-orange-pin",
+            html: "",
+            iconSize: [24, 24],
+          });
+
+          const marker = L.marker([loc.lat, loc.lng], {
+            icon: icon,
+            draggable: false,
+          }).addTo(AppState.mapInstance);
+
+          marker.bindPopup(`
+            <div style="text-align:center;">
+              <strong>Base Location #${idx + 1}</strong><br>
+              <div style="display:flex; gap: 8px; margin-top:8px; justify-content: center;">
+                <button onclick="moveBasePin(${idx})" style="padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px; cursor:pointer;">Move</button>
+                <button onclick="removeBasePin(${idx})" style="padding:6px 12px; background:var(--danger); color:white; border:none; border-radius:6px; cursor:pointer;">Remove</button>
+              </div>
+            </div>
+          `);
+
+          AppState.baseMarkers.push(marker);
+
+          if (listContainer) {
+            listContainer.innerHTML += `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:var(--surface); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+                <span style="font-size:0.85rem; color:var(--text);">Pin #${
+                  idx + 1
+                }: ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}</span>
+                <button onclick="removeBasePin(${idx})" style="background:transparent; color:var(--danger); border:none; font-weight:bold; cursor:pointer; font-size:0.9rem;">✕</button>
+              </div>
+            `;
+          }
+        });
+      }
+
+      window.removeBasePin = function (index) {
+        AppState.baseLocations.splice(index, 1);
+        renderHomeBases();
+      };
+
+      window.moveBasePin = function (index) {
+        closeAllModals();
+
+        // Grab the coordinates and remove the static pin from the array
+        const loc = AppState.baseLocations[index];
+        AppState.baseLocations.splice(index, 1);
+        renderHomeBases();
+
+        // Recreate it as a draggable temp marker
+        const icon = L.divIcon({
+          className: "custom-orange-pin glowing-pin",
+          html: "",
+          iconSize: [28, 28],
+        });
+
+        if (AppState.tempMarker) {
+          AppState.mapInstance.removeLayer(AppState.tempMarker);
+        }
+
+        AppState.tempMarker = L.marker([loc.lat, loc.lng], {
+          icon: icon,
+          draggable: true,
+        }).addTo(AppState.mapInstance);
+
+        // Explicitly enable dragging for touchscreen compatibility
+        if (AppState.tempMarker.dragging) {
+          AppState.tempMarker.dragging.enable();
+        }
+
+        document.getElementById("lockPinBtn").style.display = "block";
+      };
+
+      window.addNewBasePin = function () {
+        if (AppState.baseLocations.length >= 5) {
+          window.showCustomAlert(
+            "Maximum Reached",
+            "You can set a maximum of 5 base pickup pins."
+          );
+          return;
+        }
+
+        closeAllModals();
+
+        const center = AppState.mapInstance.getCenter();
+        const icon = L.divIcon({
+          className: "custom-orange-pin glowing-pin",
+          html: "",
+          iconSize: [28, 28],
+        });
+
+        if (AppState.tempMarker) {
+          AppState.mapInstance.removeLayer(AppState.tempMarker);
+        }
+
+        AppState.tempMarker = L.marker([center.lat, center.lng], {
+          icon: icon,
+          draggable: true,
+        }).addTo(AppState.mapInstance);
+
+        // Explicitly enable dragging for touchscreen compatibility
+        if (AppState.tempMarker.dragging) {
+          AppState.tempMarker.dragging.enable();
+        }
+
+        document.getElementById("lockPinBtn").style.display = "block";
+      };
+
+      window.lockHomePin = function () {
+        if (AppState.tempMarker) {
+          const pos = AppState.tempMarker.getLatLng();
+
+          window.startDrawingZone = function () {
+            closeAllModals();
+            AppState.isDrawingZone = true;
+            AppState.deliveryZone = [];
+            if (AppState.zonePolygon) {
+              AppState.mapInstance.removeLayer(AppState.zonePolygon);
+              AppState.zonePolygon = null;
+            }
+            if (AppState.zoneTempLine) {
+              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+              AppState.zoneTempLine = null;
+            }
+            document.getElementById("finishZoneBtn").style.display = "block";
+            document.getElementById("clearZoneBtn").style.display = "block";
+            window.showCustomAlert(
+              "Draw Mode",
+              "Tap the map to drop boundary points. Connect them around your service area."
+            );
+          };
+
+          window.finishDrawingZone = function () {
+            AppState.isDrawingZone = false;
+            document.getElementById("finishZoneBtn").style.display = "none";
+            document.getElementById("clearZoneBtn").style.display = "none";
+            if (AppState.zoneTempLine) {
+              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+              AppState.zoneTempLine = null;
+            }
+            if (AppState.deliveryZone.length > 2) {
+              AppState.zonePolygon = L.polygon(AppState.deliveryZone, {
+                color: "var(--accent)",
+                fillOpacity: 0.1,
+                weight: 2,
+              }).addTo(AppState.mapInstance);
+            } else {
+              AppState.deliveryZone = [];
+            }
+            openModal("scheduleModal");
+          };
+
+          window.clearZone = function () {
+            AppState.deliveryZone = [];
+            if (AppState.zoneTempLine)
+              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+            if (AppState.zonePolygon)
+              AppState.mapInstance.removeLayer(AppState.zonePolygon);
+            AppState.zoneTempLine = null;
+            AppState.zonePolygon = null;
+          };
+
+          AppState.baseLocations.push({ lat: pos.lat, lng: pos.lng });
+          AppState.mapInstance.removeLayer(AppState.tempMarker);
+          AppState.tempMarker = null;
+        }
+
+        document.getElementById("lockPinBtn").style.display = "none";
+        renderHomeBases();
+        openModal("scheduleModal");
+      };
+
+      AppState.weeklyRoutine = {
+        Sun: [],
+        Mon: [],
+        Tue: [],
+        Wed: [],
+        Thu: [],
+        Fri: [],
+        Sat: [],
+      };
+      AppState.activeRoutineDays = [];
+
+      window.toggleRoutineDay = function (day) {
+        const index = AppState.activeRoutineDays.indexOf(day);
+        if (index > -1) {
+          // Toggle Off
+          AppState.activeRoutineDays.splice(index, 1);
+          document.getElementById("dayBtn_" + day).classList.remove("active");
+        } else {
+          // Toggle On
+          AppState.activeRoutineDays.push(day);
+          document.getElementById("dayBtn_" + day).classList.add("active");
+        }
+        window.renderWaveBuilder();
+      };
+
+      window.syncActiveDays = function () {
+        if (AppState.activeRoutineDays.length === 0) return;
+        const templateDay = AppState.activeRoutineDays[0];
+        const templateWaves = JSON.parse(
+          JSON.stringify(AppState.weeklyRoutine[templateDay])
+        );
+
+        AppState.activeRoutineDays.forEach((day) => {
+          AppState.weeklyRoutine[day] = JSON.parse(
+            JSON.stringify(templateWaves)
+          );
+        });
+        window.renderWaveBuilder();
+      };
+
+      window.renderWaveBuilder = function () {
+        const container = document.getElementById("waveBuilderContainer");
+        const activeDays = AppState.activeRoutineDays;
+
+        if (activeDays.length === 0) {
+          container.innerHTML =
+            '<p style="color:var(--text-muted); font-size: 0.85rem; text-align: center;">Select one or more days above to configure waves.</p>';
+          return;
+        }
+
+        const templateDay = activeDays[0];
+        let html = `<label style="color: var(--accent); margin-bottom: 10px; display: block; font-weight: 700;">Editing: ${activeDays.join(
+          ", "
+        )}</label>`;
+        const waves = AppState.weeklyRoutine[templateDay] || [];
+
+        if (waves.length === 0) {
+          html += `<p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">No runs scheduled for the selected days.</p>`;
+        } else {
+          waves.forEach((wave, index) => {
+            html += `
+                  <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: center; background: var(--surface-elevated); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+                      <div style="flex: 1;">
+                          <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Departure</label>
+                          <input type="time" value="${wave.time}" onchange="updateWaveTime(${index}, this.value)" style="padding: 8px; width: 100%; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text);" />
+                      </div>
+                      <div style="flex: 1;">
+                          <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Max Stops</label>
+                          <input type="number" value="${wave.capacity}" min="1" onchange="updateWaveCapacity(${index}, this.value)" style="padding: 8px; width: 100%; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text);" />
+                      </div>
+                      <button type="button" onclick="removeWave(${index})" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--danger); border-radius: 6px; font-size: 1.1rem; cursor: pointer; padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-top: 18px;">✕</button>
+                  </div>
+                  `;
+          });
+        }
+
+        html += `<button type="button" class="btn btn-secondary" style="padding: 12px; font-size: 0.9rem;" onclick="addWave()">+ Add Wave</button>`;
+        container.innerHTML = html;
+
+        document.querySelectorAll(".day-btn").forEach((btn) => {
+          const d = btn.id.split("_")[1];
+          if (
+            AppState.weeklyRoutine[d] &&
+            AppState.weeklyRoutine[d].length > 0
+          ) {
+            btn.style.borderBottom = "3px solid var(--accent)";
+          } else {
+            btn.style.borderBottom = "1px solid var(--border)";
+          }
+        });
+      };
+
+      window.addWave = function () {
+        if (AppState.activeRoutineDays.length === 0) return;
+        const templateDay = AppState.activeRoutineDays[0];
+        if (!AppState.weeklyRoutine[templateDay])
+          AppState.weeklyRoutine[templateDay] = [];
+        AppState.weeklyRoutine[templateDay].push({
+          time: "12:00",
+          capacity: 6,
+        });
+        window.syncActiveDays();
+      };
+
+      window.removeWave = function (index) {
+        if (AppState.activeRoutineDays.length === 0) return;
+        const templateDay = AppState.activeRoutineDays[0];
+        AppState.weeklyRoutine[templateDay].splice(index, 1);
+        window.syncActiveDays();
+      };
+
+      window.updateWaveTime = function (index, val) {
+        if (AppState.activeRoutineDays.length === 0) return;
+        const templateDay = AppState.activeRoutineDays[0];
+        AppState.weeklyRoutine[templateDay][index].time = val;
+        window.syncActiveDays();
+      };
+
+      window.updateWaveCapacity = function (index, val) {
+        if (AppState.activeRoutineDays.length === 0) return;
+        const templateDay = AppState.activeRoutineDays[0];
+        AppState.weeklyRoutine[templateDay][index].capacity =
+          parseInt(val) || 1;
+        window.syncActiveDays();
+      };
+
+      window.saveScheduleBlock = async function () {
+        const btn = document.getElementById("saveScheduleBtn");
+        const origText = btn.innerText;
+        btn.innerText = "Saving...";
+
+        const primaryBase =
+          AppState.baseLocations.length > 0
+            ? AppState.baseLocations[0]
+            : { lat: 39.8283, lng: -98.5795 };
+
+        try {
+          await window.setDoc(
+            window.doc(window.db, "driver_settings", DRIVER_DOC_ID),
+            {
+              baseLocations: AppState.baseLocations,
+              baseLat: primaryBase.lat,
+              baseLng: primaryBase.lng,
+
+              deliveryZone: AppState.deliveryZone || [],
+              globalCutoffMinutes:
+                parseInt(document.getElementById("globalCutoffInput").value) ||
+                30,
+
+              weeklyRoutine: AppState.weeklyRoutine,
+            },
+            { merge: true }
+          );
+          btn.innerText = "Saved!";
+          btn.classList.replace("btn-primary", "btn-success");
+          setTimeout(() => {
+            btn.innerText = origText;
+            btn.classList.replace("btn-success", "btn-primary");
+            closeAllModals();
+          }, 1500);
+        } catch (e) {
+          console.error("Save failed:", e);
+          btn.innerText = "Error Saving";
+        }
+      };
+
+      // Modal & Sheet Controls
+      function openModal(id) {
+        document
+          .querySelectorAll(".modal")
+          .forEach((m) => m.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+      }
+      function closeAllModals() {
+        const wasModalOpen =
+          document.querySelectorAll(".modal.active").length > 0;
+
+        document
+          .querySelectorAll(".modal")
+          .forEach((m) => m.classList.remove("active"));
+
+        const sheet = document.getElementById("activeQueueSheet");
+        if (sheet) {
+          if (wasModalOpen) {
+            sheet.classList.add("expanded");
+          } else {
+            sheet.classList.toggle("expanded");
+          }
+        }
+      }
+
+      function toggleBottomSheet() {
+        document
+          .getElementById("activeQueueSheet")
+          .classList.toggle("expanded");
+      }
+
+      // Image Upload Preview
+
+      // Image Upload & Compression
+      window.previewProfileImage = function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = function () {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // Shrink to 300px wide to prevent database overload
+            const scale = 300 / img.width;
+            canvas.width = 300;
+            canvas.height = img.height * scale;
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Convert to compressed JPEG and update UI
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+            document.getElementById("profileImagePreview").src =
+              compressedBase64;
+          };
+          img.src = e.target.result;
+
+          if (window.markProfileDirty) window.markProfileDirty();
+        };
+        reader.readAsDataURL(file);
+      };
+
+      function listenForPendingOrders() {
+        // Time-Boundary Security: Prevent runaway read costs by ignoring stuck orders older than 48 hours
+        const timeBoundary = new Date();
+        timeBoundary.setHours(timeBoundary.getHours() - 48);
+
+        const q = window.query(
+          window.collection(window.db, "orders"),
+          window.where("assignedDriverId", "==", DRIVER_DOC_ID),
+          window.where("status", "in", ["pending", "accepted"]),
+          window.where("createdAt", ">=", timeBoundary)
+        );
+
+        window.onSnapshot(q, (snapshot) => {
+          const newOrders = [];
+
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+
+            if (data.stops && Array.isArray(data.stops)) {
+              data.stops.forEach((stop, index) => {
+                newOrders.push({
+                  id: docSnap.id + "_pickup_" + index,
+                  dbId: docSnap.id,
+                  title: `Pickup: ${stop.storeName || "Store"}`,
+                  lat: stop.lat,
+                  lng: stop.lng,
+                  status: data.status,
+
+                  type: "pickup",
+                  tipAmount: data.tipAmount || 0,
+
+                  userId: data.userId,
+
+                  totalCost: data.totalCost || 0,
+                  bookingType: data.bookingType || "scheduled",
+                  stripeSessionId: data.stripeSessionId || null,
+
+                  shiftId: data.shiftId || null,
+
+                  pickupNumber: stop.pickupNumber || "",
+                  sosTimeline: data.sosTimeline || "scheduled",
+
+                  pin: stop.pin || "",
+                  curbsideInstructions: stop.curbsideInstructions || "",
+                  barcodeImageUrl: stop.barcodeImageUrl || "",
+                });
+              });
+            }
+
+            if (data.deliveryAddress) {
+              if (data.deliveryLat && data.deliveryLng) {
+                newOrders.push({
+                  id: docSnap.id + "_del",
+                  dbId: docSnap.id,
+                  title: `Delivery: ${data.deliveryAddress}`,
+                  lat: data.deliveryLat,
+                  lng: data.deliveryLng,
+                  status: data.status,
+
+                  type: "delivery",
+                  instructions: data.instructions || "",
+                  tipAmount: data.tipAmount || 0,
+
+                  userId: data.userId,
+
+                  totalCost: data.totalCost || 0,
+                  bookingType: data.bookingType || "scheduled",
+                  stripeSessionId: data.stripeSessionId || null,
+
+                  shiftId: data.shiftId || null,
+
+                  sosTimeline: data.sosTimeline || "scheduled",
+                });
+              } else {
+                console.warn(
+                  `Order ${docSnap.id} skipped: Missing strict coordinate payload.`
+                );
+              }
+            }
+          });
+
+          window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
+          let hasNewSOS = false;
+
+          newOrders.forEach((order) => {
+            if (
+              order.sosTimeline === "asap_today" &&
+              !window.pendingSOSOrderIds.has(order.dbId)
+            ) {
+              hasNewSOS = true;
+              window.pendingSOSOrderIds.add(order.dbId);
+            }
+          });
+
+          const previousTriageLength = AppState.triageQueue.length;
+
+          if (hasNewSOS && !AppState.isInitialLoad) {
+            document.getElementById("sosAlertModal").style.display = "flex";
+            const sosAudio = document.getElementById("sosAlarmSound");
+
+            if (sosAudio) {
+              sosAudio.loop = true;
+              sosAudio
+                .play()
+                .catch((e) => console.log("SOS Audio blocked:", e));
+            }
+          } else if (
+            !AppState.isInitialLoad &&
+            newOrders.length > previousTriageLength
+          ) {
+            document
+              .getElementById("alertSound")
+              .play()
+              .catch(() => console.log("Audio blocked."));
+          }
+
+          AppState.isInitialLoad = false;
+
+          AppState.triageQueue = newOrders;
+          AppState.pendingOrders = snapshot.docs.length;
+
+          // Force the dashboard to redraw dynamically if they are actively looking at the triage screen
+          if (AppState.workflowPhase === "triage") {
+            updateDashboardUI();
+          }
+
+          if (window.updateNotificationsUI) window.updateNotificationsUI();
+
+          if (window.monitorActiveRoute) window.monitorActiveRoute();
+        });
+      }
+
+      window.saveShiftState = async function () {
+        try {
+          await window.setDoc(
+            window.doc(window.db, "driver_state", DRIVER_DOC_ID),
+            {
+              workflowPhase: AppState.workflowPhase,
+              activeQueue: AppState.activeQueue,
+              triageQueue: AppState.triageQueue,
+            },
+            { merge: true }
+          );
+        } catch (e) {
+          console.error("State save failed:", e);
+        }
+      };
+
+      window.initializeShiftState = async function () {
+        try {
+          const stateSnap = await window.getDoc(
+            window.doc(window.db, "driver_state", DRIVER_DOC_ID)
+          );
+          let isActiveShift = false;
+
+          if (stateSnap.exists()) {
+            const data = stateSnap.data();
+            if (data.workflowPhase && data.workflowPhase !== "idle") {
+              isActiveShift = true;
+              AppState.workflowPhase = data.workflowPhase;
+              AppState.activeQueue = data.activeQueue || [];
+              AppState.triageQueue = data.triageQueue || [];
+            }
+          }
+
+          if (isActiveShift) {
+            AppState.isOnline = true;
+            const btn = document.getElementById("dutyToggleBtn");
+            if (btn) {
+              btn.innerText = "On Duty";
+              btn.classList.add("active");
+            }
+            await window.setDoc(
+              window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+              { isOnline: true, timestamp: new Date() },
+              { merge: true }
+            );
+
+            if (AppState.activeQueue && AppState.activeQueue.length > 0) {
+              if (window.monitorActiveRoute) window.monitorActiveRoute();
+            }
+
+            updateDashboardUI(); // Render the restored active route
+          } else {
+            AppState.isOnline = false;
+            await window.setDoc(
+              window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+              { isOnline: false, timestamp: new Date() },
+              { merge: true }
+            );
+          }
+        } catch (e) {
+          console.error("Initialization failed:", e);
+        }
+      };
+
+      window.toggleDutyStatus = async function () {
+        AppState.isOnline = !AppState.isOnline;
+        const btn = document.getElementById("dutyToggleBtn");
+
+        if (AppState.isOnline) {
+          btn.innerText = "On Duty";
+          btn.classList.add("active");
+        } else {
+          btn.innerText = "Off Duty";
+          btn.classList.remove("active");
+        }
+
+        try {
+          await window.setDoc(
+            window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+            { isOnline: AppState.isOnline, timestamp: new Date() },
+            { merge: true }
+          );
+        } catch (e) {
+          console.error("Duty status update failed:", e);
+        }
+      };
+
+      function startTelemetry() {
+        setInterval(() => {
+          if (!AppState.isOnline) return;
+
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                if (!AppState.liveDriverMarker) {
+                  const liveIcon = L.divIcon({
+                    className: "cluster-pin live-pin-override",
+                    html: "➤",
+                    iconSize: [26, 26],
+                    iconAnchor: [13, 13],
+                  });
+                  AppState.liveDriverMarker = L.marker([lat, lng], {
+                    icon: liveIcon,
+                    zIndexOffset: 1000,
+                  }).addTo(AppState.mapInstance);
+                } else {
+                  AppState.liveDriverMarker.setLatLng([lat, lng]);
+                }
+
+                try {
+                  await window.setDoc(
+                    window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+                    { lat: lat, lng: lng, timestamp: new Date() },
+                    { merge: true }
+                  );
+                } catch (e) {
+                  console.error("Telemetry failed:", e);
+                }
+              },
+              (error) => console.error("GPS Error:", error),
+              { enableHighAccuracy: true }
+            );
+          }
+        }, 30000);
+      }
+
+      window.acknowledgeSOS = function () {
+        document.getElementById("sosAlertModal").style.display = "none";
+        // Force the app into triage mode so the driver can immediately route it
+        window.startTriageMode();
+      };
+
+      // Visual Pruning System Engine
+      window.startTriageMode = function () {
+        // Stop all alarms strictly when the triage/bottom sheet opens (Bell Icon action)
+        const sosAudio = document.getElementById("sosAlarmSound");
+        if (sosAudio) {
+          sosAudio.pause();
+          sosAudio.currentTime = 0;
+        }
+        const stdAudio = document.getElementById("alertSound");
+        if (stdAudio) {
+          stdAudio.pause();
+          stdAudio.currentTime = 0;
+        }
+
+        if (AppState.pendingOrders === 0) return;
+
+        AppState.acknowledgedOrders = AppState.pendingOrders;
+        if (window.updateNotificationsUI) window.updateNotificationsUI();
+
+        closeNotificationModal();
+        closeAllModals();
+        AppState.workflowPhase = "triage";
+        updateDashboardUI();
+
+        // Auto-expand the bottom sheet to show the route details
+        document.getElementById("activeQueueSheet").classList.add("expanded");
+      };
+
+      function getDistance(p1, p2) {
+        const dy = p1[0] - p2[0];
+        const dx = p1[1] - p2[1];
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      function drawTriageRoute() {
+        AppState.layerGroup.clearLayers();
+
+        // Nearest-Neighbor Sorting Logic (Pickups First, Deliveries Last)
+
+        let unsortedPickups = AppState.triageQueue.filter(
+          (o) => o.type === "pickup"
+        );
+        let unsortedDeliveries = AppState.triageQueue.filter(
+          (o) => o.type === "delivery"
+        );
+
+        let current = [39.8283, -98.5795];
+        if (unsortedPickups.length > 0) {
+          current = [unsortedPickups[0].lat, unsortedPickups[0].lng];
+        } else if (unsortedDeliveries.length > 0) {
+          current = [unsortedDeliveries[0].lat, unsortedDeliveries[0].lng];
+        }
+
+        let sorted = [];
+
+        // 1. Sort and route all Pickups first
+        while (unsortedPickups.length > 0) {
+          unsortedPickups.sort(
+            (a, b) =>
+              getDistance(current, [a.lat, a.lng]) -
+              getDistance(current, [b.lat, b.lng])
+          );
+          let next = unsortedPickups.shift();
+          sorted.push(next);
+          current = [next.lat, next.lng];
+        }
+
+        // 2. Sort and route all Deliveries (SOS First, then Standard)
+        let sosDeliveriesTriage = unsortedDeliveries.filter(
+          (d) => d.bookingType === "emergency"
+        );
+        let stdDeliveriesTriage = unsortedDeliveries.filter(
+          (d) => d.bookingType !== "emergency"
+        );
+
+        while (sosDeliveriesTriage.length > 0) {
+          sosDeliveriesTriage.sort(
+            (a, b) =>
+              getDistance(current, [a.lat, a.lng]) -
+              getDistance(current, [b.lat, b.lng])
+          );
+          let next = sosDeliveriesTriage.shift();
+          sorted.push(next);
+          current = [next.lat, next.lng];
+        }
+
+        while (stdDeliveriesTriage.length > 0) {
+          stdDeliveriesTriage.sort(
+            (a, b) =>
+              getDistance(current, [a.lat, a.lng]) -
+              getDistance(current, [b.lat, b.lng])
+          );
+          let next = stdDeliveriesTriage.shift();
+          sorted.push(next);
+          current = [next.lat, next.lng];
+        }
+
+        AppState.triageQueue = sorted; // Save sorted sequence
+
+        // Draw Street-Snapped Polyline via Google Directions
+        if (sorted.length > 0) {
+          const directionsService = new google.maps.DirectionsService();
+
+          const origin = new google.maps.LatLng(sorted[0].lat, sorted[0].lng);
+
+          const destination = new google.maps.LatLng(
+            sorted[sorted.length - 1].lat,
+            sorted[sorted.length - 1].lng
+          );
+
+          const waypoints = sorted.slice(0, -1).map((stop) => ({
+            location: new google.maps.LatLng(stop.lat, stop.lng),
+            stopover: true,
+          }));
+
+          directionsService.route(
+            {
+              origin: origin,
+              destination: destination,
+              waypoints: waypoints,
+              travelMode: google.maps.TravelMode.DRIVING,
+            },
+            (result, status) => {
+              if (status === google.maps.DirectionsStatus.OK) {
+                const encodedPath = result.routes[0].overview_polyline;
+                const decodedCoords = decodePolyline(encodedPath);
+                L.polyline(decodedCoords, {
+                  color: "var(--accent)",
+                  weight: 5,
+                  opacity: 0.9,
+                  lineJoin: "round",
+                }).addTo(AppState.layerGroup);
+              }
+            }
+          );
+        }
+
+        // Draw Interactive Pruning Pins
+        sorted.forEach((order) => {
+          let pinClass =
+            order.bookingType === "emergency"
+              ? "custom-sos-pin"
+              : "custom-store-pin";
+          let iconHtml = "";
+          let iSize = [28, 28];
+          let iAnchor = [14, 28];
+          let pAnchor = [0, -28];
+
+          if (order.type === "delivery") {
+            pinClass = "custom-delivery-pin";
+            iconHtml = "⌂";
+            iSize = [32, 32];
+            iAnchor = [16, 16];
+            pAnchor = [0, -16];
+          }
+
+          const icon = L.divIcon({
+            className: pinClass,
+            html: iconHtml,
+            iconSize: iSize,
+            iconAnchor: iAnchor,
+            popupAnchor: pAnchor,
+          });
+
+          const marker = L.marker([order.lat, order.lng], { icon }).addTo(
+            AppState.layerGroup
+          );
+
+          marker.bindPopup(`
+          <div style="text-align:center;">
+            <strong>${order.title}</strong><br>
+            <button onclick="rejectTriageOrder('${order.id}')" class="btn btn-emergency" style="padding: 6px 12px; margin-top: 10px; font-size: 0.8rem; border-radius: 6px;">Reject & Redraw</button>
+          </div>
+        `);
+        });
+
+        if (sorted.length > 0) {
+          let latlngs = [
+            AppState.homeBase,
+            ...sorted.map((o) => [o.lat, o.lng]),
+          ];
+          AppState.mapInstance.fitBounds(latlngs, { padding: [50, 50] });
+        }
+      }
+
+      window.acceptTriageOrder = async function (dbId) {
+        try {
+          AppState.triageQueue.forEach((item) => {
+            if (item.dbId === dbId) item.status = "accepted";
+          });
+          updateDashboardUI();
+          await window.updateDoc(window.doc(window.db, "orders", dbId), {
+            status: "accepted",
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      window.declineTriageOrder = async function (dbId) {
+        const reason = prompt("Explain why you are declining this route:");
+        if (reason === null) return;
+        try {
+          await window.updateDoc(window.doc(window.db, "orders", dbId), {
+            status: "cancelled",
+            cancelReason: reason || "Declined by driver.",
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      window.cancelTriageOrder = async function (dbId) {
+        if (
+          confirm(
+            "Are you sure you want to cancel this order? This will abort the order entirely and notify the customer you are unable to get there."
+          )
+        ) {
+          try {
+            AppState.triageQueue = AppState.triageQueue.filter(
+              (item) => item.dbId !== dbId
+            );
+            updateDashboardUI();
+            await window.updateDoc(window.doc(window.db, "orders", dbId), {
+              status: "cancelled",
+              cancelReason: "Driver cancelled before starting route.",
+            });
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      };
+
+      window.rejectTriageOrder = function (uniqueId) {
+        const item = AppState.triageQueue.find((o) => o.id === uniqueId);
+        if (!item) return;
+        if (
+          confirm(
+            "Are you sure you want to reject this stop? This will decline the entire customer order from your queue."
+          )
+        ) {
+          window.declineTriageOrder(item.dbId);
+        }
+      };
+
+      window.emergencyAbortActiveRoute = async function () {
+        if (
+          AppState.workflowPhase === "idle" ||
+          AppState.workflowPhase === "complete"
+        ) {
+          window.showCustomAlert(
+            "Action Invalid",
+            "You do not currently have an active route to abort."
+          );
+          return;
+        }
+
+        if (
+          !confirm(
+            "EMERGENCY ABORT: Are you absolutely sure? This will drop all remaining pickups and deliveries, returning them to the network for another driver. You cannot undo this."
+          )
+        )
+          return;
+
+        const btn = document.getElementById("emergencyAbortBtn");
+        if (btn) btn.innerText = "Aborting...";
+
+        try {
+          const combinedOrders = [
+            ...AppState.activeQueue,
+            ...AppState.triageQueue,
+          ];
+          const uniqueOrderIds = [
+            ...new Set(combinedOrders.map((item) => item.dbId)),
+          ];
+
+          for (const orderId of uniqueOrderIds) {
+            if (orderId) {
+              await window.updateDoc(window.doc(window.db, "orders", orderId), {
+                status: "cancelled",
+                cancelReason:
+                  "Driver experienced an emergency and had to abort the route.",
+              });
+            }
+          }
+
+          AppState.workflowPhase = "idle";
+          AppState.activeQueue = [];
+          AppState.triageQueue = [];
+
+          await window.saveShiftState();
+
+          updateDashboardUI();
+          closeAllModals();
+
+          if (btn) btn.innerText = "Abort Run";
+          window.showCustomAlert(
+            "Route Aborted",
+            "Your route has been successfully cleared. Orders have been released back to the global network."
+          );
+        } catch (e) {
+          console.error("Failed to abort route:", e);
+          if (btn) btn.innerText = "Abort Run";
+          window.showCustomAlert(
+            "Network Error",
+            "Failed to release orders to the network. Please check your connection and try again."
+          );
+        }
+      };
+
+      // --- ROUTING & DISTANCE MATRIX UTILS ---
+      let activeRouteLayer = null;
+
+      function decodePolyline(encoded) {
+        let points = [];
+        let index = 0,
+          len = encoded.length;
+        let lat = 0,
+          lng = 0;
+
+        while (index < len) {
+          let b,
+            shift = 0,
+            result = 0;
+          do {
+            b = encoded.charAt(index++).charCodeAt(0) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+          } while (b >= 0x20);
+          let dlat = result & 1 ? ~(result >> 1) : result >> 1;
+          lat += dlat;
+
+          shift = 0;
+          result = 0;
+          do {
+            b = encoded.charAt(index++).charCodeAt(0) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+          } while (b >= 0x20);
+          let dlng = result & 1 ? ~(result >> 1) : result >> 1;
+          lng += dlng;
+
+          points.push([lat / 1e5, lng / 1e5]);
+        }
+        return points;
+      }
+
+      function drawActualRoute(origin, waypoints, destination) {
+        if (activeRouteLayer) {
+          AppState.mapInstance.removeLayer(activeRouteLayer);
+        }
+        activeRouteLayer = L.featureGroup().addTo(AppState.layerGroup);
+
+        const directionsService = new google.maps.DirectionsService();
+        const allPoints = [origin, ...waypoints, destination];
+
+        // Standard Single-Call Engine (<= 25 points)
+        if (allPoints.length <= 25) {
+          const request = {
+            origin: new google.maps.LatLng(origin[0], origin[1]),
+            destination: new google.maps.LatLng(destination[0], destination[1]),
+            waypoints: waypoints.map((wp) => ({
+              location: new google.maps.LatLng(wp[0], wp[1]),
+              stopover: true,
+            })),
+            travelMode: google.maps.TravelMode.DRIVING,
+          };
+
+          directionsService.route(request, (result, status) => {
+            if (status === google.maps.DirectionsStatus.OK) {
+              const encodedPath = result.routes[0].overview_polyline;
+              const decodedCoords = decodePolyline(encodedPath);
+              L.polyline(decodedCoords, {
+                color: "var(--accent)",
+                weight: 5,
+                opacity: 0.9,
+                lineJoin: "round",
+              }).addTo(activeRouteLayer);
+
+              AppState.mapInstance.fitBounds(activeRouteLayer.getBounds(), {
+                padding: [60, 60],
+              });
+            } else {
+              console.warn(
+                "Single route request failed (" +
+                  status +
+                  "). Activating batch fallback..."
+              );
+              executeBatchedRoute(allPoints, directionsService);
+            }
+          });
+        } else {
+          // High-Capacity Batch Engine (> 25 points)
+          executeBatchedRoute(allPoints, directionsService);
+        }
+      }
+
+      function executeBatchedRoute(allPoints, directionsService) {
+        const chunks = [];
+        const chunkSize = 24; // 24 segments = 25 coordinates (overlaps boundaries)
+
+        for (let i = 0; i < allPoints.length - 1; i += chunkSize) {
+          chunks.push(allPoints.slice(i, i + chunkSize + 1));
+        }
+
+        chunks.forEach((chunk, index) => {
+          setTimeout(() => {
+            if (chunk.length < 2) return;
+
+            const reqOrigin = new google.maps.LatLng(chunk[0][0], chunk[0][1]);
+            const reqDest = new google.maps.LatLng(
+              chunk[chunk.length - 1][0],
+              chunk[chunk.length - 1][1]
+            );
+            const reqWaypoints = chunk.slice(1, -1).map((wp) => ({
+              location: new google.maps.LatLng(wp[0], wp[1]),
+              stopover: true,
+            }));
+
+            directionsService.route(
+              {
+                origin: reqOrigin,
+                destination: reqDest,
+                waypoints: reqWaypoints,
+                travelMode: google.maps.TravelMode.DRIVING,
+              },
+              (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                  const encodedPath = result.routes[0].overview_polyline;
+                  const decodedCoords = decodePolyline(encodedPath);
+                  L.polyline(decodedCoords, {
+                    color: "var(--accent)",
+                    weight: 5,
+                    opacity: 0.9,
+                    lineJoin: "round",
+                  }).addTo(activeRouteLayer);
+
+                  if (activeRouteLayer.getLayers().length > 0) {
+                    AppState.mapInstance.fitBounds(
+                      activeRouteLayer.getBounds(),
+                      {
+                        padding: [60, 60],
+                      }
+                    );
+                  }
+                } else {
+                  console.error(
+                    "Batch routing chunk " + index + " failed:",
+                    status
+                  );
+                }
+              }
+            );
+          }, index * 60); // 60ms micro-throttle to protect Google API burst quota
+        });
+      }
+
+      function groupPickups(queue) {
+        let groups = {};
+        queue
+
+          .filter((q) => q.type === "pickup" && q.status !== "completed")
+          .forEach((p) => {
+            let key = `${p.lat}_${p.lng}`;
+
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(p);
+          });
+        return Object.values(groups);
+      }
+
+      async function sortDeliveriesByTime(originLat, originLng, deliveries) {
+        if (!deliveries || deliveries.length === 0) return [];
+
+        const origin = new google.maps.LatLng(originLat, originLng);
+        const service = new google.maps.DistanceMatrixService();
+
+        // Standard Single-Call Engine (<= 25 destinations)
+        if (deliveries.length <= 25) {
+          return new Promise((resolve) => {
+            const destinations = deliveries.map(
+              (d) => new google.maps.LatLng(d.lat, d.lng)
+            );
+
+            service.getDistanceMatrix(
+              {
+                origins: [origin],
+                destinations: destinations,
+                travelMode: google.maps.TravelMode.DRIVING,
+              },
+              async (response, status) => {
+                if (status === "OK") {
+                  const results = response.rows[0].elements;
+                  let mapped = deliveries.map((d, i) => ({
+                    ...d,
+                    durationVal:
+                      results[i] && results[i].status === "OK"
+                        ? results[i].duration.value
+                        : 999999,
+                  }));
+                  mapped.sort((a, b) => a.durationVal - b.durationVal);
+                  resolve(mapped);
+                } else {
+                  console.warn(
+                    "Single Distance Matrix failed (" +
+                      status +
+                      "). Activating batch engine..."
+                  );
+                  const batched = await executeBatchedDistanceMatrix(
+                    origin,
+                    deliveries,
+                    service
+                  );
+                  resolve(batched);
+                }
+              }
+            );
+          });
+        }
+
+        // High-Capacity Batch Engine (> 25 destinations)
+        return await executeBatchedDistanceMatrix(origin, deliveries, service);
+      }
+
+      async function executeBatchedDistanceMatrix(origin, deliveries, service) {
+        const chunkSize = 25;
+        const chunks = [];
+
+        for (let i = 0; i < deliveries.length; i += chunkSize) {
+          chunks.push(deliveries.slice(i, i + chunkSize));
+        }
+
+        const chunkPromises = chunks.map((chunk, index) => {
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              const destinations = chunk.map(
+                (d) => new google.maps.LatLng(d.lat, d.lng)
+              );
+
+              service.getDistanceMatrix(
+                {
+                  origins: [origin],
+                  destinations: destinations,
+                  travelMode: google.maps.TravelMode.DRIVING,
+                },
+                (response, status) => {
+                  if (status === "OK") {
+                    const results = response.rows[0].elements;
+                    const mapped = chunk.map((d, i) => ({
+                      ...d,
+                      durationVal:
+                        results[i] && results[i].status === "OK"
+                          ? results[i].duration.value
+                          : 999999,
+                    }));
+                    resolve(mapped);
+                  } else {
+                    console.error(
+                      "Distance Matrix chunk " +
+                        index +
+                        " failed (" +
+                        status +
+                        "). Applying Euclidean fallback."
+                    );
+                    const originCoords = [origin.lat(), origin.lng()];
+                    const mapped = chunk.map((d) => ({
+                      ...d,
+                      durationVal: getDistance(originCoords, [d.lat, d.lng]),
+                    }));
+                    resolve(mapped);
+                  }
+                }
+              );
+            }, index * 60); // 60ms micro-throttle to protect Google API burst quota
+          });
+        });
+
+        const allChunkResults = await Promise.all(chunkPromises);
+        const flattened = allChunkResults.flat();
+        flattened.sort((a, b) => a.durationVal - b.durationVal);
+        return flattened;
+      }
+
+      window.activeOrderUnsubscribers = [];
+
+      window.monitorActiveRoute = function () {
+        if (window.activeOrderUnsubscribers) {
+          window.activeOrderUnsubscribers.forEach((unsub) => unsub());
+        }
+        window.activeOrderUnsubscribers = [];
+
+        // Combine activeQueue and triageQueue to monitor ALL current orders
+        const uniqueOrderIds = [
+          ...new Set([
+            ...AppState.activeQueue.map((item) => item.dbId),
+            ...AppState.triageQueue.map((item) => item.dbId),
+          ]),
+        ];
+
+        uniqueOrderIds.forEach((orderId) => {
+          if (!orderId) return;
+
+          // 1. Monitor Order Status for Cancellations
+          const unsub = window.onSnapshot(
+            window.doc(window.db, "orders", orderId),
+            (docSnap) => {
+              if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.status === "cancelled") {
+                  window.showCustomAlert(
+                    "Delivery Aborted",
+                    "🚨 A customer cancelled their order! Actively rerouting your remaining stops now."
+                  );
+
+                  AppState.activeQueue = AppState.activeQueue.filter(
+                    (item) => item.dbId !== orderId
+                  );
+                  AppState.triageQueue = AppState.triageQueue.filter(
+                    (item) => item.dbId !== orderId
+                  );
+
+                  if (
+                    AppState.activeQueue.length === 0 &&
+                    AppState.triageQueue.length === 0
+                  ) {
+                    AppState.workflowPhase = "idle";
+                  } else if (
+                    AppState.workflowPhase === "pickup" ||
+                    AppState.workflowPhase === "ready_pickup"
+                  ) {
+                    const pendingPickups = AppState.activeQueue.filter(
+                      (i) => i.type === "pickup" && i.status !== "completed"
+                    );
+                    if (
+                      pendingPickups.length === 0 &&
+                      AppState.activeQueue.length > 0
+                    ) {
+                      AppState.workflowPhase = "ready_delivery";
+                    }
+                  }
+
+                  updateDashboardUI();
+                }
+              }
+            }
+          );
+          window.activeOrderUnsubscribers.push(unsub);
+
+          // 2. Background Chat Listener for Notifications (Filing Cabinet System)
+          const chatQ = window.query(
+            window.collection(window.db, "orders", orderId, "messages"),
+            window.orderBy("timestamp", "asc")
+          );
+
+          const chatUnsub = window.onSnapshot(chatQ, (snapshot) => {
+            let unreadForThisOrder = 0;
+            let hasNewAlert = false;
+
+            // Recalculate exact unread count to prevent state drift
+            snapshot.docs.forEach((docSnap) => {
+              const msg = docSnap.data();
+              if (msg.senderId !== DRIVER_DOC_ID && !msg.read) {
+                unreadForThisOrder++;
+              }
+            });
+
+            // Trigger audio only on actual new message additions
+            snapshot.docChanges().forEach((change) => {
+              if (change.type === "added") {
+                const msg = change.doc.data();
+                if (msg.senderId !== DRIVER_DOC_ID && !msg.read) {
+                  hasNewAlert = true;
+                }
+              }
+            });
+
+            // Save to the global dictionary (Filing Cabinet)
+            AppState.unreadCounts = AppState.unreadCounts || {};
+            AppState.unreadCounts[orderId] = unreadForThisOrder;
+
+            if (hasNewAlert) {
+              const alertAudio = document.getElementById("alertSound");
+              if (alertAudio) {
+                alertAudio
+                  .play()
+                  .catch((e) => console.log("Audio blocked:", e));
+              }
+            }
+
+            if (window.updateNotificationsUI) window.updateNotificationsUI();
+          });
+          window.activeOrderUnsubscribers.push(chatUnsub);
+        });
+      };
+
+      window.drawFinancialSummary = function () {
+        const container = document.getElementById("financialSummaryContainer");
+        const grid = document.getElementById("financialGrid");
+        const timelineHeader = document.getElementById(
+          "deliveryTimelineHeader"
+        );
+
+        const activeData =
+          AppState.workflowPhase === "triage" ||
+          AppState.workflowPhase === "idle"
+            ? AppState.triageQueue
+            : AppState.activeQueue;
+
+        if (!activeData || activeData.length === 0) {
+          container.style.display = "none";
+          if (timelineHeader) timelineHeader.style.display = "none";
+          grid.innerHTML = "";
+          return;
+        }
+
+        // Determine if any active order is scheduled for today
+        const isToday = activeData.some(
+          (item) =>
+            item.sosTimeline === "today" || item.sosTimeline === "asap_today"
+        );
+        if (timelineHeader) {
+          timelineHeader.style.display = "block";
+          timelineHeader.innerText = isToday
+            ? "DELIVERY FOR TODAY"
+            : "DELIVERY FOR TOMORROW";
+        }
+
+        const customerMap = {};
+        activeData.forEach((item) => {
+          if (!customerMap[item.dbId]) {
+            customerMap[item.dbId] = {
+              stops: 0,
+              tipAmount: item.tipAmount || 0,
+              totalCost: item.totalCost || 0,
+              bookingType: item.bookingType || "scheduled",
+            };
+          }
+          if (item.type === "pickup") {
+            customerMap[item.dbId].stops += 1;
+          }
+        });
+
+        let grandBase = 0;
+        let grandTip = 0;
+        let grandTotal = 0;
+        let cardsHTML = "";
+        let customerCount = 1;
+
+        for (const dbId in customerMap) {
+          const data = customerMap[dbId];
+          const baseFee = data.totalCost - data.tipAmount;
+
+          grandBase += baseFee;
+          grandTip += data.tipAmount;
+          grandTotal += data.totalCost;
+
+          cardsHTML += `
+              <div class="finance-card">
+                <h5>Customer ${customerCount} ${
+            data.bookingType === "emergency" ? "🚨" : ""
+          }</h5>
+                <div class="finance-row"><span>Base (${
+                  data.stops
+                } stop)</span> <span>$${baseFee.toFixed(2)}</span></div>
+                <div class="finance-row"><span>Tip</span> <span style="color: var(--success);">+$${data.tipAmount.toFixed(
+                  2
+                )}</span></div>
+                <div class="finance-total"><span>Total</span> <span>$${data.totalCost.toFixed(
+                  2
+                )}</span></div>
+              </div>
+            `;
+          customerCount++;
+        }
+
+        grid.innerHTML =
+          `
+            <div class="finance-card master">
+              <h5>Grand Total</h5>
+              <div class="finance-row"><span>Route Base</span> <span>$${grandBase.toFixed(
+                2
+              )}</span></div>
+              <div class="finance-row"><span>Total Tips</span> <span>+$${grandTip.toFixed(
+                2
+              )}</span></div>
+              <div class="finance-total"><span>Payout</span> <span>$${grandTotal.toFixed(
+                2
+              )}</span></div>
+            </div>
+          ` + cardsHTML;
+
+        container.style.display = "block";
+      };
+
+      // --- STATE MACHINE ---
+      async function updateDashboardUI() {
+        const gTitle = document.getElementById("glanceTitle");
+        const gSub = document.getElementById("glanceSubtitle");
+        const wfBtn = document.getElementById("workflowBtn");
+        const timeline = document.getElementById("timelineList");
+
+        if (AppState.workflowPhase === "triage") {
+          gTitle.innerText = "Waiting Room";
+
+          const uniqueOrderCount = new Set(
+            AppState.triageQueue.map((item) => item.dbId)
+          ).size;
+          gSub.innerText = `${uniqueOrderCount} Incoming Request(s).`;
+
+          wfBtn.innerText = "Proceed to Pickups";
+          wfBtn.className = "btn btn-primary";
+          wfBtn.style.display = "block";
+
+          wfBtn.onclick = async function (e) {
+            e.stopPropagation();
+            const acceptedOrders = AppState.triageQueue.filter(
+              (t) => t.status === "accepted"
+            );
+            if (acceptedOrders.length === 0) {
+              window.showCustomAlert(
+                "Queue Empty",
+                "You must accept at least one order before starting the run."
+              );
+              return;
+            }
+
+            const newApproved = acceptedOrders.map((t) => ({
+              ...t,
+              status: "approved",
+            }));
+
+            // Safely merge new runs into the existing route without losing progress
+            const existingActive = AppState.activeQueue || [];
+            const existingIds = new Set(existingActive.map((x) => x.id));
+            const distinctNew = newApproved.filter(
+              (x) => !existingIds.has(x.id)
+            );
+
+            const originalText = wfBtn.innerText;
+            wfBtn.innerText = "Calculating Route Tags...";
+            wfBtn.disabled = true;
+
+            let tempQueue = [...existingActive, ...distinctNew];
+            let untaggedDeliveries = tempQueue.filter(
+              (q) => q.type === "delivery" && !q.deliveryTag
+            );
+
+            if (untaggedDeliveries.length > 0) {
+              let maxD = 0;
+              let maxED = 0;
+              tempQueue.forEach((q) => {
+                if (q.deliveryTag) {
+                  if (q.deliveryTag.startsWith("ED")) {
+                    let num = parseInt(q.deliveryTag.replace("ED", ""));
+                    if (num > maxED) maxED = num;
+                  } else if (q.deliveryTag.startsWith("D")) {
+                    let num = parseInt(q.deliveryTag.replace("D", ""));
+                    if (num > maxD) maxD = num;
+                  }
+                }
+              });
+
+              const pickups = tempQueue.filter((q) => q.type === "pickup");
+              const currentLoc =
+                pickups.length > 0
+                  ? [
+                      pickups[pickups.length - 1].lat,
+                      pickups[pickups.length - 1].lng,
+                    ]
+                  : AppState.homeBase;
+
+              const sosDeliveries = untaggedDeliveries.filter(
+                (d) => d.bookingType === "emergency"
+              );
+              const stdDeliveries = untaggedDeliveries.filter(
+                (d) => d.bookingType !== "emergency"
+              );
+
+              const sortedSOS = await sortDeliveriesByTime(
+                currentLoc[0],
+                currentLoc[1],
+                sosDeliveries
+              );
+              const nextOrigin =
+                sortedSOS.length > 0
+                  ? [
+                      sortedSOS[sortedSOS.length - 1].lat,
+                      sortedSOS[sortedSOS.length - 1].lng,
+                    ]
+                  : currentLoc;
+              const sortedStandard = await sortDeliveriesByTime(
+                nextOrigin[0],
+                nextOrigin[1],
+                stdDeliveries
+              );
+
+              sortedSOS.forEach((d) => {
+                maxED++;
+                d.deliveryTag = "ED" + maxED;
+              });
+              sortedStandard.forEach((d) => {
+                maxD++;
+                d.deliveryTag = "D" + maxD;
+              });
+
+              const tagMap = {};
+              [...sortedSOS, ...sortedStandard].forEach((d) => {
+                tagMap[d.dbId] = d.deliveryTag;
+              });
+
+              tempQueue.forEach((q) => {
+                if (tagMap[q.dbId]) {
+                  q.deliveryTag = tagMap[q.dbId];
+                }
+              });
+            }
+
+            AppState.activeQueue = tempQueue;
+
+            wfBtn.innerText = originalText;
+            wfBtn.disabled = false;
+
+            AppState.workflowPhase = "ready_pickup";
+            AppState.pendingOrders = 0;
+
+            if (window.monitorActiveRoute) window.monitorActiveRoute();
+            updateDashboardUI();
+
+            // ONLY push the "approved" status update to the distinct new orders
+            // so we don't accidentally overwrite in_transit or picked_up statuses
+            const uniqueNewOrderIds = [
+              ...new Set(distinctNew.map((item) => item.dbId)),
+            ];
+            for (const orderId of uniqueNewOrderIds) {
+              if (orderId) {
+                window
+                  .updateDoc(window.doc(window.db, "orders", orderId), {
+                    status: "approved",
+                  })
+                  .catch((e) => console.error(e));
+              }
+            }
+
+            const uniqueShiftIds = [
+              ...new Set(
+                distinctNew.map((item) => item.shiftId).filter(Boolean)
+              ),
+            ];
+            for (const sId of uniqueShiftIds) {
+              window
+                .updateDoc(window.doc(window.db, "shifts", sId), {
+                  status: "departed",
+                })
+                .catch((e) =>
+                  console.error("Failed to update shift status:", e)
+                );
+            }
+          };
+
+          drawTriageRoute();
+          timeline.innerHTML = "";
+          AppState.triageQueue.forEach((o, i) => {
+            let actions = "";
+
+            if (o.type === "pickup") {
+              if (o.status === "pending") {
+                actions = `<div style="margin-top: 10px; display: flex; gap: 10px;">
+                      <button class="btn btn-primary" style="padding: 8px; font-size: 0.8rem; flex: 1;" onclick="acceptTriageOrder('${o.dbId}')">Accept</button>
+                      <button class="btn btn-secondary" style="padding: 8px; font-size: 0.8rem; flex: 1; color: var(--danger); border-color: var(--danger);" onclick="declineTriageOrder('${o.dbId}')">Decline</button>
+                  </div>`;
+              } else {
+                actions = `
+                  <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="color: var(--success); font-weight: bold; font-size: 0.85rem; text-align: center;">✓ Accepted - Waiting to Start</div>
+                    <button class="btn btn-emergency" style="padding: 8px; font-size: 0.8rem; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer;" onclick="cancelTriageOrder('${o.dbId}')">Cancel Route</button>
+                  </div>`;
+              }
+
+              actions += `
+                <div style="display: flex; gap: 10px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px;">
+                  <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${o.userId}')">📞 Call</button>
+                  <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${o.dbId}')">💬 Chat</button>
+                </div>
+              `;
+            } else {
+              actions = `<div style="margin-top: 10px; color: var(--text-muted); font-size: 0.85rem; font-weight: bold;"> Final Delivery Drop-off</div>`;
+            }
+
+            timeline.innerHTML += `<li class="timeline-item"><div class="node-card"><strong>Stop ${
+              i + 1
+            }: ${
+              o.title
+            }</strong><p style="font-size:0.8rem; color:var(--text-muted);">Distance sorted automatically.</p>${actions}</div></li>`;
+          });
+        } else if (AppState.workflowPhase === "ready_pickup") {
+          AppState.layerGroup.clearLayers();
+          gTitle.innerText = "Route Locked";
+
+          const groupedPickups = groupPickups(AppState.activeQueue);
+          gSub.innerText = `${groupedPickups.length} Grouped Pickup Locations`;
+          wfBtn.innerText = "Start Pickups";
+          wfBtn.className = "btn btn-primary";
+
+          wfBtn.onclick = (e) => {
+            e.stopPropagation();
+            AppState.workflowPhase = "pickup";
+            updateDashboardUI();
+          };
+
+          if (groupedPickups.length > 0) {
+            drawActualRoute(
+              [groupedPickups[0][0].lat, groupedPickups[0][0].lng],
+
+              groupedPickups.slice(0, -1).map((g) => [g[0].lat, g[0].lng]),
+              [
+                groupedPickups[groupedPickups.length - 1][0].lat,
+                groupedPickups[groupedPickups.length - 1][0].lng,
+              ]
+            );
+
+            groupedPickups.forEach((group) => {
+              const clusterIcon = L.divIcon({
+                className: "custom-store-pin",
+                html: "",
+                iconSize: [28, 28],
+                iconAnchor: [14, 28],
+                popupAnchor: [0, -28],
+              });
+              L.marker([group[0].lat, group[0].lng], {
+                icon: clusterIcon,
+              }).addTo(AppState.layerGroup);
+            });
+          }
+          drawPickupTimeline();
+        } else if (AppState.workflowPhase === "pickup") {
+          gTitle.innerText = "Active Pickups";
+          gSub.innerText = "Secure items and mark complete.";
+          wfBtn.style.display = "none"; // Action is inside the cards now
+          drawPickupTimeline();
+        } else if (AppState.workflowPhase === "ready_delivery") {
+          AppState.layerGroup.clearLayers();
+          gTitle.innerText = "Pickups Complete";
+          gSub.innerText = "Calculating fastest delivery route...";
+          wfBtn.style.display = "none";
+
+          timeline.innerHTML =
+            "<p style='color: var(--text-muted);'>Locking tagged route sequence...</p>";
+
+          const pickups = AppState.activeQueue.filter(
+            (q) => q.type === "pickup"
+          );
+
+          const currentLoc =
+            pickups.length > 0
+              ? [
+                  pickups[pickups.length - 1].lat,
+                  pickups[pickups.length - 1].lng,
+                ]
+              : AppState.homeBase;
+
+          let deliveries = AppState.activeQueue.filter(
+            (q) => q.type === "delivery"
+          );
+
+          deliveries.sort((a, b) => {
+            const getTagValue = (tag) => {
+              if (!tag) return 999999;
+              if (tag.startsWith("ED"))
+                return parseInt(tag.replace("ED", "")) - 10000;
+              if (tag.startsWith("D")) return parseInt(tag.replace("D", ""));
+              return 999999;
+            };
+            return getTagValue(a.deliveryTag) - getTagValue(b.deliveryTag);
+          });
+
+          const sortedDeliveries = [...deliveries];
+
+          AppState.activeQueue = [
+            ...AppState.activeQueue.filter((q) => q.type === "pickup"),
+            ...sortedDeliveries,
+          ];
+
+          gSub.innerText = `${sortedDeliveries.length} Deliveries Sorted.`;
+          wfBtn.innerText = "Begin Deliveries";
+          wfBtn.className = "btn btn-primary";
+          wfBtn.style.display = "block";
+
+          wfBtn.onclick = async (e) => {
+            e.stopPropagation();
+            // 1. Extract only the delivery stops to establish their exact order in line
+
+            const deliveryStops = AppState.activeQueue.filter(
+              (q) => q.type === "delivery"
+            );
+
+            // 2. Tell Firebase the driver is on the way and push their exact queue position
+            for (let i = 0; i < deliveryStops.length; i++) {
+              const orderId = deliveryStops[i].dbId;
+              if (orderId) {
+                try {
+                  await window.updateDoc(
+                    window.doc(window.db, "orders", orderId),
+                    {
+                      status: "in_transit",
+                      queuePosition: i + 1,
+                    }
+                  );
+                } catch (e) {
+                  console.error(
+                    "Failed to update in_transit and queue position:",
+                    e
+                  );
+                }
+              }
+            }
+
+            // 3. Advance the driver's local screen to the delivery phase
+            AppState.workflowPhase = "delivery";
+            updateDashboardUI();
+          };
+
+          if (sortedDeliveries.length > 0) {
+            drawActualRoute(
+              currentLoc,
+              sortedDeliveries.slice(0, -1).map((d) => [d.lat, d.lng]),
+              [
+                sortedDeliveries[sortedDeliveries.length - 1].lat,
+                sortedDeliveries[sortedDeliveries.length - 1].lng,
+              ]
+            );
+
+            sortedDeliveries.forEach((d) => {
+              const delIcon = L.divIcon({
+                className: "custom-delivery-pin",
+                html: "⌂",
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, -16],
+              });
+              L.marker([d.lat, d.lng], { icon: delIcon }).addTo(
+                AppState.layerGroup
+              );
+            });
+          }
+
+          drawDeliveryTimeline();
+        } else if (AppState.workflowPhase === "delivery") {
+          const nextDelivery = AppState.activeQueue.find(
+            (q) => q.type === "delivery" && q.status !== "completed"
+          );
+
+          if (!nextDelivery) {
+            AppState.workflowPhase = "complete";
+            return updateDashboardUI();
+          }
+
+          let tagBadge = "";
+          if (nextDelivery.deliveryTag) {
+            const isEmergency = nextDelivery.deliveryTag.startsWith("ED");
+            tagBadge = `<span style="background: ${
+              isEmergency ? "var(--danger)" : "var(--accent)"
+            }; color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.4); margin-left: 10px; vertical-align: middle;">TAG: ${
+              nextDelivery.deliveryTag
+            }</span>`;
+          }
+
+          gTitle.innerHTML = `En Route: ${nextDelivery.title} ${tagBadge}`;
+          gSub.innerText = "Match the tag to the bag and navigate to drop-off.";
+          wfBtn.innerText = "Delivered Next Stop";
+
+          wfBtn.className = "btn btn-success";
+          wfBtn.style.display = "block";
+
+          wfBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const cleanId = (nextDelivery.dbId || nextDelivery.id).replace(
+              "_del",
+              ""
+            );
+
+            const originalText = wfBtn.innerText;
+            wfBtn.innerText = "Updating Database...";
+            wfBtn.disabled = true;
+
+            try {
+              // 1. Mark the current delivery as completed in Firebase FIRST
+              await window.updateDoc(window.doc(window.db, "orders", cleanId), {
+                status: "completed",
+              });
+
+              // 2. Only advance the local UI state if the network call succeeds
+              nextDelivery.status = "completed";
+
+              // 3. Find all remaining deliveries and decrement their queuePosition
+              const remainingDeliveries = AppState.activeQueue.filter(
+                (q) => q.type === "delivery" && q.status !== "completed"
+              );
+
+              for (let i = 0; i < remainingDeliveries.length; i++) {
+                const remainingId = remainingDeliveries[i].dbId;
+                if (remainingId) {
+                  try {
+                    await window.updateDoc(
+                      window.doc(window.db, "orders", remainingId),
+                      {
+                        queuePosition: i + 1,
+                      }
+                    );
+                  } catch (queueErr) {
+                    console.error("Failed to update queue position:", queueErr);
+                  }
+                }
+              }
+
+              wfBtn.disabled = false;
+              updateDashboardUI();
+            } catch (error) {
+              console.error("Failed to complete order:", error);
+              wfBtn.innerText = originalText;
+              wfBtn.disabled = false;
+              window.showCustomAlert(
+                "Network Error",
+                "Failed to mark delivery as complete in the database. Please check your connection and try again."
+              );
+            }
+          };
+
+          drawDeliveryTimeline();
+        } else if (AppState.workflowPhase === "complete") {
+          AppState.layerGroup.clearLayers();
+          if (activeRouteLayer)
+            AppState.mapInstance.removeLayer(activeRouteLayer);
+          gTitle.innerText = "Route Complete!";
+          gSub.innerText = "Verify payments & finalize run.";
+
+          wfBtn.innerText = "Deliveries Completed";
+          wfBtn.className = "btn btn-primary";
+          wfBtn.style.display = "block";
+
+          wfBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const originalText = wfBtn.innerText;
+            wfBtn.innerText = "Capturing Funds...";
+
+            wfBtn.disabled = true;
+
+            const uniqueOrders = [
+              ...new Map(
+                AppState.activeQueue.map((item) => [item.dbId, item])
+              ).values(),
+            ];
+            const cloudFunctionUrl =
+              "https://capturepickupheropayment-1068443635940.us-central1.run.app";
+
+            for (const order of uniqueOrders) {
+              if (order.stripeSessionId) {
+                try {
+                  await fetch(cloudFunctionUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      stripeSessionId: order.stripeSessionId,
+                    }),
+                  });
+                } catch (e) {
+                  console.error("Capture failed for order:", order.dbId, e);
+                }
+              }
+            }
+
+            wfBtn.disabled = false;
+            AppState.workflowPhase = "idle";
+            AppState.activeQueue = [];
+            AppState.triageQueue = [];
+            updateDashboardUI();
+            AppState.mapInstance.setView(AppState.homeBase, 12);
+          };
+
+          timeline.innerHTML =
+            '<li class="timeline-item"><div class="node-card"><strong>All Drops Complete</strong><p style="font-size:0.8rem; color:var(--text-muted);">Payouts secured via Stripe.</p></div></li>';
+        } else if (AppState.workflowPhase === "idle") {
+          // Wipe the stranded pins and route lines off the map
+          AppState.layerGroup.clearLayers();
+          if (activeRouteLayer) {
+            AppState.mapInstance.removeLayer(activeRouteLayer);
+          }
+
+          gTitle.innerText = "Idle / No Active Route";
+          gSub.innerText = "Awaiting scheduled runs.";
+          wfBtn.style.display = "none";
+          timeline.innerHTML =
+            '<p style="color: var(--text-muted);">Queue is empty.</p>';
+        }
+
+        if (window.drawFinancialSummary) window.drawFinancialSummary();
+
+        window.saveShiftState();
+      }
+
+      // --- CUSTOM TIMELINES & ACTIONS ---
+
+      window.markPickupComplete = async function (uniqueId) {
+        const item = AppState.activeQueue.find(
+          (i) => i.id === uniqueId && i.type === "pickup"
+        );
+        if (!item) return;
+
+        const cleanId = item.dbId;
+        const stopIndex = parseInt(uniqueId.split("_pickup_")[1]);
+
+        // Check if there are any MORE pickups left for THIS specific customer (excluding the current one)
+        const remainingCustomerPickups = AppState.activeQueue.filter(
+          (i) =>
+            i.dbId === cleanId &&
+            i.type === "pickup" &&
+            i.id !== uniqueId &&
+            i.status !== "completed"
+        );
+
+        try {
+          const orderRef = window.doc(window.db, "orders", cleanId);
+          const orderSnap = await window.getDoc(orderRef);
+
+          if (orderSnap.exists()) {
+            const orderData = orderSnap.data();
+            const updatedStops = [...orderData.stops];
+
+            if (updatedStops[stopIndex]) {
+              updatedStops[stopIndex].completed = true;
+            }
+
+            const updatePayload = { stops: updatedStops };
+
+            if (remainingCustomerPickups.length === 0) {
+              // All items for this customer are secured, flip the master switch
+              updatePayload.status = "picked_up";
+            }
+
+            await window.updateDoc(orderRef, updatePayload);
+          }
+
+          // Network call succeeded, NOW update the local state
+          item.status = "completed";
+
+          const pendingPickups = AppState.activeQueue.filter(
+            (i) => i.type === "pickup" && i.status !== "completed"
+          );
+
+          if (pendingPickups.length === 0) {
+            AppState.workflowPhase = "ready_delivery";
+            updateDashboardUI();
+          } else {
+            drawPickupTimeline();
+          }
+
+          window.saveShiftState();
+        } catch (error) {
+          console.error("Firebase update failed", error);
+          window.showCustomAlert(
+            "Network Error",
+            "Failed to confirm pickup. Please check your connection and try again."
+          );
+        }
+      };
+
+      function drawPickupTimeline() {
+        const timeline = document.getElementById("timelineList");
+        timeline.innerHTML = "";
+
+        const pickups = AppState.activeQueue.filter((q) => q.type === "pickup");
+
+        let activeFound = false;
+
+        pickups.forEach((node) => {
+          const isDone = node.status === "completed";
+          let statusClass = "completed";
+          let navBtnHTML = "";
+
+          if (!isDone && !activeFound) {
+            statusClass = "active";
+            activeFound = true;
+
+            // Native OS deep link to Google Maps
+            const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${node.lat},${node.lng}&travelmode=driving`;
+            navBtnHTML = `<button class="btn" style="margin-top:10px; margin-bottom:5px; padding:12px; font-size:0.95rem; background:#22c55e; color:white; border:none; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="window.open('${mapsUrl}', '_blank')">
+              <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+              Navigate to Pickup
+            </button>`;
+          } else if (!isDone) {
+            statusClass = "";
+          }
+
+          const btnHTML = isDone
+            ? `<button class="btn btn-secondary" style="margin-top:10px; padding:8px; font-size:0.85rem;" disabled>Picked Up ✓</button>`
+            : `<button class="btn btn-primary" style="margin-top:10px; padding:8px; font-size:0.85rem;" onclick="markPickupComplete('${node.id}')">Items Picked Up</button>`;
+
+          let connectHTML = "";
+          if (
+            !isDone &&
+            (AppState.workflowPhase === "pickup" ||
+              AppState.workflowPhase === "ready_pickup")
+          ) {
+            connectHTML = `
+              <div style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${node.userId}')">📞 Call</button>
+                <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${node.dbId}')">💬 Chat</button>
+              </div>
+            `;
+          }
+
+          // Generate the detailed pickup information UI box
+          let extraInfo = `
+            <div style="background: var(--surface); padding: 12px; border-radius: 8px; margin-top: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem;">
+              ${
+                node.pickupNumber
+                  ? `<div><strong style="color:var(--accent);">Pickup Order #:</strong> ${node.pickupNumber}</div>`
+                  : ""
+              }
+              ${
+                node.pin
+                  ? `<div><strong style="color:var(--accent);">Pickup PIN:</strong> ${node.pin}</div>`
+                  : ""
+              }
+              ${
+                node.curbsideInstructions
+                  ? `<div><strong style="color:var(--accent);">Pickup Notes:</strong> ${node.curbsideInstructions}</div>`
+                  : ""
+              }
+              ${
+                node.barcodeImageUrl
+                  ? `<img src="${node.barcodeImageUrl}" style="max-width: 100%; margin-top: 10px; border-radius: 6px; border: 1px solid white;">`
+                  : ""
+              }
+            </div>
+          `;
+
+          timeline.innerHTML += `
+            <li class="timeline-item ${statusClass}">
+              <div class="node-card">
+                ${connectHTML}
+                <div class="node-header">
+                  <strong>${node.title}</strong>
+
+                  ${
+                    node.deliveryTag
+                      ? `<span style="background: ${
+                          node.deliveryTag.startsWith("ED")
+                            ? "var(--danger)"
+                            : "var(--accent)"
+                        }; color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.4); margin-left: 10px;">TAG: ${
+                          node.deliveryTag
+                        }</span>`
+                      : ""
+                  }
+
+
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
+
+                ${AppState.workflowPhase === "pickup" ? navBtnHTML : ""}
+
+                ${!isDone ? extraInfo : ""}
+
+                ${AppState.workflowPhase === "pickup" ? btnHTML : ""}
+              </div>
+            </li>
+          `;
+        });
+      }
+
+      function drawDeliveryTimeline() {
+        const timeline = document.getElementById("timelineList");
+        timeline.innerHTML = "";
+
+        const deliveries = AppState.activeQueue.filter(
+          (q) => q.type === "delivery"
+        );
+        let activeFound = false;
+
+        deliveries.forEach((node) => {
+          let statusClass = "";
+          let navBtnHTML = "";
+
+          if (node.status === "completed") {
+            statusClass = "completed";
+          } else if (!activeFound) {
+            statusClass = "active";
+            activeFound = true;
+
+            // Native OS deep link to Google Maps
+            const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${node.lat},${node.lng}&travelmode=driving`;
+            navBtnHTML = `<button class="btn" style="margin-top:10px; padding:12px; font-size:0.95rem; background:#22c55e; color:white; border:none; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="window.open('${mapsUrl}', '_blank')">
+              <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+              Navigate to Drop-off
+            </button>`;
+          }
+
+          let connectHTML = "";
+          if (
+            node.status !== "completed" &&
+            (AppState.workflowPhase === "delivery" ||
+              AppState.workflowPhase === "ready_delivery")
+          ) {
+            connectHTML = `
+              <div style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${node.userId}')">📞 Call</button>
+                <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${node.dbId}')">💬 Chat</button>
+              </div>
+            `;
+          }
+
+          let extraInfo = "";
+          if (node.instructions && node.status !== "completed") {
+            extraInfo = `
+              <div style="background: var(--surface); padding: 12px; border-radius: 8px; margin-top: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem;">
+                <div><strong style="color:var(--accent);">Drop-off Notes:</strong> ${node.instructions}</div>
+              </div>
+            `;
+          }
+
+          timeline.innerHTML += `
+            <li class="timeline-item ${statusClass}">
+              <div class="node-card">
+                ${connectHTML}
+                <div class="node-header">
+                  <strong>${node.title}</strong>
+
+                  ${
+                    node.deliveryTag
+                      ? `<span style="background: ${
+                          node.deliveryTag.startsWith("ED")
+                            ? "var(--danger)"
+                            : "var(--accent)"
+                        }; color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.4); margin-left: 10px;">TAG: ${
+                          node.deliveryTag
+                        }</span>`
+                      : ""
+                  }
+
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Rural Route Drop-off</p>
+
+                ${AppState.workflowPhase === "delivery" ? navBtnHTML : ""}
+
+                ${extraInfo}
+
+
+              </div>
+            </li>
+          `;
+        });
+      }
+
+      // --- SETTINGS DROPDOWN & VALIDATION LOGIC ---
+      window.toggleSettingsDropdown = function () {
+        document
+          .getElementById("settingsDropdownMenu")
+          .classList.toggle("active");
+      };
+
+      window.markProfileDirty = function () {
+        localStorage.setItem("unsavedDriverProfile", "true");
+        window.checkProfileDirty();
+      };
+
+      window.checkProfileDirty = function () {
+        const saveBtn = document.getElementById("saveSettingsBtn");
+        if (!saveBtn) return;
+
+        const nameInput = document
+          .getElementById("driverNameInput")
+          .value.trim();
+        const phoneInput = document.getElementById("driverPhoneInput")
+          ? document.getElementById("driverPhoneInput").value.trim()
+          : "";
+        const bioInput = document.getElementById("driverBioInput").value.trim();
+        const picSrc = document.getElementById("profileImagePreview").src;
+
+        const isValid =
+          nameInput !== "" &&
+          phoneInput !== "" &&
+          bioInput !== "" &&
+          !picSrc.includes("data:image/svg+xml");
+
+        if (!isValid) {
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = "0.5";
+          saveBtn.innerText = "Complete Profile";
+        } else if (localStorage.getItem("unsavedDriverProfile") === "true") {
+          saveBtn.disabled = false;
+          saveBtn.style.opacity = "1";
+          saveBtn.innerText = "Save Changes";
+        } else {
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = "0.5";
+          saveBtn.innerText = "No Changes Made";
+        }
+      };
+
+      // --- CHAT & NOTIFICATION SYSTEM ---
+      AppState.unreadMessages = 0;
+      window.chatUnsubscribe = null;
+      window.activeChatOrderId = null;
+
+      window.openNotificationModal = function () {
+        document.getElementById("notificationModal").classList.add("active");
+      };
+
+      window.closeNotificationModal = function () {
+        document.getElementById("notificationModal").classList.remove("active");
+      };
+
+      window.openChatModal = function (orderId) {
+        if (!orderId && !window.activeChatOrderId) return;
+        const targetId = orderId || window.activeChatOrderId;
+
+        document.getElementById("chatModal").classList.add("active");
+
+        // Zero out the unread count for this specific thread when opened
+        AppState.unreadCounts = AppState.unreadCounts || {};
+        AppState.unreadCounts[targetId] = 0;
+
+        if (window.updateNotificationsUI) window.updateNotificationsUI();
+
+        window.initChatListener(targetId);
+
+        setTimeout(() => {
+          const container = document.getElementById("chatMessageContainer");
+          container.scrollTop = container.scrollHeight;
+        }, 100);
+      };
+
+      window.closeChatModal = function () {
+        document.getElementById("chatModal").classList.remove("active");
+      };
+
+      window.lockChatDormantState = function () {
+        document.getElementById("chatTextInput").disabled = true;
+        document.getElementById("chatSendBtn").disabled = true;
+        const imgInput = document.getElementById("chatImageInput");
+        if (imgInput) imgInput.disabled = true;
+
+        document.getElementById("chatHeaderSubtitle").innerText =
+          "Waiting for route";
+        document.getElementById("chatHeaderSubtitle").style.color =
+          "var(--text-muted)";
+        document.getElementById("chatMessageContainer").innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+            Chat is strictly locked.<br>There is no active delivery route.
+          </div>
+        `;
+      };
+
+      window.initChatListener = function (orderId) {
+        if (window.chatUnsubscribe) window.chatUnsubscribe();
+        window.activeChatOrderId = orderId;
+
+        document.getElementById("chatTextInput").disabled = false;
+        document.getElementById("chatSendBtn").disabled = false;
+
+        const imgInput = document.getElementById("chatImageInput");
+        if (imgInput) imgInput.disabled = false;
+
+        document.getElementById("chatHeaderSubtitle").innerText =
+          "Live Connection";
+        document.getElementById("chatHeaderSubtitle").style.color =
+          "var(--success)";
+
+        const q = window.query(
+          window.collection(window.db, "orders", orderId, "messages"),
+          window.orderBy("timestamp", "asc")
+        );
+
+        window.chatUnsubscribe = window.onSnapshot(q, (snapshot) => {
+          const container = document.getElementById("chatMessageContainer");
+          let html = "";
+          let isNewPayload = false;
+
+          // 1. Check for brand new messages to trigger alerts
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              const msg = change.doc.data();
+              const isMe = msg.senderId === DRIVER_DOC_ID;
+
+              if (!isMe && !msg.read) {
+                isNewPayload = true;
+              }
+            }
+          });
+
+          // 2. Rebuild entire chat to resolve "Sending..." optimistic local writes
+          snapshot.docs.forEach((docSnap) => {
+            const msg = docSnap.data();
+            const isMe = msg.senderId === DRIVER_DOC_ID;
+            const bubbleClass = isMe ? "hero" : "customer";
+
+            const timeString = msg.timestamp
+              ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "Sending...";
+
+            html += `
+              <div class="chat-bubble ${bubbleClass}">
+                ${
+                  msg.imageUrl
+                    ? `<img src="${msg.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2);"><br>`
+                    : ""
+                }
+                ${msg.text}
+                <div class="chat-timestamp">${timeString}</div>
+              </div>
+            `;
+
+            // Actively mark read payloads to kill the notification ping loop
+            if (
+              !isMe &&
+              !msg.read &&
+              document.getElementById("chatModal").classList.contains("active")
+            ) {
+              window
+                .updateDoc(docSnap.ref, { read: true })
+                .catch((e) => console.log(e));
+            }
+          });
+
+          container.innerHTML =
+            html ||
+            `
+            <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+              Send a message to your Customer.
+            </div>
+          `;
+          container.scrollTop = container.scrollHeight;
+
+          if (isNewPayload) {
+            const alertAudio = document.getElementById("alertSound");
+            if (alertAudio) {
+              alertAudio.play().catch((e) => console.log("Audio blocked:", e));
+            }
+          }
+        });
+      };
+
+      window.sendChatMessage = async function () {
+        const input = document.getElementById("chatTextInput");
+        const text = input.value.trim();
+        if (!text || !window.activeChatOrderId) return;
+
+        input.value = "";
+
+        try {
+          await window.addDoc(
+            window.collection(
+              window.db,
+              "orders",
+              window.activeChatOrderId,
+              "messages"
+            ),
+            {
+              senderId: DRIVER_DOC_ID,
+              text: text,
+              timestamp: window.serverTimestamp(),
+              read: false,
+            }
+          );
+        } catch (e) {
+          console.error("Failed to send message:", e);
+          window.showCustomAlert("Error", "Failed to send message.");
+        }
+      };
+
+      window.handleChatImageUpload = function (event) {
+        const file = event.target.files[0];
+        if (!file || !window.activeChatOrderId) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = async function () {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            const maxW = 600;
+            const scale = img.width > maxW ? maxW / img.width : 1;
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
+
+            try {
+              await window.addDoc(
+                window.collection(
+                  window.db,
+                  "orders",
+                  window.activeChatOrderId,
+                  "messages"
+                ),
+                {
+                  senderId: DRIVER_DOC_ID,
+                  text: "📷 Image attached",
+                  imageUrl: compressedBase64,
+                  timestamp: window.serverTimestamp(),
+                  read: false,
+                }
+              );
+            } catch (err) {
+              console.error("Failed to send image:", err);
+              window.showCustomAlert("Error", "Failed to send image.");
+            }
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = ""; // Reset file path to allow repeat identical uploads
+      };
+
+      window.callCustomer = async function (userId) {
+        if (!userId) return;
+
+        try {
+          const userDoc = await window.getDoc(
+            window.doc(window.db, "users", userId)
+          );
+          if (userDoc.exists() && userDoc.data().phoneNumber) {
+            window.location.href = `tel:${userDoc.data().phoneNumber}`;
+          } else {
+            window.showCustomAlert(
+              "Error",
+              "Customer has no verified phone number on file."
+            );
+          }
+        } catch (e) {
+          console.error("Failed to fetch customer phone:", e);
+        }
+      };
+
+      // INTERCEPT TERMINAL STATE FOR UI CLEANUP
+      const originalUpdateDashboardUI = updateDashboardUI;
+      updateDashboardUI = async function () {
+        await originalUpdateDashboardUI();
+        if (
+          AppState.workflowPhase === "idle" ||
+          AppState.workflowPhase === "complete"
+        ) {
+          if (window.chatUnsubscribe) window.chatUnsubscribe();
+          window.lockChatDormantState();
+          window.activeChatOrderId = null;
+        }
+      };
+
+      window.updateNotificationsUI = async function () {
+        const notifList = document.getElementById("notificationList");
+        let html = "";
+        let totalCount = 0;
+
+        let newPending =
+          AppState.pendingOrders - (AppState.acknowledgedOrders || 0);
+        if (newPending < 0) {
+          AppState.acknowledgedOrders = AppState.pendingOrders;
+          newPending = 0;
+        }
+
+        if (newPending > 0) {
+          totalCount += newPending;
+          html += `
+            <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--danger); cursor: pointer; margin-bottom: 15px;" onclick="window.startTriageMode()">
+              <strong style="color: var(--danger);">Pending Route Requests (${newPending})</strong>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open mapping engine</p>
+            </div>
+          `;
+        }
+
+        // --- THE FILING CABINET: Build persistent threads for every active customer ---
+        const allOrders = [
+          ...(AppState.activeQueue || []),
+          ...(AppState.triageQueue || []),
+        ];
+        const uniqueOrdersMap = new Map();
+
+        allOrders.forEach((o) => {
+          if (o.dbId) uniqueOrdersMap.set(o.dbId, o);
+        });
+
+        AppState.unreadCounts = AppState.unreadCounts || {};
+        AppState.customerNames = AppState.customerNames || {};
+
+        for (const [orderId, order] of uniqueOrdersMap.entries()) {
+          const unread = AppState.unreadCounts[orderId] || 0;
+          totalCount += unread;
+
+          // Reach into Firebase to pull the customer's real name if we haven't cached it yet
+          if (!AppState.customerNames[order.userId]) {
+            try {
+              const uDoc = await window.getDoc(
+                window.doc(window.db, "users", order.userId)
+              );
+              AppState.customerNames[order.userId] =
+                uDoc.exists() && uDoc.data().fullName
+                  ? uDoc.data().fullName
+                  : "Customer";
+            } catch (e) {
+              AppState.customerNames[order.userId] = "Customer";
+            }
+          }
+
+          const customerName = AppState.customerNames[order.userId];
+
+          // Build individual thread card
+          html += `
+              <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid ${
+                unread > 0 ? "var(--accent)" : "var(--border)"
+              }; cursor: pointer; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;" onclick="openChatModal('${orderId}')">
+                <div>
+                  <strong style="color: ${
+                    unread > 0 ? "var(--accent)" : "var(--text)"
+                  };">💬 Chat with ${customerName}</strong>
+                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Order ID: ${orderId
+                    .substring(0, 8)
+                    .toUpperCase()}</p>
+                </div>
+                ${
+                  unread > 0
+                    ? `<div style="background: var(--accent); color: white; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold;">${unread}</div>`
+                    : ""
+                }
+              </div>
+            `;
+        }
+
+        if (html === "") {
+          html = `<p style="color: var(--text-muted); text-align: center; margin-top: 20px;">No active chats or notifications.</p>`;
+        }
+
+        if (notifList) notifList.innerHTML = html;
+
+        const badge = document.getElementById("driverNotificationBadge");
+        if (badge) {
+          badge.innerText = totalCount;
+          badge.style.display = totalCount > 0 ? "flex" : "none";
+        }
+      };
+
+      // Inject Triage into Notification center if pending orders exist
+      const originalListenForPendingOrders = window.listenForPendingOrders;
+      window.listenForPendingOrders = function () {
+        originalListenForPendingOrders();
+        setTimeout(() => {
+          if (window.updateNotificationsUI) window.updateNotificationsUI();
+          if (window.monitorActiveRoute) window.monitorActiveRoute();
+        }, 500);
+      };
+
+      // --- COMMUNITY HUB LOGIC ---
+      window.communityUnsubscribe = null;
+      window.communityPendingImage = null;
+
+      window.toggleCommunityFeed = function () {
+        const trigger = document.getElementById("communityTriggerBtn");
+        const modal = document.getElementById("communityModal");
+        const isActive = trigger.classList.contains("active");
+
+        if (!isActive) {
+          trigger.classList.add("active");
+          modal.classList.add("active");
+
+          if (!window.communityUnsubscribe && DRIVER_DOC_ID) {
+            window.initCommunityListener();
+          } else if (!DRIVER_DOC_ID) {
+            document.getElementById("communityFeedContainer").innerHTML = `
+              <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+                Please sign in to view and post to the Neighborhood Hub.
+              </div>
+            `;
+          }
+        } else {
+          trigger.classList.remove("active");
+          modal.classList.remove("active");
+        }
+      };
+
+      window.toggleCommunityTooltip = function (event) {
+        if (event) event.stopPropagation();
+        const box = document.getElementById("communityTooltipBox");
+        if (box) box.classList.toggle("active");
+      };
+
+      document.addEventListener("click", function (event) {
+        const box = document.getElementById("communityTooltipBox");
+        const btn = document.querySelector("#communityModal .tooltip-icon-btn");
+        if (box && box.classList.contains("active")) {
+          if (
+            !box.contains(event.target) &&
+            (!btn || !btn.contains(event.target))
+          ) {
+            box.classList.remove("active");
+          }
+        }
+      });
+
+      window.handleCommunityImageUpload = function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = function () {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const maxW = 600;
+            const scale = img.width > maxW ? maxW / img.width : 1;
+
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            window.communityPendingImage = canvas.toDataURL("image/jpeg", 0.6);
+
+            document.getElementById("communityImagePreview").src =
+              window.communityPendingImage;
+            document.getElementById(
+              "communityImagePreviewContainer"
+            ).style.display = "block";
+
+            const inputLabel = document.querySelector(
+              "#communityInputArea label"
+            );
+            inputLabel.style.background = "var(--accent)";
+            inputLabel.querySelector("svg").style.fill = "white";
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = "";
+      };
+
+      window.removeCommunityImage = function (event) {
+        if (event) event.preventDefault();
+
+        window.communityPendingImage = null;
+        document.getElementById(
+          "communityImagePreviewContainer"
+        ).style.display = "none";
+        document.getElementById("communityImagePreview").src = "";
+        document.getElementById("communityImageInput").value = "";
+
+        const inputLabel = document.querySelector("#communityInputArea label");
+        inputLabel.style.background = "var(--surface-elevated)";
+        inputLabel.querySelector("svg").style.fill = "var(--text-muted)";
+      };
+
+      window.communityUnsubscribe = null;
+      window.postToDeleteId = null;
+
+      window.promptDeletePost = function (postId) {
+        window.postToDeleteId = postId;
+        document.getElementById("deletePostConfirmModal").style.display =
+          "flex";
+      };
+
+      window.cancelDeletePost = function () {
+        window.postToDeleteId = null;
+        document.getElementById("deletePostConfirmModal").style.display =
+          "none";
+      };
+
+      window.confirmDeletePost = async function () {
+        if (!window.postToDeleteId) return;
+
+        try {
+          await window.updateDoc(
+            window.doc(window.db, "community_posts", window.postToDeleteId),
+            { status: "hidden" }
+          );
+          window.cancelDeletePost();
+        } catch (e) {
+          console.error("Failed to delete post:", e);
+          window.showCustomAlert(
+            "Error",
+            "Failed to delete post. Please try again."
+          );
+        }
+      };
+
+      window.initCommunityListener = function () {
+        if (window.communityUnsubscribe) window.communityUnsubscribe();
+
+        const q = window.query(
+          window.collection(window.db, "community_posts"),
+          window.orderBy("timestamp", "desc")
+        );
+
+        window.communityUnsubscribe = window.onSnapshot(
+          q,
+          (snapshot) => {
+            const container = document.getElementById("communityFeedContainer");
+            let html = "";
+            let validPostsFound = false;
+
+            snapshot.docs.forEach((docSnap) => {
+              const post = docSnap.data();
+
+              if (post.status !== "active") return;
+              validPostsFound = true;
+
+              const timeString = post.timestamp
+                ? new Date(post.timestamp.toDate()).toLocaleDateString([], {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Posting...";
+
+              const isAuthor = post.userId === DRIVER_DOC_ID;
+
+              const deleteBtnHtml = isAuthor
+                ? `
+                <button onclick="promptDeletePost('${docSnap.id}')" style="background: transparent; border: none; padding: 4px; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center;">
+                  <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor; transition: fill 0.2s;" onmouseover="this.style.fill='var(--danger)'" onmouseout="this.style.fill='currentColor'">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                  </svg>
+                </button>
+              `
+                : "";
+
+              html += `
+              <div class="community-post">
+                <div class="community-post-header">
+                  <div style="display: flex; align-items: baseline; gap: 8px;">
+                    <span class="community-post-author">${
+                      post.authorName || "Hero"
+                    }</span>
+                    <span class="community-post-time">${timeString}</span>
+                  </div>
+                  ${deleteBtnHtml}
+                </div>
+                ${
+                  post.imageUrl
+                    ? `<img src="${post.imageUrl}" class="community-post-image">`
+                    : ""
+                }
+                ${
+                  post.text
+                    ? `<div class="community-post-text">${post.text}</div>`
+                    : ""
+                }
+              </div>
+            `;
+            });
+
+            container.innerHTML = validPostsFound
+              ? html
+              : `
+            <div style="text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 0.9rem;">
+              Be the first to post in the Neighborhood Hub!
+            </div>
+          `;
+
+            container.scrollTop = 0;
+          },
+          (error) => {
+            console.error("Error loading community feed:", error);
+          }
+        );
+      };
+
+      // --- PWA INSTALLATION PROMPT ---
+      let deferredInstallPrompt = null;
+
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+
+        setTimeout(() => {
+          document.getElementById("pwaInstallPrompt").style.top =
+            "env(safe-area-inset-top, 20px)";
+        }, 2000);
+      });
+
+      const installBtn = document.getElementById("pwaInstallBtn");
+      if (installBtn) {
+        installBtn.addEventListener("click", async () => {
+          if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            const { outcome } = await deferredInstallPrompt.userChoice;
+            if (outcome === "accepted") {
+              deferredInstallPrompt = null;
+              dismissPwaPrompt();
+            }
+          }
+        });
+      }
+
+      window.dismissPwaPrompt = function () {
+        document.getElementById("pwaInstallPrompt").style.top = "-150px";
+      };
+
+      window.addEventListener("appinstalled", () => {
+        dismissPwaPrompt();
+      });
+    </script>
+  </body>
+</html>
