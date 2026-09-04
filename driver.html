@@ -10,17 +10,17 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
 
-    <link rel="manifest" href="manifest-driver.json" /> 
+    <link rel="manifest" href="manifest-driver.json" />
     <meta name="theme-color" content="#ee611c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
+      content="black-translucent" 
     />
-    <meta name="apple-mobile-web-app-title" content="Hero Driver" />
+    <meta name="apple-mobile-web-app-title" content="Hero Driver" /> 
     <link rel="apple-touch-icon" href="heroimg192.png" />
 
-    <link 
+    <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
@@ -1592,14 +1592,14 @@
         </div>
 
         <div class="form-group">
-          <label>Active Days</label>
+          <label>Select Day to Edit</label>
 
           <div class="day-toggles">
             <button
               type="button"
               class="day-btn"
               id="dayBtn_Sun"
-              onclick="toggleRoutineDay('Sun')"
+              onclick="selectRoutineDay('Sun')"
             >
               Sun
             </button>
@@ -1607,7 +1607,7 @@
               type="button"
               class="day-btn"
               id="dayBtn_Mon"
-              onclick="toggleRoutineDay('Mon')"
+              onclick="selectRoutineDay('Mon')"
             >
               Mon
             </button>
@@ -1615,7 +1615,7 @@
               type="button"
               class="day-btn"
               id="dayBtn_Tue"
-              onclick="toggleRoutineDay('Tue')"
+              onclick="selectRoutineDay('Tue')"
             >
               Tue
             </button>
@@ -1623,15 +1623,15 @@
               type="button"
               class="day-btn"
               id="dayBtn_Wed"
-              onclick="toggleRoutineDay('Wed')"
+              onclick="selectRoutineDay('Wed')"
             >
-              Wen
+              Wed
             </button>
             <button
               type="button"
               class="day-btn"
               id="dayBtn_Thu"
-              onclick="toggleRoutineDay('Thu')"
+              onclick="selectRoutineDay('Thu')"
             >
               Thu
             </button>
@@ -1639,7 +1639,7 @@
               type="button"
               class="day-btn"
               id="dayBtn_Fri"
-              onclick="toggleRoutineDay('Fri')"
+              onclick="selectRoutineDay('Fri')"
             >
               Fri
             </button>
@@ -1647,7 +1647,7 @@
               type="button"
               class="day-btn"
               id="dayBtn_Sat"
-              onclick="toggleRoutineDay('Sat')"
+              onclick="selectRoutineDay('Sat')"
             >
               Sat
             </button>
@@ -2807,18 +2807,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               };
             }
 
-            AppState.activeRoutineDays = [];
-            Object.keys(AppState.weeklyRoutine).forEach((day) => {
-              if (
-                AppState.weeklyRoutine[day] &&
-                AppState.weeklyRoutine[day].length > 0
-              ) {
-                AppState.activeRoutineDays.push(day);
-                const btn = document.getElementById("dayBtn_" + day);
-                if (btn) btn.classList.add("active");
-              }
-            });
-
+            AppState.selectedRoutineDay = "Mon";
             window.renderWaveBuilder();
 
             const killSwitch = document.getElementById("killSwitchToggle");
@@ -3208,55 +3197,22 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         Fri: [],
         Sat: [],
       };
-      AppState.activeRoutineDays = [];
+      AppState.selectedRoutineDay = "Mon";
 
-      window.toggleRoutineDay = function (day) {
-        const index = AppState.activeRoutineDays.indexOf(day);
-        if (index > -1) {
-          // Toggle Off
-          AppState.activeRoutineDays.splice(index, 1);
-          document.getElementById("dayBtn_" + day).classList.remove("active");
-        } else {
-          // Toggle On
-          AppState.activeRoutineDays.push(day);
-          document.getElementById("dayBtn_" + day).classList.add("active");
-        }
-        window.renderWaveBuilder();
-      };
-
-      window.syncActiveDays = function () {
-        if (AppState.activeRoutineDays.length === 0) return;
-        const templateDay = AppState.activeRoutineDays[0];
-        const templateWaves = JSON.parse(
-          JSON.stringify(AppState.weeklyRoutine[templateDay])
-        );
-
-        AppState.activeRoutineDays.forEach((day) => {
-          AppState.weeklyRoutine[day] = JSON.parse(
-            JSON.stringify(templateWaves)
-          );
-        });
+      window.selectRoutineDay = function (day) {
+        AppState.selectedRoutineDay = day;
         window.renderWaveBuilder();
       };
 
       window.renderWaveBuilder = function () {
         const container = document.getElementById("waveBuilderContainer");
-        const activeDays = AppState.activeRoutineDays;
+        const selectedDay = AppState.selectedRoutineDay || "Mon";
 
-        if (activeDays.length === 0) {
-          container.innerHTML =
-            '<p style="color:var(--text-muted); font-size: 0.85rem; text-align: center;">Select one or more days above to configure waves.</p>';
-          return;
-        }
-
-        const templateDay = activeDays[0];
-        let html = `<label style="color: var(--accent); margin-bottom: 10px; display: block; font-weight: 700;">Editing: ${activeDays.join(
-          ", "
-        )}</label>`;
-        const waves = AppState.weeklyRoutine[templateDay] || [];
+        let html = `<label style="color: var(--text); margin-bottom: 10px; display: block; font-weight: 700;">Editing Schedule For: <span style="color: var(--accent);">${selectedDay}</span></label>`;
+        const waves = AppState.weeklyRoutine[selectedDay] || [];
 
         if (waves.length === 0) {
-          html += `<p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">No runs scheduled for the selected days.</p>`;
+          html += `<p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">No runs scheduled for ${selectedDay}.</p>`;
         } else {
           waves.forEach((wave, index) => {
             html += `
@@ -3275,54 +3231,76 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           });
         }
 
-        html += `<button type="button" class="btn btn-secondary" style="padding: 12px; font-size: 0.9rem;" onclick="addWave()">+ Add Wave</button>`;
+        html += `<button type="button" class="btn btn-secondary" style="padding: 12px; font-size: 0.9rem;" onclick="addWave()">+ Add Run to ${selectedDay}</button>`;
+
+        // Quick helper to duplicate a weekday schedule instantly
+        if (["Mon", "Tue", "Wed", "Thu", "Fri"].includes(selectedDay)) {
+          html += `<button type="button" class="btn btn-secondary" style="padding: 12px; font-size: 0.9rem; margin-top: 10px; border-color: var(--border); color: var(--text-muted); background: transparent;" onclick="copyToWeekdays('${selectedDay}')">⎘ Copy ${selectedDay} to All Weekdays</button>`;
+        }
+
         container.innerHTML = html;
 
+        // Sync tab visuals and active green indicator bars
         document.querySelectorAll(".day-btn").forEach((btn) => {
           const d = btn.id.split("_")[1];
-          if (
-            AppState.weeklyRoutine[d] &&
-            AppState.weeklyRoutine[d].length > 0
-          ) {
-            btn.style.borderBottom = "3px solid var(--accent)";
-          } else {
-            btn.style.borderBottom = "1px solid var(--border)";
+          const hasRuns =
+            AppState.weeklyRoutine[d] && AppState.weeklyRoutine[d].length > 0;
+
+          btn.style.background = "var(--surface-elevated)";
+          btn.style.color = "var(--text)";
+          btn.style.borderColor = "var(--border)";
+          btn.style.borderBottom = hasRuns
+            ? "3px solid var(--success)"
+            : "1px solid var(--border)";
+
+          if (d === selectedDay) {
+            btn.style.background = "var(--accent)";
+            btn.style.color = "white";
+            btn.style.borderColor = "var(--accent)";
+            btn.style.borderBottom = hasRuns
+              ? "3px solid var(--success)"
+              : "3px solid var(--accent)";
           }
         });
       };
 
       window.addWave = function () {
-        if (AppState.activeRoutineDays.length === 0) return;
-        const templateDay = AppState.activeRoutineDays[0];
-        if (!AppState.weeklyRoutine[templateDay])
-          AppState.weeklyRoutine[templateDay] = [];
-        AppState.weeklyRoutine[templateDay].push({
-          time: "12:00",
-          capacity: 6,
-        });
-        window.syncActiveDays();
+        const d = AppState.selectedRoutineDay;
+        if (!AppState.weeklyRoutine[d]) AppState.weeklyRoutine[d] = [];
+        AppState.weeklyRoutine[d].push({ time: "12:00", capacity: 6 });
+        window.renderWaveBuilder();
       };
 
       window.removeWave = function (index) {
-        if (AppState.activeRoutineDays.length === 0) return;
-        const templateDay = AppState.activeRoutineDays[0];
-        AppState.weeklyRoutine[templateDay].splice(index, 1);
-        window.syncActiveDays();
+        const d = AppState.selectedRoutineDay;
+        AppState.weeklyRoutine[d].splice(index, 1);
+        window.renderWaveBuilder();
       };
 
       window.updateWaveTime = function (index, val) {
-        if (AppState.activeRoutineDays.length === 0) return;
-        const templateDay = AppState.activeRoutineDays[0];
-        AppState.weeklyRoutine[templateDay][index].time = val;
-        window.syncActiveDays();
+        const d = AppState.selectedRoutineDay;
+        AppState.weeklyRoutine[d][index].time = val;
       };
 
       window.updateWaveCapacity = function (index, val) {
-        if (AppState.activeRoutineDays.length === 0) return;
-        const templateDay = AppState.activeRoutineDays[0];
-        AppState.weeklyRoutine[templateDay][index].capacity =
-          parseInt(val) || 1;
-        window.syncActiveDays();
+        const d = AppState.selectedRoutineDay;
+        AppState.weeklyRoutine[d][index].capacity = parseInt(val) || 1;
+      };
+
+      window.copyToWeekdays = function (sourceDay) {
+        if (
+          !confirm(
+            `Copy ${sourceDay}'s schedule to all weekdays (Mon-Fri)? This will overwrite their current schedules.`
+          )
+        )
+          return;
+        const template = JSON.parse(
+          JSON.stringify(AppState.weeklyRoutine[sourceDay] || [])
+        );
+        ["Mon", "Tue", "Wed", "Thu", "Fri"].forEach((day) => {
+          AppState.weeklyRoutine[day] = JSON.parse(JSON.stringify(template));
+        });
+        window.renderWaveBuilder();
       };
 
       window.saveScheduleBlock = async function () {
