@@ -5702,6 +5702,45 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           );
         }
       };
+      
+      
+      
+      window.sendCommunityMessage = async function () {
+        const input = document.getElementById("communityTextInput");
+        const text = input.value.trim();
+
+        if (!text && !window.communityPendingImage) return;
+
+        if (!DRIVER_DOC_ID) {
+          window.showCustomAlert("Authentication Required", "Please sign in to post to the Neighborhood Hub.");
+          return;
+        }
+
+        const authorName = document.getElementById("driverNameInput")?.value || "Hero";
+
+        try {
+          await window.addDoc(window.collection(window.db, "community_posts"), {
+            userId: DRIVER_DOC_ID,
+            authorName: authorName,
+            text: text,
+            imageUrl: window.communityPendingImage || null,
+            timestamp: window.serverTimestamp(),
+            status: "active"
+          });
+
+          input.value = "";
+          window.removeCommunityImage();
+        } catch (e) {
+          console.error("Failed to post message:", e);
+          window.showCustomAlert("Error", "Failed to post message. Please try again.");
+        }
+      };
+      
+      
+      
+      
+      
+      
 
       window.initCommunityListener = function () {
         if (window.communityUnsubscribe) window.communityUnsubscribe();
