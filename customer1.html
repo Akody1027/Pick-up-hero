@@ -17,14 +17,14 @@
     />
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
-
-    <link 
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+ 
+    <link
+      rel="stylesheet" 
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
     />
 
     <script src="https://js.stripe.com/v3/"></script>
-
+ 
     <style>
       :root {
         --bg: #121212;
@@ -1291,7 +1291,6 @@
         position: absolute;
         top: calc(env(safe-area-inset-top, 20px) + 40px);
 
-             
         left: 60px;
         z-index: 1000;
         background: var(--surface-elevated);
@@ -1679,6 +1678,7 @@
                       id="storeSearchInput_1"
                       placeholder="Walmart, Target, etc..."
                     />
+
                     <button
                       class="btn btn-secondary"
                       style="margin-top: 8px; margin-bottom: 5%"
@@ -1686,6 +1686,18 @@
                     >
                       Search Map
                     </button>
+                  </div>
+
+                  <div
+                    style="
+                      text-align: center;
+                      padding-top: 5%;
+                      padding-bottom: 5%;
+                    "
+                  >
+                    <h1 style="font-size:20px; font-weight: 500; color:var(--accent) ;">
+                      Please provide as much detail as possible.
+                    </h1>
                   </div>
 
                   <div
@@ -1714,7 +1726,8 @@
 
                   <div style="display: flex; gap: 10px">
                     <div class="form-group" style="flex: 2">
-                      <label>Store Order Number *</label>
+                      <label>Store Order Number (Optional)</label>
+
                       <input
                         type="text"
                         id="pickupNumberInput_1"
@@ -2065,6 +2078,104 @@
     </div>
 
     <!-- FULL SCREEN MODAL: FIND HERO -->
+
+    <!-- FULL SCREEN MODAL: ORDER TYPE INTERCEPT -->
+    <div id="orderTypeInterceptModal" class="modal">
+      <div class="modal-header">
+        <h2>Select Order Type</h2>
+        <button class="close-btn" onclick="closeOrderTypeIntercept()">✕</button>
+      </div>
+      <div class="modal-content">
+        <!-- STEP 1: INITIAL CHOICE -->
+        <div id="interceptStepChoice" class="step-panel active">
+          <p
+            style="
+              color: var(--text-muted);
+              text-align: center;
+              margin-bottom: 20px;
+            "
+          >
+            What type of order is this?
+          </p>
+          <button
+            class="btn btn-secondary"
+            style="padding: 20px; font-size: 1.1rem; margin-bottom: 15px"
+            onclick="proceedToGroceries()"
+          >
+            Grocery Pickup
+          </button>
+          <button
+            class="btn btn-primary"
+            style="padding: 20px; font-size: 1.1rem"
+            onclick="showHotFoodDisclaimer()"
+          >
+            Hot Food Pickup
+          </button>
+        </div>
+
+        <!-- STEP 2: HOT FOOD DISCLAIMER -->
+        <div id="interceptStepDisclaimer" class="step-panel">
+          <div style="text-align: center; margin-bottom: 20px">
+            <div
+              style="
+                width: 60px;
+                height: 60px;
+                background: rgba(238, 97, 28, 0.1);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 15px;
+                color: var(--accent);
+              "
+            >
+              <svg
+                viewBox="0 0 24 24"
+                style="width: 32px; height: 32px; fill: currentColor"
+              >
+                <path
+                  d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm4.77 1c-.82-1.18-1.77-2.73-1.77-6h-2c0 2.06.66 4.3 1.96 6.18L16.5 14v8h2v-8l2.54-3.82C22.34 8.3 23 6.06 23 4h-2c0 3.27-.95 4.82-1.77 6z"
+                />
+              </svg>
+            </div>
+            <h3 style="color: var(--accent); margin-bottom: 10px">
+              Hot Food Procedure
+            </h3>
+            <p
+              style="
+                color: var(--text);
+                font-size: 0.95rem;
+                line-height: 1.5;
+                text-align: left;
+              "
+            >
+              To ensure your food is completely fresh,
+              <strong>do not place your food order yet.</strong> <br /><br />
+              You may proceed to reserve your Hero. When your Hero is headed
+              towards the restaurant, they will contact you directly to tell you
+              to submit the food order so they arrive right as it is bagged.
+            </p>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: auto">
+            <button
+              class="btn btn-secondary"
+              style="flex: 1"
+              onclick="backToInterceptChoice()"
+            >
+              Cancel
+            </button>
+            <button
+              class="btn btn-primary"
+              style="flex: 1"
+              onclick="proceedToHotFood()"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="findHeroModal" class="modal">
       <div class="modal-header">
         <h2>Find Nearby Hero</h2>
@@ -2648,6 +2759,8 @@
         bookingType: "scheduled",
         compressedImages: {},
         targetTimeline: "tomorrow",
+        isHotFood: false,
+
         unreadMessages: 0,
       };
 
@@ -2764,10 +2877,8 @@
             "";
           const base64Img = window.appState.compressedImages[i] || "";
 
-          if (!pickupNum || storeName === "Pending...") {
-            alert(
-              `Please confirm the store and enter an order number for Stop ${i}.`
-            );
+          if (storeName === "Pending...") {
+            alert(`Please confirm the store location for Stop ${i}.`);
             return;
           }
 
@@ -2869,6 +2980,7 @@
 
             bookingType: window.appState.bookingType,
             sosTimeline: window.appState.targetTimeline || "scheduled",
+            isHotFood: window.appState.isHotFood || false,
             status: "pending_payment",
             createdAt: new Date(),
           };
@@ -4583,6 +4695,56 @@
       };
 
       // --- BOTTOM SHEET DRAG LOGIC ---
+
+      // --- ORDER TYPE INTERCEPT LOGIC ---
+      window.triggerOrderIntercept = function () {
+        document
+          .getElementById("orderTypeInterceptModal")
+          .classList.add("active");
+        document.getElementById("interceptStepChoice").classList.add("active");
+        document
+          .getElementById("interceptStepDisclaimer")
+          .classList.remove("active");
+      };
+
+      window.closeOrderTypeIntercept = function () {
+        document
+          .getElementById("orderTypeInterceptModal")
+          .classList.remove("active");
+      };
+
+      window.proceedToGroceries = function () {
+        window.appState.isHotFood = false;
+        window.closeOrderTypeIntercept();
+        document.getElementById("scheduleInterceptModule").style.display =
+          "none";
+        document.getElementById("checkoutFlowContent").style.display = "flex";
+      };
+
+      window.showHotFoodDisclaimer = function () {
+        document
+          .getElementById("interceptStepChoice")
+          .classList.remove("active");
+        document
+          .getElementById("interceptStepDisclaimer")
+          .classList.add("active");
+      };
+
+      window.backToInterceptChoice = function () {
+        document
+          .getElementById("interceptStepDisclaimer")
+          .classList.remove("active");
+        document.getElementById("interceptStepChoice").classList.add("active");
+      };
+
+      window.proceedToHotFood = function () {
+        window.appState.isHotFood = true;
+        window.closeOrderTypeIntercept();
+        document.getElementById("scheduleInterceptModule").style.display =
+          "none";
+        document.getElementById("checkoutFlowContent").style.display = "flex";
+      };
+
       const sheet = document.getElementById("trackerSheet");
       let startY,
         currentY,
@@ -5321,8 +5483,9 @@
 
                   <div style="display: flex; gap: 10px;">
                     <div class="form-group" style="flex: 2;">
-                      <label>Store Order Number *</label>
-                      <input type="text" id="pickupNumberInput_${newIndex}" placeholder="e.g., #98765432" />
+
+<label>Store Order Number (Optional)</label>
+<input type="text" id="pickupNumberInput_${newIndex}" placeholder="e.g., #98765432" />
                     </div>
                     <div class="form-group" style="flex: 1;">
                       <label>PIN <span class="tooltip-icon" onclick="openInfoTooltip()">?</span></label>
@@ -5460,9 +5623,7 @@
         if (type === "scheduled") {
           window.initScheduleIntercept();
         } else if (type === "emergency") {
-          document.getElementById("scheduleInterceptModule").style.display =
-            "none";
-          document.getElementById("checkoutFlowContent").style.display = "flex";
+          window.triggerOrderIntercept();
 
           const banner = document.getElementById("timelineDisplay");
           if (window.appState.targetTimeline === "asap_today") {
@@ -5674,9 +5835,8 @@
         window.appState.selectedShiftId = shiftId;
         window.appState.targetTimeline = "scheduled";
         document.getElementById("timelineDisplay").innerText = displayString;
-        document.getElementById("scheduleInterceptModule").style.display =
-          "none";
-        document.getElementById("checkoutFlowContent").style.display = "flex";
+
+        window.triggerOrderIntercept();
       };
 
       const originalGoToStep2 = goToStep2;
