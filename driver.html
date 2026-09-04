@@ -10,7 +10,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
 
-    <link rel="manifest" href="manifest-driver.json" />
+    <link rel="manifest" href="manifest-driver.json" /> 
     <meta name="theme-color" content="#ee611c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
@@ -20,7 +20,7 @@
     <meta name="apple-mobile-web-app-title" content="Hero Driver" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
 
-    <link
+    <link 
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
@@ -1543,7 +1543,11 @@
 
     <!-- BOTTOM NAVIGATION -->
     <nav class="bottom-nav">
-      <button class="nav-btn active" id="navHome" onclick="closeAllModals()">
+      <button
+        class="nav-btn active"
+        id="navHome"
+        onclick="closeAllModals(); document.getElementById('activeQueueSheet').classList.remove('expanded');"
+      >
         <svg viewBox="0 0 24 24">
           <path d="M12 3l10 9h-3v9h-14v-9h-3l10-9z" />
         </svg>
@@ -1688,6 +1692,38 @@
           >
             + Add Location Pin (Max 5)
           </button>
+
+          <div
+            id="deliveryZoneStatusContainer"
+            style="
+              display: none;
+              justify-content: space-between;
+              align-items: center;
+              background: var(--surface);
+              padding: 10px 14px;
+              border-radius: 8px;
+              border: 1px solid var(--border);
+              margin-top: 15px;
+            "
+          >
+            <span style="font-size: 0.85rem; color: var(--text)"
+              >Active Delivery Zone</span
+            >
+            <button
+              type="button"
+              onclick="removeDeliveryZone()"
+              style="
+                background: transparent;
+                color: var(--danger);
+                border: none;
+                font-weight: bold;
+                cursor: pointer;
+                font-size: 0.9rem;
+              "
+            >
+              ✕
+            </button>
+          </div>
 
           <button
             class="btn btn-secondary"
@@ -2089,6 +2125,26 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           <svg viewBox="0 0 24 24">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
           </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- HOT FOOD PRE-ARRIVAL ALERT MODAL -->
+    <div class="soft-prompt-overlay" id="hotFoodDriverInterceptModal">
+      <div class="soft-prompt-box">
+        <h3 style="color: var(--danger); margin-bottom: 15px">
+          Next Stop: Hot Food!
+        </h3>
+        <p style="margin-bottom: 25px">
+          Send the automated alert to the customer NOW so they can place the
+          food order and have it fresh upon your arrival.
+        </p>
+        <button
+          class="btn btn-primary"
+          style="background: var(--danger); border-color: var(--danger)"
+          onclick="sendHotFoodAlertAndProceed()"
+        >
+          Send Alert & Route
         </button>
       </div>
     </div>
@@ -2735,6 +2791,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               }).addTo(AppState.mapInstance);
             }
 
+            if (window.updateDeliveryZoneUI) window.updateDeliveryZoneUI();
+
             if (data.weeklyRoutine) {
               AppState.weeklyRoutine = data.weeklyRoutine;
             } else {
@@ -3059,56 +3117,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         if (AppState.tempMarker) {
           const pos = AppState.tempMarker.getLatLng();
 
-          window.startDrawingZone = function () {
-            closeAllModals();
-            AppState.isDrawingZone = true;
-            AppState.deliveryZone = [];
-            if (AppState.zonePolygon) {
-              AppState.mapInstance.removeLayer(AppState.zonePolygon);
-              AppState.zonePolygon = null;
-            }
-            if (AppState.zoneTempLine) {
-              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
-              AppState.zoneTempLine = null;
-            }
-            document.getElementById("finishZoneBtn").style.display = "block";
-            document.getElementById("clearZoneBtn").style.display = "block";
-            window.showCustomAlert(
-              "Draw Mode",
-              "Tap the map to drop boundary points. Connect them around your service area."
-            );
-          };
-
-          window.finishDrawingZone = function () {
-            AppState.isDrawingZone = false;
-            document.getElementById("finishZoneBtn").style.display = "none";
-            document.getElementById("clearZoneBtn").style.display = "none";
-            if (AppState.zoneTempLine) {
-              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
-              AppState.zoneTempLine = null;
-            }
-            if (AppState.deliveryZone.length > 2) {
-              AppState.zonePolygon = L.polygon(AppState.deliveryZone, {
-                color: "var(--accent)",
-                fillOpacity: 0.1,
-                weight: 2,
-              }).addTo(AppState.mapInstance);
-            } else {
-              AppState.deliveryZone = [];
-            }
-            openModal("scheduleModal");
-          };
-
-          window.clearZone = function () {
-            AppState.deliveryZone = [];
-            if (AppState.zoneTempLine)
-              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
-            if (AppState.zonePolygon)
-              AppState.mapInstance.removeLayer(AppState.zonePolygon);
-            AppState.zoneTempLine = null;
-            AppState.zonePolygon = null;
-          };
-
           AppState.baseLocations.push({ lat: pos.lat, lng: pos.lng });
           AppState.mapInstance.removeLayer(AppState.tempMarker);
           AppState.tempMarker = null;
@@ -3117,6 +3125,78 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById("lockPinBtn").style.display = "none";
         renderHomeBases();
         openModal("scheduleModal");
+      };
+
+      window.updateDeliveryZoneUI = function () {
+        const container = document.getElementById(
+          "deliveryZoneStatusContainer"
+        );
+        const drawBtn = document.getElementById("drawZoneBtn");
+        if (container && drawBtn) {
+          if (AppState.deliveryZone && AppState.deliveryZone.length > 2) {
+            container.style.display = "flex";
+            drawBtn.style.display = "none";
+          } else {
+            container.style.display = "none";
+            drawBtn.style.display = "block";
+          }
+        }
+      };
+
+      window.removeDeliveryZone = function () {
+        window.clearZone();
+        window.updateDeliveryZoneUI();
+      };
+
+      window.startDrawingZone = function () {
+        closeAllModals();
+        AppState.isDrawingZone = true;
+        AppState.deliveryZone = [];
+        if (AppState.zonePolygon) {
+          AppState.mapInstance.removeLayer(AppState.zonePolygon);
+          AppState.zonePolygon = null;
+        }
+        if (AppState.zoneTempLine) {
+          AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+          AppState.zoneTempLine = null;
+        }
+        document.getElementById("finishZoneBtn").style.display = "block";
+        document.getElementById("clearZoneBtn").style.display = "block";
+        window.showCustomAlert(
+          "Draw Mode",
+          "Tap the map to drop boundary points. Connect them around your service area."
+        );
+      };
+
+      window.finishDrawingZone = function () {
+        AppState.isDrawingZone = false;
+        document.getElementById("finishZoneBtn").style.display = "none";
+        document.getElementById("clearZoneBtn").style.display = "none";
+        if (AppState.zoneTempLine) {
+          AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+          AppState.zoneTempLine = null;
+        }
+        if (AppState.deliveryZone.length > 2) {
+          AppState.zonePolygon = L.polygon(AppState.deliveryZone, {
+            color: "var(--accent)",
+            fillOpacity: 0.1,
+            weight: 2,
+          }).addTo(AppState.mapInstance);
+        } else {
+          AppState.deliveryZone = [];
+        }
+        window.updateDeliveryZoneUI();
+        openModal("scheduleModal");
+      };
+
+      window.clearZone = function () {
+        AppState.deliveryZone = [];
+        if (AppState.zoneTempLine)
+          AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+        if (AppState.zonePolygon)
+          AppState.mapInstance.removeLayer(AppState.zonePolygon);
+        AppState.zoneTempLine = null;
+        AppState.zonePolygon = null;
       };
 
       AppState.weeklyRoutine = {
@@ -3292,22 +3372,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           .forEach((m) => m.classList.remove("active"));
         document.getElementById(id).classList.add("active");
       }
-      function closeAllModals() {
-        const wasModalOpen =
-          document.querySelectorAll(".modal.active").length > 0;
 
+      function closeAllModals() {
         document
           .querySelectorAll(".modal")
           .forEach((m) => m.classList.remove("active"));
-
-        const sheet = document.getElementById("activeQueueSheet");
-        if (sheet) {
-          if (wasModalOpen) {
-            sheet.classList.add("expanded");
-          } else {
-            sheet.classList.toggle("expanded");
-          }
-        }
       }
 
       function toggleBottomSheet() {
@@ -3392,6 +3461,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   sosTimeline: data.sosTimeline || "scheduled",
 
                   pin: stop.pin || "",
+
+                  isHotFood: data.isHotFood || false,
+
                   curbsideInstructions: stop.curbsideInstructions || "",
                   barcodeImageUrl: stop.barcodeImageUrl || "",
                 });
@@ -3610,6 +3682,55 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }, 30000);
       }
 
+      window.pendingInterceptCallback = null;
+      window.pendingInterceptOrderId = null;
+
+      window.triggerHotFoodIntercept = function (orderId, callback) {
+        window.pendingInterceptOrderId = orderId;
+        window.pendingInterceptCallback = callback;
+        document.getElementById("hotFoodDriverInterceptModal").style.display =
+          "flex";
+      };
+
+      window.sendHotFoodAlertAndProceed = async function () {
+        const btn = document.querySelector(
+          "#hotFoodDriverInterceptModal .btn-primary"
+        );
+        const origText = btn.innerText;
+        btn.innerText = "Sending...";
+        btn.disabled = true;
+
+        if (window.pendingInterceptOrderId) {
+          try {
+            await window.addDoc(
+              window.collection(
+                window.db,
+                "orders",
+                window.pendingInterceptOrderId,
+                "messages"
+              ),
+              {
+                senderId: "SYSTEM",
+                text: "SYSTEM_HOT_FOOD_ALERT",
+                timestamp: window.serverTimestamp(),
+                read: false,
+              }
+            );
+          } catch (e) {
+            console.error("Failed to send hot food system alert", e);
+          }
+        }
+
+        btn.innerText = origText;
+        btn.disabled = false;
+        document.getElementById("hotFoodDriverInterceptModal").style.display =
+          "none";
+
+        if (window.pendingInterceptCallback) {
+          window.pendingInterceptCallback();
+        }
+      };
+
       window.acknowledgeSOS = function () {
         document.getElementById("sosAlertModal").style.display = "none";
         // Force the app into triage mode so the driver can immediately route it
@@ -3684,6 +3805,57 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
 
         // 2. Sort and route all Deliveries (SOS First, then Standard)
+
+        // --- HOT FOOD 5-MILE PENALTY ALGORITHM ---
+        function getDistanceMiles(p1, p2) {
+          if (!AppState.mapInstance) return 0;
+          return (
+            AppState.mapInstance.distance(
+              L.latLng(p1[0], p1[1]),
+              L.latLng(p2[0], p2[1])
+            ) * 0.000621371
+          );
+        }
+
+        const hfIndex = sorted.findIndex((p) => p.isHotFood);
+        if (hfIndex !== -1 && hfIndex < sorted.length - 1) {
+          let baseMiles = 0;
+          let pCurrent = [sorted[0].lat, sorted[0].lng];
+          for (let i = 0; i < sorted.length; i++) {
+            baseMiles += getDistanceMiles(pCurrent, [
+              sorted[i].lat,
+              sorted[i].lng,
+            ]);
+            pCurrent = [sorted[i].lat, sorted[i].lng];
+          }
+
+          let modifiedSorted = [...sorted];
+          const hfItem = modifiedSorted.splice(hfIndex, 1)[0];
+          modifiedSorted.push(hfItem);
+
+          let modMiles = 0;
+          let mCurrent = [modifiedSorted[0].lat, modifiedSorted[0].lng];
+          for (let i = 0; i < modifiedSorted.length; i++) {
+            modMiles += getDistanceMiles(mCurrent, [
+              modifiedSorted[i].lat,
+              modifiedSorted[i].lng,
+            ]);
+            mCurrent = [modifiedSorted[i].lat, modifiedSorted[i].lng];
+          }
+
+          if (modMiles - baseMiles <= 5.0) {
+            sorted = modifiedSorted;
+            current = [
+              sorted[sorted.length - 1].lat,
+              sorted[sorted.length - 1].lng,
+            ];
+          } else {
+            sorted[hfIndex].geographicLock = true;
+            sorted[hfIndex].geoStopNum = hfIndex + 1;
+          }
+        }
+        // --- END HOT FOOD ALGORITHM ---
+
         let sosDeliveriesTriage = unsortedDeliveries.filter(
           (d) => d.bookingType === "emergency"
         );
@@ -3787,7 +3959,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           marker.bindPopup(`
           <div style="text-align:center;">
             <strong>${order.title}</strong><br>
-            <button onclick="rejectTriageOrder('${order.id}')" class="btn btn-emergency" style="padding: 6px 12px; margin-top: 10px; font-size: 0.8rem; border-radius: 6px;">Reject & Redraw</button>
+            
+                        ${
+                          order.geographicLock
+                            ? `<span style="background:var(--danger);color:white;padding:4px 8px;border-radius:6px;font-size:0.75rem;display:inline-block;margin-top:4px;margin-bottom:4px;">Geographic Lock: Hot Food is Stop #${order.geoStopNum}</span><br>`
+                            : ""
+                        }
+
+            
+            
+            <button onclick="rejectTriageOrder('${
+              order.id
+            }')" class="btn btn-emergency" style="padding: 6px 12px; margin-top: 10px; font-size: 0.8rem; border-radius: 6px;">Reject & Redraw</button>
           </div>
         `);
         });
@@ -4621,8 +4804,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           wfBtn.onclick = (e) => {
             e.stopPropagation();
-            AppState.workflowPhase = "pickup";
-            updateDashboardUI();
+            const pickups = AppState.activeQueue.filter(
+              (q) => q.type === "pickup" && q.status !== "completed"
+            );
+            if (pickups.length > 0 && pickups[0].isHotFood) {
+              window.triggerHotFoodIntercept(pickups[0].dbId, () => {
+                AppState.workflowPhase = "pickup";
+                updateDashboardUI();
+              });
+            } else {
+              AppState.workflowPhase = "pickup";
+              updateDashboardUI();
+            }
           };
 
           if (groupedPickups.length > 0) {
@@ -4968,7 +5161,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             AppState.workflowPhase = "ready_delivery";
             updateDashboardUI();
           } else {
-            drawPickupTimeline();
+            if (pendingPickups[0].isHotFood) {
+              window.triggerHotFoodIntercept(pendingPickups[0].dbId, () => {
+                drawPickupTimeline();
+                window.saveShiftState();
+              });
+              return;
+            } else {
+              drawPickupTimeline();
+            }
           }
 
           window.saveShiftState();
@@ -5073,11 +5274,24 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
 
                 </div>
+                
+                
+                                  ${
+                                    node.geographicLock
+                                      ? `<span style="background: var(--danger); color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.4); margin-left: 10px;">Geographic Lock: Hot Food Stop #${node.geoStopNum}</span>`
+                                      : ""
+                                  }
+
+                
+                
+                
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
 
                 ${AppState.workflowPhase === "pickup" ? navBtnHTML : ""}
 
                 ${!isDone ? extraInfo : ""}
+                
+                
 
                 ${AppState.workflowPhase === "pickup" ? btnHTML : ""}
               </div>
@@ -5702,9 +5916,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           );
         }
       };
-      
-      
-      
+
       window.sendCommunityMessage = async function () {
         const input = document.getElementById("communityTextInput");
         const text = input.value.trim();
@@ -5712,11 +5924,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         if (!text && !window.communityPendingImage) return;
 
         if (!DRIVER_DOC_ID) {
-          window.showCustomAlert("Authentication Required", "Please sign in to post to the Neighborhood Hub.");
+          window.showCustomAlert(
+            "Authentication Required",
+            "Please sign in to post to the Neighborhood Hub."
+          );
           return;
         }
 
-        const authorName = document.getElementById("driverNameInput")?.value || "Hero";
+        const authorName =
+          document.getElementById("driverNameInput")?.value || "Hero";
 
         try {
           await window.addDoc(window.collection(window.db, "community_posts"), {
@@ -5725,22 +5941,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             text: text,
             imageUrl: window.communityPendingImage || null,
             timestamp: window.serverTimestamp(),
-            status: "active"
+            status: "active",
           });
 
           input.value = "";
           window.removeCommunityImage();
         } catch (e) {
           console.error("Failed to post message:", e);
-          window.showCustomAlert("Error", "Failed to post message. Please try again.");
+          window.showCustomAlert(
+            "Error",
+            "Failed to post message. Please try again."
+          );
         }
       };
-      
-      
-      
-      
-      
-      
 
       window.initCommunityListener = function () {
         if (window.communityUnsubscribe) window.communityUnsubscribe();
