@@ -2093,6 +2093,26 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       </div>
     </div>
 
+    <!-- HOT FOOD PRE-ARRIVAL ALERT MODAL -->
+    <div class="soft-prompt-overlay" id="hotFoodDriverInterceptModal">
+      <div class="soft-prompt-box">
+        <h3 style="color: var(--danger); margin-bottom: 15px">
+          Next Stop: Hot Food!
+        </h3>
+        <p style="margin-bottom: 25px">
+          Send the automated alert to the customer NOW so they can place the
+          food order and have it fresh upon your arrival.
+        </p>
+        <button
+          class="btn btn-primary"
+          style="background: var(--danger); border-color: var(--danger)"
+          onclick="sendHotFoodAlertAndProceed()"
+        >
+          Send Alert & Route
+        </button>
+      </div>
+    </div>
+
     <!-- CUSTOM ALERT PROMPT -->
     <div class="soft-prompt-overlay" id="customAlertModal">
       <div class="soft-prompt-box">
@@ -3392,6 +3412,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   sosTimeline: data.sosTimeline || "scheduled",
 
                   pin: stop.pin || "",
+
+                  isHotFood: data.isHotFood || false,
+
                   curbsideInstructions: stop.curbsideInstructions || "",
                   barcodeImageUrl: stop.barcodeImageUrl || "",
                 });
@@ -3610,6 +3633,55 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }, 30000);
       }
 
+      window.pendingInterceptCallback = null;
+      window.pendingInterceptOrderId = null;
+
+      window.triggerHotFoodIntercept = function (orderId, callback) {
+        window.pendingInterceptOrderId = orderId;
+        window.pendingInterceptCallback = callback;
+        document.getElementById("hotFoodDriverInterceptModal").style.display =
+          "flex";
+      };
+
+      window.sendHotFoodAlertAndProceed = async function () {
+        const btn = document.querySelector(
+          "#hotFoodDriverInterceptModal .btn-primary"
+        );
+        const origText = btn.innerText;
+        btn.innerText = "Sending...";
+        btn.disabled = true;
+
+        if (window.pendingInterceptOrderId) {
+          try {
+            await window.addDoc(
+              window.collection(
+                window.db,
+                "orders",
+                window.pendingInterceptOrderId,
+                "messages"
+              ),
+              {
+                senderId: "SYSTEM",
+                text: "SYSTEM_HOT_FOOD_ALERT",
+                timestamp: window.serverTimestamp(),
+                read: false,
+              }
+            );
+          } catch (e) {
+            console.error("Failed to send hot food system alert", e);
+          }
+        }
+
+        btn.innerText = origText;
+        btn.disabled = false;
+        document.getElementById("hotFoodDriverInterceptModal").style.display =
+          "none";
+
+        if (window.pendingInterceptCallback) {
+          window.pendingInterceptCallback();
+        }
+      };
+
       window.acknowledgeSOS = function () {
         document.getElementById("sosAlertModal").style.display = "none";
         // Force the app into triage mode so the driver can immediately route it
@@ -3684,6 +3756,57 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
 
         // 2. Sort and route all Deliveries (SOS First, then Standard)
+
+        // --- HOT FOOD 5-MILE PENALTY ALGORITHM ---
+        function getDistanceMiles(p1, p2) {
+          if (!AppState.mapInstance) return 0;
+          return (
+            AppState.mapInstance.distance(
+              L.latLng(p1[0], p1[1]),
+              L.latLng(p2[0], p2[1])
+            ) * 0.000621371
+          );
+        }
+
+        const hfIndex = sorted.findIndex((p) => p.isHotFood);
+        if (hfIndex !== -1 && hfIndex < sorted.length - 1) {
+          let baseMiles = 0;
+          let pCurrent = [sorted[0].lat, sorted[0].lng];
+          for (let i = 0; i < sorted.length; i++) {
+            baseMiles += getDistanceMiles(pCurrent, [
+              sorted[i].lat,
+              sorted[i].lng,
+            ]);
+            pCurrent = [sorted[i].lat, sorted[i].lng];
+          }
+
+          let modifiedSorted = [...sorted];
+          const hfItem = modifiedSorted.splice(hfIndex, 1)[0];
+          modifiedSorted.push(hfItem);
+
+          let modMiles = 0;
+          let mCurrent = [modifiedSorted[0].lat, modifiedSorted[0].lng];
+          for (let i = 0; i < modifiedSorted.length; i++) {
+            modMiles += getDistanceMiles(mCurrent, [
+              modifiedSorted[i].lat,
+              modifiedSorted[i].lng,
+            ]);
+            mCurrent = [modifiedSorted[i].lat, modifiedSorted[i].lng];
+          }
+
+          if (modMiles - baseMiles <= 5.0) {
+            sorted = modifiedSorted;
+            current = [
+              sorted[sorted.length - 1].lat,
+              sorted[sorted.length - 1].lng,
+            ];
+          } else {
+            sorted[hfIndex].geographicLock = true;
+            sorted[hfIndex].geoStopNum = hfIndex + 1;
+          }
+        }
+        // --- END HOT FOOD ALGORITHM ---
+
         let sosDeliveriesTriage = unsortedDeliveries.filter(
           (d) => d.bookingType === "emergency"
         );
@@ -3787,7 +3910,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           marker.bindPopup(`
           <div style="text-align:center;">
             <strong>${order.title}</strong><br>
-            <button onclick="rejectTriageOrder('${order.id}')" class="btn btn-emergency" style="padding: 6px 12px; margin-top: 10px; font-size: 0.8rem; border-radius: 6px;">Reject & Redraw</button>
+            
+                        ${
+                          order.geographicLock
+                            ? `<span style="background:var(--danger);color:white;padding:4px 8px;border-radius:6px;font-size:0.75rem;display:inline-block;margin-top:4px;margin-bottom:4px;">Geographic Lock: Hot Food is Stop #${order.geoStopNum}</span><br>`
+                            : ""
+                        }
+
+            
+            
+            <button onclick="rejectTriageOrder('${
+              order.id
+            }')" class="btn btn-emergency" style="padding: 6px 12px; margin-top: 10px; font-size: 0.8rem; border-radius: 6px;">Reject & Redraw</button>
           </div>
         `);
         });
@@ -4621,8 +4755,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           wfBtn.onclick = (e) => {
             e.stopPropagation();
-            AppState.workflowPhase = "pickup";
-            updateDashboardUI();
+            const pickups = AppState.activeQueue.filter(
+              (q) => q.type === "pickup" && q.status !== "completed"
+            );
+            if (pickups.length > 0 && pickups[0].isHotFood) {
+              window.triggerHotFoodIntercept(pickups[0].dbId, () => {
+                AppState.workflowPhase = "pickup";
+                updateDashboardUI();
+              });
+            } else {
+              AppState.workflowPhase = "pickup";
+              updateDashboardUI();
+            }
           };
 
           if (groupedPickups.length > 0) {
@@ -4968,7 +5112,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             AppState.workflowPhase = "ready_delivery";
             updateDashboardUI();
           } else {
-            drawPickupTimeline();
+            if (pendingPickups[0].isHotFood) {
+              window.triggerHotFoodIntercept(pendingPickups[0].dbId, () => {
+                drawPickupTimeline();
+                window.saveShiftState();
+              });
+              return;
+            } else {
+              drawPickupTimeline();
+            }
           }
 
           window.saveShiftState();
@@ -5073,11 +5225,24 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
 
                 </div>
+                
+                
+                                  ${
+                                    node.geographicLock
+                                      ? `<span style="background: var(--danger); color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.4); margin-left: 10px;">Geographic Lock: Hot Food Stop #${node.geoStopNum}</span>`
+                                      : ""
+                                  }
+
+                
+                
+                
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
 
                 ${AppState.workflowPhase === "pickup" ? navBtnHTML : ""}
 
                 ${!isDone ? extraInfo : ""}
+                
+                
 
                 ${AppState.workflowPhase === "pickup" ? btnHTML : ""}
               </div>
@@ -5699,6 +5864,44 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           window.showCustomAlert(
             "Error",
             "Failed to delete post. Please try again."
+          );
+        }
+      };
+
+      window.sendCommunityMessage = async function () {
+        const input = document.getElementById("communityTextInput");
+        const text = input.value.trim();
+
+        if (!text && !window.communityPendingImage) return;
+
+        if (!DRIVER_DOC_ID) {
+          window.showCustomAlert(
+            "Authentication Required",
+            "Please sign in to post to the Neighborhood Hub."
+          );
+          return;
+        }
+
+        const authorName =
+          document.getElementById("driverNameInput")?.value || "Hero";
+
+        try {
+          await window.addDoc(window.collection(window.db, "community_posts"), {
+            userId: DRIVER_DOC_ID,
+            authorName: authorName,
+            text: text,
+            imageUrl: window.communityPendingImage || null,
+            timestamp: window.serverTimestamp(),
+            status: "active",
+          });
+
+          input.value = "";
+          window.removeCommunityImage();
+        } catch (e) {
+          console.error("Failed to post message:", e);
+          window.showCustomAlert(
+            "Error",
+            "Failed to post message. Please try again."
           );
         }
       };
