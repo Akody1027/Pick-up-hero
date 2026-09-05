@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -18,14 +17,14 @@
     />
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
- 
+
     <link
-      rel="stylesheet"  
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
 
     <script src="https://js.stripe.com/v3/"></script>
- 
+
     <style>
       :root {
         --bg: #121212;
@@ -1323,14 +1322,12 @@
             border-radius: 4px;
           "
         ></div>
-        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text)" 
+        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text)"
           >Optimal Delivery Area</span
         >
       </div>
     </div>
 
-    
-    
     <!-- ZONE HELP TOOLTIP (Left of Legend) -->
     <div
       style="
@@ -1343,7 +1340,7 @@
         align-items: flex-start;
       "
     >
-      <div 
+      <div
         id="zoneTooltipBtn"
         class="tooltip-icon-btn glowing-pin"
         onclick="toggleZoneTooltip(event)"
@@ -1353,7 +1350,13 @@
       <div
         id="zoneTooltipBox"
         class="tooltip-box"
-        style="top: 35px; left: 0; right: auto; bottom: auto; transform-origin: top left"
+        style="
+          top: 35px;
+          left: 0;
+          right: auto;
+          bottom: auto;
+          transform-origin: top left;
+        "
       >
         <h4>
           Optimal Delivery Area
@@ -1362,26 +1365,14 @@
           </button>
         </h4>
         <p>
-          This highlighted zone represents your Hero's preferred delivery route. If your address falls outside this boundary,
-          <strong
-            > DON'T WORRY!
-            </strong
-          >
+          This highlighted zone represents your Hero's preferred delivery route.
+          If your address falls outside this boundary,
+          <strong> DON'T WORRY! </strong>
           You may still submit your request, and your Hero will review it.
         </p>
       </div>
     </div>
-    
-    
-    
-  
 
-    
-    
-    
-    
-    
-    
     <div class="top-controls">
       <!-- GLOBAL ACTIVITY SPINNER -->
       <div id="globalActivitySpinner" class="activity-spinner"></div>
@@ -1708,7 +1699,13 @@
                       padding-bottom: 5%;
                     "
                   >
-                    <h1 style="font-size:20px; font-weight: 500; color:var(--accent) ;">
+                    <h1
+                      style="
+                        font-size: 20px;
+                        font-weight: 500;
+                        color: var(--accent);
+                      "
+                    >
                       Please provide as much detail as possible.
                     </h1>
                   </div>
@@ -6286,6 +6283,38 @@
         } catch (e) {
           console.error("Failed to delete post:", e);
           alert("Failed to delete post. Please try again.");
+        }
+      };
+
+      window.sendCommunityMessage = async function () {
+        const input = document.getElementById("communityTextInput");
+        const text = input.value.trim();
+
+        if (!text && !window.communityPendingImage) return;
+
+        if (!window.appState || !window.appState.userId) {
+          alert("Please sign in to post to the Neighborhood Hub.");
+          return;
+        }
+
+        const authorName =
+          document.getElementById("customerNameInput")?.value || "Neighbor";
+
+        try {
+          await window.addDoc(window.collection(window.db, "community_posts"), {
+            userId: window.appState.userId,
+            authorName: authorName,
+            text: text,
+            imageUrl: window.communityPendingImage || null,
+            timestamp: window.serverTimestamp(),
+            status: "active",
+          });
+
+          input.value = "";
+          window.removeCommunityImage();
+        } catch (e) {
+          console.error("Failed to post message:", e);
+          alert("Failed to post message. Please try again.");
         }
       };
 
