@@ -20,7 +20,7 @@
     <link rel="apple-touch-icon" href="heroimg192.png" />
  
     <link
-      rel="stylesheet" 
+      rel="stylesheet"  
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
     />
 
@@ -1323,25 +1323,27 @@
             border-radius: 4px;
           "
         ></div>
-        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text)"
+        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text)" 
           >Optimal Delivery Area</span
         >
       </div>
     </div>
 
-    <!-- ZONE HELP TOOLTIP (Below Bell) -->
+    
+    
+    <!-- ZONE HELP TOOLTIP (Left of Legend) -->
     <div
       style="
         position: absolute;
-        top: calc(env(safe-area-inset-top, 20px) + 65px);
-        right: 20px;
+        top: calc(env(safe-area-inset-top, 20px) + 95px);
+        left: 20px;
         z-index: 1500;
         display: flex;
         flex-direction: column;
-        align-items: flex-end;
+        align-items: flex-start;
       "
     >
-      <div
+      <div 
         id="zoneTooltipBtn"
         class="tooltip-icon-btn glowing-pin"
         onclick="toggleZoneTooltip(event)"
@@ -1351,7 +1353,7 @@
       <div
         id="zoneTooltipBox"
         class="tooltip-box"
-        style="top: 35px; right: 0; bottom: auto; transform-origin: top right"
+        style="top: 35px; left: 0; right: auto; bottom: auto; transform-origin: top left"
       >
         <h4>
           Optimal Delivery Area
@@ -1360,16 +1362,26 @@
           </button>
         </h4>
         <p>
-          This highlighted zone represents your Hero's preferred delivery route.
+          This highlighted zone represents your Hero's preferred delivery route. If your address falls outside this boundary,
           <strong
-            >If your address falls outside this boundary, you are not
-            excluded!</strong
+            > DON'T WORRY!
+            </strong
           >
           You may still submit your request, and your Hero will review it.
         </p>
       </div>
     </div>
+    
+    
+    
+  
 
+    
+    
+    
+    
+    
+    
     <div class="top-controls">
       <!-- GLOBAL ACTIVITY SPINNER -->
       <div id="globalActivitySpinner" class="activity-spinner"></div>
