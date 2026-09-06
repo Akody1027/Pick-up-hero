@@ -4500,16 +4500,57 @@
           userMarker.setLatLng([userLat, userLng]);
           userMarker.setOpacity(1);
 
-          // Zoom the map to perfectly frame the customer and their selected Hero's hub
+          let nearestMarker = null;
+        let shortestDistance = Infinity;
 
-          const targetBase =
-            window.appState.selectedPinLat && window.appState.selectedPinLng
-              ? [window.appState.selectedPinLat, window.appState.selectedPinLng]
-              : [userLat, userLng];
+        // 1. Scan stationary base markers for the closest Hero
+        if (window.baseMarkers) {
+          for (const markers of Object.values(window.baseMarkers)) {
+            markers.forEach((m) => {
+              const dist = map.distance([userLat, userLng], m.getLatLng());
+              if (dist < shortestDistance) {
+                shortestDistance = dist;
+                nearestMarker = m;
+              }
+            });
+          }
+        }
 
-          const bounds = L.latLngBounds([userLat, userLng], targetBase);
+        // 2. Scan live telemetry markers (if bases are bypassed/disabled)
+        if (window.liveMarkers) {
+          for (const m of Object.values(window.liveMarkers)) {
+            const dist = map.distance([userLat, userLng], m.getLatLng());
+            if (dist < shortestDistance) {
+              shortestDistance = dist;
+              nearestMarker = m;
+            }
+          }
+        }
 
-          map.fitBounds(bounds, { padding: [70, 70] });
+        let targetLat = userLat;
+        let targetLng = userLng;
+
+        if (nearestMarker) {
+          const pos = nearestMarker.getLatLng();
+          targetLat = pos.lat;
+          targetLng = pos.lng;
+        } else if (window.appState.selectedPinLat && window.appState.selectedPinLng) {
+          targetLat = window.appState.selectedPinLat;
+          targetLng = window.appState.selectedPinLng;
+        }
+
+        // 3. Widen the padding to 150px and enforce a max zoom ceiling of 13
+        const bounds = L.latLngBounds([userLat, userLng], [targetLat, targetLng]);
+        map.fitBounds(bounds, { padding: [150, 150], maxZoom: 13 });
+
+        // 4. Programmatically "click" the nearest pin to auto-slide the bottom sheet
+        if (nearestMarker) {
+          setTimeout(() => {
+            nearestMarker.fire('click');
+          }, 350); 
+        }
+   
+          
         }, 1500);
       }
 
