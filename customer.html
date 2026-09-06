@@ -5,8 +5,22 @@
     <title>Pick Up Hero - Delivery</title>
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
+
+    <script>
+      // Native App Zoom: If the device is a narrow candy bar phone (under 390px),
+      // force the layout width to 390px. The mobile browser will automatically natively
+      // zoom the entire interface out to fit the physical screen.
+      if (window.screen.width < 400) {
+        document
+          .querySelector('meta[name="viewport"]')
+          .setAttribute(
+            "content",
+            "width=390, user-scalable=no, viewport-fit=cover"
+          );
+      }
+    </script>
 
     <link rel="manifest" href="manifest-customer.json" />
     <meta name="theme-color" content="#ee611c" />
@@ -670,7 +684,8 @@
       /* --- TOP NOTIFICATION BELL --- */
       .top-controls {
         position: absolute;
-        top: env(safe-area-inset-top, 20px);
+        top: max(env(safe-area-inset-top, 20px), 35px);
+
         right: 20px;
         z-index: 1500;
       }
