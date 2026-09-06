@@ -23,10 +23,10 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
 
-    <script src="https://js.stripe.com/v3/"></script> 
-   
-    <style>     
-      :root { 
+    <script src="https://js.stripe.com/v3/"></script>
+
+    <style>
+      :root {
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
@@ -2328,30 +2328,6 @@
       </div>
     </div>
 
-    <!-- SOS TODAY READINESS WARNING -->
-    <div class="soft-prompt-overlay" id="sosReadyWarning">
-      <div class="soft-prompt-box">
-        <h3 style="color: var(--danger)">Stop!</h3>
-        <p>
-          To guarantee ASAP delivery today, your order
-          <strong>must</strong> already be marked as 'Ready for Pickup' by the
-          store.
-        </p>
-        <div class="prompt-actions" style="flex-direction: column">
-          <button class="btn btn-primary" onclick="confirmSOSToday()">
-            Okay, it's ready!
-          </button>
-          <button
-            class="btn btn-secondary"
-            style="background: transparent; border: none; margin-top: 10px"
-            onclick="document.getElementById('sosReadyWarning').style.display='none'"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- PROFILE ENFORCEMENT GATE -->
     <div class="soft-prompt-overlay" id="profileGateModal">
       <div class="soft-prompt-box">
@@ -3364,7 +3340,7 @@
               }
             });
           }
-        } else { 
+        } else {
           console.error("Google Maps API failed to load.");
         }
       }
@@ -3373,7 +3349,7 @@
         map = L.map("map", { zoomControl: false }).setView(
           [41.2333, -95.6111],
           9
-        ); 
+        );
 
         // Dark Mode Tile Layer (CartoDB Dark Matter)
 
@@ -4501,56 +4477,60 @@
           userMarker.setOpacity(1);
 
           let nearestMarker = null;
-        let shortestDistance = Infinity;
+          let shortestDistance = Infinity;
 
-        // 1. Scan stationary base markers for the closest Hero
-        if (window.baseMarkers) {
-          for (const markers of Object.values(window.baseMarkers)) {
-            markers.forEach((m) => {
+          // 1. Scan stationary base markers for the closest Hero
+          if (window.baseMarkers) {
+            for (const markers of Object.values(window.baseMarkers)) {
+              markers.forEach((m) => {
+                const dist = map.distance([userLat, userLng], m.getLatLng());
+                if (dist < shortestDistance) {
+                  shortestDistance = dist;
+                  nearestMarker = m;
+                }
+              });
+            }
+          }
+
+          // 2. Scan live telemetry markers (if bases are bypassed/disabled)
+          if (window.liveMarkers) {
+            for (const m of Object.values(window.liveMarkers)) {
               const dist = map.distance([userLat, userLng], m.getLatLng());
               if (dist < shortestDistance) {
                 shortestDistance = dist;
                 nearestMarker = m;
               }
-            });
-          }
-        }
-
-        // 2. Scan live telemetry markers (if bases are bypassed/disabled)
-        if (window.liveMarkers) {
-          for (const m of Object.values(window.liveMarkers)) {
-            const dist = map.distance([userLat, userLng], m.getLatLng());
-            if (dist < shortestDistance) {
-              shortestDistance = dist;
-              nearestMarker = m;
             }
           }
-        }
 
-        let targetLat = userLat;
-        let targetLng = userLng;
+          let targetLat = userLat;
+          let targetLng = userLng;
 
-        if (nearestMarker) {
-          const pos = nearestMarker.getLatLng();
-          targetLat = pos.lat;
-          targetLng = pos.lng;
-        } else if (window.appState.selectedPinLat && window.appState.selectedPinLng) {
-          targetLat = window.appState.selectedPinLat;
-          targetLng = window.appState.selectedPinLng;
-        }
+          if (nearestMarker) {
+            const pos = nearestMarker.getLatLng();
+            targetLat = pos.lat;
+            targetLng = pos.lng;
+          } else if (
+            window.appState.selectedPinLat &&
+            window.appState.selectedPinLng
+          ) {
+            targetLat = window.appState.selectedPinLat;
+            targetLng = window.appState.selectedPinLng;
+          }
 
-        // 3. Widen the padding to 150px and enforce a max zoom ceiling of 13
-        const bounds = L.latLngBounds([userLat, userLng], [targetLat, targetLng]);
-        map.fitBounds(bounds, { padding: [150, 150], maxZoom: 13 });
+          // 3. Widen the padding to 150px and enforce a max zoom ceiling of 13
+          const bounds = L.latLngBounds(
+            [userLat, userLng],
+            [targetLat, targetLng]
+          );
+          map.fitBounds(bounds, { padding: [150, 150], maxZoom: 13 });
 
-        // 4. Programmatically "click" the nearest pin to auto-slide the bottom sheet
-        if (nearestMarker) {
-          setTimeout(() => {
-            nearestMarker.fire('click');
-          }, 350); 
-        }
-   
-          
+          // 4. Programmatically "click" the nearest pin to auto-slide the bottom sheet
+          if (nearestMarker) {
+            setTimeout(() => {
+              nearestMarker.fire("click");
+            }, 350);
+          }
         }, 1500);
       }
 
@@ -5586,19 +5566,14 @@
       window.handleSOSTimeline = function (choice) {
         document.getElementById("sosTimelineSelector").style.display = "none";
         if (choice === "today") {
-          document.getElementById("sosReadyWarning").style.display = "flex";
+          window.appState.targetTimeline = "asap_today";
+          document.getElementById("timelineDisplay").innerText = "Today";
+          openAddModal("emergency");
         } else {
           window.appState.targetTimeline = "first_tomorrow";
           document.getElementById("timelineDisplay").innerText = "Tomorrow";
           openAddModal("emergency");
         }
-      };
-
-      window.confirmSOSToday = function () {
-        document.getElementById("sosReadyWarning").style.display = "none";
-        window.appState.targetTimeline = "asap_today";
-        document.getElementById("timelineDisplay").innerText = "Today";
-        openAddModal("emergency");
       };
 
       window.evalDriverStateForTimeline = async function () {
