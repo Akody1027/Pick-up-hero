@@ -1126,6 +1126,48 @@
         margin-top: 10px;
         border: 1px solid var(--border);
       }
+
+      /* --- HOT FOOD RECALL TAB --- */
+      .hot-food-recall-tab {
+        position: fixed;
+        right: -5px;
+        top: 180px;
+        background: var(--danger);
+        color: white;
+        padding: 12px 16px 12px 12px;
+        border-radius: 12px 0 0 12px;
+        font-weight: bold;
+        font-size: 0.9rem;
+        box-shadow: -4px 4px 15px rgba(239, 68, 68, 0.6);
+        z-index: 2500;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        border: 2px solid white;
+        border-right: none;
+        transition: transform 0.2s ease;
+      }
+      .hot-food-recall-tab:active {
+        transform: scale(0.95);
+      }
+      .hot-food-recall-tab svg {
+        width: 18px;
+        height: 18px;
+        fill: white;
+        animation: pulse-glow-svg 2s infinite;
+      }
+      @keyframes pulse-glow-svg {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body>
@@ -1543,7 +1585,11 @@
 
     <!-- BOTTOM NAVIGATION -->
     <nav class="bottom-nav">
-      <button class="nav-btn active" id="navHome" onclick="closeAllModals()">
+      <button
+        class="nav-btn active"
+        id="navHome"
+        onclick="closeAllModals(); document.getElementById('activeQueueSheet').classList.remove('expanded');"
+      >
         <svg viewBox="0 0 24 24">
           <path d="M12 3l10 9h-3v9h-14v-9h-3l10-9z" />
         </svg>
@@ -1588,14 +1634,14 @@
         </div>
 
         <div class="form-group">
-          <label>Active Days</label>
+          <label>Select Day to Edit</label>
 
           <div class="day-toggles">
             <button
               type="button"
               class="day-btn"
               id="dayBtn_Sun"
-              onclick="toggleRoutineDay('Sun')"
+              onclick="selectRoutineDay('Sun')"
             >
               Sun
             </button>
@@ -1603,7 +1649,7 @@
               type="button"
               class="day-btn"
               id="dayBtn_Mon"
-              onclick="toggleRoutineDay('Mon')"
+              onclick="selectRoutineDay('Mon')"
             >
               Mon
             </button>
@@ -1611,7 +1657,7 @@
               type="button"
               class="day-btn"
               id="dayBtn_Tue"
-              onclick="toggleRoutineDay('Tue')"
+              onclick="selectRoutineDay('Tue')"
             >
               Tue
             </button>
@@ -1619,15 +1665,15 @@
               type="button"
               class="day-btn"
               id="dayBtn_Wed"
-              onclick="toggleRoutineDay('Wed')"
+              onclick="selectRoutineDay('Wed')"
             >
-              Wen
+              Wed
             </button>
             <button
               type="button"
               class="day-btn"
               id="dayBtn_Thu"
-              onclick="toggleRoutineDay('Thu')"
+              onclick="selectRoutineDay('Thu')"
             >
               Thu
             </button>
@@ -1635,7 +1681,7 @@
               type="button"
               class="day-btn"
               id="dayBtn_Fri"
-              onclick="toggleRoutineDay('Fri')"
+              onclick="selectRoutineDay('Fri')"
             >
               Fri
             </button>
@@ -1643,7 +1689,7 @@
               type="button"
               class="day-btn"
               id="dayBtn_Sat"
-              onclick="toggleRoutineDay('Sat')"
+              onclick="selectRoutineDay('Sat')"
             >
               Sat
             </button>
@@ -1688,6 +1734,38 @@
           >
             + Add Location Pin (Max 5)
           </button>
+
+          <div
+            id="deliveryZoneStatusContainer"
+            style="
+              display: none;
+              justify-content: space-between;
+              align-items: center;
+              background: var(--surface);
+              padding: 10px 14px;
+              border-radius: 8px;
+              border: 1px solid var(--border);
+              margin-top: 15px;
+            "
+          >
+            <span style="font-size: 0.85rem; color: var(--text)"
+              >Active Delivery Zone</span
+            >
+            <button
+              type="button"
+              onclick="removeDeliveryZone()"
+              style="
+                background: transparent;
+                color: var(--danger);
+                border: none;
+                font-weight: bold;
+                cursor: pointer;
+                font-size: 0.9rem;
+              "
+            >
+              ✕
+            </button>
+          </div>
 
           <button
             class="btn btn-secondary"
@@ -2094,6 +2172,21 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
     </div>
 
     <!-- HOT FOOD PRE-ARRIVAL ALERT MODAL -->
+
+    <!-- HOT FOOD RECALL FLOATING TAB -->
+    <div
+      id="hotFoodRecallTab"
+      class="hot-food-recall-tab"
+      onclick="resumeHotFoodAlert()"
+    >
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"
+        />
+      </svg>
+      Hot Food Waiting
+    </div>
+
     <div class="soft-prompt-overlay" id="hotFoodDriverInterceptModal">
       <div class="soft-prompt-box">
         <h3 style="color: var(--danger); margin-bottom: 15px">
@@ -2109,6 +2202,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           onclick="sendHotFoodAlertAndProceed()"
         >
           Send Alert & Route
+        </button>
+        <button
+          class="btn btn-secondary"
+          style="margin-top: 10px"
+          onclick="snoozeHotFoodAlert()"
+        >
+          Postpone
         </button>
       </div>
     </div>
@@ -2755,6 +2855,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               }).addTo(AppState.mapInstance);
             }
 
+            if (window.updateDeliveryZoneUI) window.updateDeliveryZoneUI();
+
             if (data.weeklyRoutine) {
               AppState.weeklyRoutine = data.weeklyRoutine;
             } else {
@@ -2769,18 +2871,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               };
             }
 
-            AppState.activeRoutineDays = [];
-            Object.keys(AppState.weeklyRoutine).forEach((day) => {
-              if (
-                AppState.weeklyRoutine[day] &&
-                AppState.weeklyRoutine[day].length > 0
-              ) {
-                AppState.activeRoutineDays.push(day);
-                const btn = document.getElementById("dayBtn_" + day);
-                if (btn) btn.classList.add("active");
-              }
-            });
-
+            AppState.selectedRoutineDay = "Mon";
             window.renderWaveBuilder();
 
             const killSwitch = document.getElementById("killSwitchToggle");
@@ -3079,56 +3170,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         if (AppState.tempMarker) {
           const pos = AppState.tempMarker.getLatLng();
 
-          window.startDrawingZone = function () {
-            closeAllModals();
-            AppState.isDrawingZone = true;
-            AppState.deliveryZone = [];
-            if (AppState.zonePolygon) {
-              AppState.mapInstance.removeLayer(AppState.zonePolygon);
-              AppState.zonePolygon = null;
-            }
-            if (AppState.zoneTempLine) {
-              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
-              AppState.zoneTempLine = null;
-            }
-            document.getElementById("finishZoneBtn").style.display = "block";
-            document.getElementById("clearZoneBtn").style.display = "block";
-            window.showCustomAlert(
-              "Draw Mode",
-              "Tap the map to drop boundary points. Connect them around your service area."
-            );
-          };
-
-          window.finishDrawingZone = function () {
-            AppState.isDrawingZone = false;
-            document.getElementById("finishZoneBtn").style.display = "none";
-            document.getElementById("clearZoneBtn").style.display = "none";
-            if (AppState.zoneTempLine) {
-              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
-              AppState.zoneTempLine = null;
-            }
-            if (AppState.deliveryZone.length > 2) {
-              AppState.zonePolygon = L.polygon(AppState.deliveryZone, {
-                color: "var(--accent)",
-                fillOpacity: 0.1,
-                weight: 2,
-              }).addTo(AppState.mapInstance);
-            } else {
-              AppState.deliveryZone = [];
-            }
-            openModal("scheduleModal");
-          };
-
-          window.clearZone = function () {
-            AppState.deliveryZone = [];
-            if (AppState.zoneTempLine)
-              AppState.mapInstance.removeLayer(AppState.zoneTempLine);
-            if (AppState.zonePolygon)
-              AppState.mapInstance.removeLayer(AppState.zonePolygon);
-            AppState.zoneTempLine = null;
-            AppState.zonePolygon = null;
-          };
-
           AppState.baseLocations.push({ lat: pos.lat, lng: pos.lng });
           AppState.mapInstance.removeLayer(AppState.tempMarker);
           AppState.tempMarker = null;
@@ -3137,6 +3178,78 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById("lockPinBtn").style.display = "none";
         renderHomeBases();
         openModal("scheduleModal");
+      };
+
+      window.updateDeliveryZoneUI = function () {
+        const container = document.getElementById(
+          "deliveryZoneStatusContainer"
+        );
+        const drawBtn = document.getElementById("drawZoneBtn");
+        if (container && drawBtn) {
+          if (AppState.deliveryZone && AppState.deliveryZone.length > 2) {
+            container.style.display = "flex";
+            drawBtn.style.display = "none";
+          } else {
+            container.style.display = "none";
+            drawBtn.style.display = "block";
+          }
+        }
+      };
+
+      window.removeDeliveryZone = function () {
+        window.clearZone();
+        window.updateDeliveryZoneUI();
+      };
+
+      window.startDrawingZone = function () {
+        closeAllModals();
+        AppState.isDrawingZone = true;
+        AppState.deliveryZone = [];
+        if (AppState.zonePolygon) {
+          AppState.mapInstance.removeLayer(AppState.zonePolygon);
+          AppState.zonePolygon = null;
+        }
+        if (AppState.zoneTempLine) {
+          AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+          AppState.zoneTempLine = null;
+        }
+        document.getElementById("finishZoneBtn").style.display = "block";
+        document.getElementById("clearZoneBtn").style.display = "block";
+        window.showCustomAlert(
+          "Draw Mode",
+          "Tap the map to drop boundary points. Connect them around your service area."
+        );
+      };
+
+      window.finishDrawingZone = function () {
+        AppState.isDrawingZone = false;
+        document.getElementById("finishZoneBtn").style.display = "none";
+        document.getElementById("clearZoneBtn").style.display = "none";
+        if (AppState.zoneTempLine) {
+          AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+          AppState.zoneTempLine = null;
+        }
+        if (AppState.deliveryZone.length > 2) {
+          AppState.zonePolygon = L.polygon(AppState.deliveryZone, {
+            color: "var(--accent)",
+            fillOpacity: 0.1,
+            weight: 2,
+          }).addTo(AppState.mapInstance);
+        } else {
+          AppState.deliveryZone = [];
+        }
+        window.updateDeliveryZoneUI();
+        openModal("scheduleModal");
+      };
+
+      window.clearZone = function () {
+        AppState.deliveryZone = [];
+        if (AppState.zoneTempLine)
+          AppState.mapInstance.removeLayer(AppState.zoneTempLine);
+        if (AppState.zonePolygon)
+          AppState.mapInstance.removeLayer(AppState.zonePolygon);
+        AppState.zoneTempLine = null;
+        AppState.zonePolygon = null;
       };
 
       AppState.weeklyRoutine = {
@@ -3148,55 +3261,22 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         Fri: [],
         Sat: [],
       };
-      AppState.activeRoutineDays = [];
+      AppState.selectedRoutineDay = "Mon";
 
-      window.toggleRoutineDay = function (day) {
-        const index = AppState.activeRoutineDays.indexOf(day);
-        if (index > -1) {
-          // Toggle Off
-          AppState.activeRoutineDays.splice(index, 1);
-          document.getElementById("dayBtn_" + day).classList.remove("active");
-        } else {
-          // Toggle On
-          AppState.activeRoutineDays.push(day);
-          document.getElementById("dayBtn_" + day).classList.add("active");
-        }
-        window.renderWaveBuilder();
-      };
-
-      window.syncActiveDays = function () {
-        if (AppState.activeRoutineDays.length === 0) return;
-        const templateDay = AppState.activeRoutineDays[0];
-        const templateWaves = JSON.parse(
-          JSON.stringify(AppState.weeklyRoutine[templateDay])
-        );
-
-        AppState.activeRoutineDays.forEach((day) => {
-          AppState.weeklyRoutine[day] = JSON.parse(
-            JSON.stringify(templateWaves)
-          );
-        });
+      window.selectRoutineDay = function (day) {
+        AppState.selectedRoutineDay = day;
         window.renderWaveBuilder();
       };
 
       window.renderWaveBuilder = function () {
         const container = document.getElementById("waveBuilderContainer");
-        const activeDays = AppState.activeRoutineDays;
+        const selectedDay = AppState.selectedRoutineDay || "Mon";
 
-        if (activeDays.length === 0) {
-          container.innerHTML =
-            '<p style="color:var(--text-muted); font-size: 0.85rem; text-align: center;">Select one or more days above to configure waves.</p>';
-          return;
-        }
-
-        const templateDay = activeDays[0];
-        let html = `<label style="color: var(--accent); margin-bottom: 10px; display: block; font-weight: 700;">Editing: ${activeDays.join(
-          ", "
-        )}</label>`;
-        const waves = AppState.weeklyRoutine[templateDay] || [];
+        let html = `<label style="color: var(--text); margin-bottom: 10px; display: block; font-weight: 700;">Editing Schedule For: <span style="color: var(--accent);">${selectedDay}</span></label>`;
+        const waves = AppState.weeklyRoutine[selectedDay] || [];
 
         if (waves.length === 0) {
-          html += `<p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">No runs scheduled for the selected days.</p>`;
+          html += `<p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">No runs scheduled for ${selectedDay}.</p>`;
         } else {
           waves.forEach((wave, index) => {
             html += `
@@ -3215,54 +3295,76 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           });
         }
 
-        html += `<button type="button" class="btn btn-secondary" style="padding: 12px; font-size: 0.9rem;" onclick="addWave()">+ Add Wave</button>`;
+        html += `<button type="button" class="btn btn-secondary" style="padding: 12px; font-size: 0.9rem;" onclick="addWave()">+ Add Run to ${selectedDay}</button>`;
+
+        // Quick helper to duplicate a weekday schedule instantly
+        if (["Mon", "Tue", "Wed", "Thu", "Fri"].includes(selectedDay)) {
+          html += `<button type="button" class="btn btn-secondary" style="padding: 12px; font-size: 0.9rem; margin-top: 10px; border-color: var(--border); color: var(--text-muted); background: transparent;" onclick="copyToWeekdays('${selectedDay}')">⎘ Copy ${selectedDay} to All Weekdays</button>`;
+        }
+
         container.innerHTML = html;
 
+        // Sync tab visuals and active green indicator bars
         document.querySelectorAll(".day-btn").forEach((btn) => {
           const d = btn.id.split("_")[1];
-          if (
-            AppState.weeklyRoutine[d] &&
-            AppState.weeklyRoutine[d].length > 0
-          ) {
-            btn.style.borderBottom = "3px solid var(--accent)";
-          } else {
-            btn.style.borderBottom = "1px solid var(--border)";
+          const hasRuns =
+            AppState.weeklyRoutine[d] && AppState.weeklyRoutine[d].length > 0;
+
+          btn.style.background = "var(--surface-elevated)";
+          btn.style.color = "var(--text)";
+          btn.style.borderColor = "var(--border)";
+          btn.style.borderBottom = hasRuns
+            ? "3px solid var(--success)"
+            : "1px solid var(--border)";
+
+          if (d === selectedDay) {
+            btn.style.background = "var(--accent)";
+            btn.style.color = "white";
+            btn.style.borderColor = "var(--accent)";
+            btn.style.borderBottom = hasRuns
+              ? "3px solid var(--success)"
+              : "3px solid var(--accent)";
           }
         });
       };
 
       window.addWave = function () {
-        if (AppState.activeRoutineDays.length === 0) return;
-        const templateDay = AppState.activeRoutineDays[0];
-        if (!AppState.weeklyRoutine[templateDay])
-          AppState.weeklyRoutine[templateDay] = [];
-        AppState.weeklyRoutine[templateDay].push({
-          time: "12:00",
-          capacity: 6,
-        });
-        window.syncActiveDays();
+        const d = AppState.selectedRoutineDay;
+        if (!AppState.weeklyRoutine[d]) AppState.weeklyRoutine[d] = [];
+        AppState.weeklyRoutine[d].push({ time: "12:00", capacity: 6 });
+        window.renderWaveBuilder();
       };
 
       window.removeWave = function (index) {
-        if (AppState.activeRoutineDays.length === 0) return;
-        const templateDay = AppState.activeRoutineDays[0];
-        AppState.weeklyRoutine[templateDay].splice(index, 1);
-        window.syncActiveDays();
+        const d = AppState.selectedRoutineDay;
+        AppState.weeklyRoutine[d].splice(index, 1);
+        window.renderWaveBuilder();
       };
 
       window.updateWaveTime = function (index, val) {
-        if (AppState.activeRoutineDays.length === 0) return;
-        const templateDay = AppState.activeRoutineDays[0];
-        AppState.weeklyRoutine[templateDay][index].time = val;
-        window.syncActiveDays();
+        const d = AppState.selectedRoutineDay;
+        AppState.weeklyRoutine[d][index].time = val;
       };
 
       window.updateWaveCapacity = function (index, val) {
-        if (AppState.activeRoutineDays.length === 0) return;
-        const templateDay = AppState.activeRoutineDays[0];
-        AppState.weeklyRoutine[templateDay][index].capacity =
-          parseInt(val) || 1;
-        window.syncActiveDays();
+        const d = AppState.selectedRoutineDay;
+        AppState.weeklyRoutine[d][index].capacity = parseInt(val) || 1;
+      };
+
+      window.copyToWeekdays = function (sourceDay) {
+        if (
+          !confirm(
+            `Copy ${sourceDay}'s schedule to all weekdays (Mon-Fri)? This will overwrite their current schedules.`
+          )
+        )
+          return;
+        const template = JSON.parse(
+          JSON.stringify(AppState.weeklyRoutine[sourceDay] || [])
+        );
+        ["Mon", "Tue", "Wed", "Thu", "Fri"].forEach((day) => {
+          AppState.weeklyRoutine[day] = JSON.parse(JSON.stringify(template));
+        });
+        window.renderWaveBuilder();
       };
 
       window.saveScheduleBlock = async function () {
@@ -3312,22 +3414,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           .forEach((m) => m.classList.remove("active"));
         document.getElementById(id).classList.add("active");
       }
-      function closeAllModals() {
-        const wasModalOpen =
-          document.querySelectorAll(".modal.active").length > 0;
 
+      function closeAllModals() {
         document
           .querySelectorAll(".modal")
           .forEach((m) => m.classList.remove("active"));
-
-        const sheet = document.getElementById("activeQueueSheet");
-        if (sheet) {
-          if (wasModalOpen) {
-            sheet.classList.add("expanded");
-          } else {
-            sheet.classList.toggle("expanded");
-          }
-        }
       }
 
       function toggleBottomSheet() {
@@ -3636,6 +3727,28 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.pendingInterceptCallback = null;
       window.pendingInterceptOrderId = null;
 
+      window.hotFoodSnoozeTimer = null;
+
+      window.snoozeHotFoodAlert = function () {
+        document.getElementById("hotFoodDriverInterceptModal").style.display =
+          "none";
+        document.getElementById("hotFoodRecallTab").style.display = "flex";
+
+        if (window.hotFoodSnoozeTimer) clearTimeout(window.hotFoodSnoozeTimer);
+
+        // 5-minute auto-resume (300,000 ms)
+        window.hotFoodSnoozeTimer = setTimeout(() => {
+          window.resumeHotFoodAlert();
+        }, 300000);
+      };
+
+      window.resumeHotFoodAlert = function () {
+        if (window.hotFoodSnoozeTimer) clearTimeout(window.hotFoodSnoozeTimer);
+        document.getElementById("hotFoodRecallTab").style.display = "none";
+        document.getElementById("hotFoodDriverInterceptModal").style.display =
+          "flex";
+      };
+
       window.triggerHotFoodIntercept = function (orderId, callback) {
         window.pendingInterceptOrderId = orderId;
         window.pendingInterceptCallback = callback;
@@ -3644,6 +3757,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       };
 
       window.sendHotFoodAlertAndProceed = async function () {
+        if (window.hotFoodSnoozeTimer) clearTimeout(window.hotFoodSnoozeTimer);
+        const recallTab = document.getElementById("hotFoodRecallTab");
+        if (recallTab) recallTab.style.display = "none";
+
         const btn = document.querySelector(
           "#hotFoodDriverInterceptModal .btn-primary"
         );
@@ -3996,6 +4113,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       };
 
       window.emergencyAbortActiveRoute = async function () {
+        if (window.hotFoodSnoozeTimer) clearTimeout(window.hotFoodSnoozeTimer);
+        const recallTab = document.getElementById("hotFoodRecallTab");
+        if (recallTab) recallTab.style.display = "none";
+
         if (
           AppState.workflowPhase === "idle" ||
           AppState.workflowPhase === "complete"
