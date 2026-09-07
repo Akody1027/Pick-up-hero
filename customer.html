@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>Pick Up Hero - Delivery</title>
-    <meta
+    <meta 
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
@@ -18,7 +18,7 @@
           .setAttribute(
             "content",
             "width=390, user-scalable=no, viewport-fit=cover"
-          );
+          ); 
       }
     </script>
 
@@ -2210,14 +2210,31 @@
         <h2>Find Nearby Hero</h2>
         <button class="close-btn" onclick="closeAllModals()">✕</button>
       </div>
+
       <div class="modal-content">
-        <div class="form-group">
+        <div class="form-group" style="position: relative">
           <label>YOUR ADRESS</label>
           <input
             type="text"
             id="findHeroAddressInput"
             placeholder="Enter address or landmark..."
+            style="padding-right: 45px"
           />
+          <div
+            id="locationSpinner"
+            class="search-spinner"
+            style="
+              display: none;
+              position: absolute;
+              right: 15px;
+              bottom: 13px;
+              margin: 0;
+              border-color: rgba(238, 97, 28, 0.3);
+              border-top-color: var(--accent);
+              width: 22px;
+              height: 22px;
+            "
+          ></div>
         </div>
 
         <div style="text-align: center; margin: 10px 0">
@@ -4452,14 +4469,25 @@
         document.getElementById("locationSoftPrompt").style.display = "none";
 
         if (navigator.geolocation) {
+          const input = document.getElementById("findHeroAddressInput");
+          const spinner = document.getElementById("locationSpinner");
+
+          input.value = "Acquiring GPS...";
+          input.disabled = true;
+          spinner.style.display = "block";
+
           navigator.geolocation.getCurrentPosition(
             (position) => {
               userLat = position.coords.latitude;
               userLng = position.coords.longitude;
-              document.getElementById("findHeroAddressInput").value =
-                "Current Location Acquired";
+              input.value = "Current Location Acquired";
+              input.disabled = false;
+              spinner.style.display = "none";
             },
             (error) => {
+              input.value = "";
+              input.disabled = false;
+              spinner.style.display = "none";
               alert("Location access denied or unavailable.");
             }
           );
