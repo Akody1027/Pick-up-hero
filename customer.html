@@ -19,7 +19,7 @@
             "content",
             "width=450, user-scalable=no, viewport-fit=cover"
           ); 
-      }
+      } 
     </script>
 
     <link rel="manifest" href="manifest-customer.json" />
@@ -1101,6 +1101,108 @@
         margin-top: 10px;
         border: 1px solid var(--border);
       }
+      
+      
+            /* --- IOS INSTALL MODAL --- */
+      .ios-install-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(18, 18, 18, 0.95);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 6000;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .ios-install-modal.active {
+        display: flex;
+      }
+      .ios-install-close {
+        position: absolute;
+        top: max(env(safe-area-inset-top, 20px), 30px);
+        right: 20px;
+        background: transparent;
+        border: none;
+        color: var(--accent);
+        font-size: 2rem;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 6010;
+      }
+      .ios-install-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        width: 100%;
+        max-width: 400px;
+      }
+      .ios-install-grid img {
+        width: 100%;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .ios-install-grid img:active {
+        transform: scale(0.95);
+      }
+      .ios-carousel-view {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+      .ios-carousel-view.active {
+        display: flex;
+      }
+      .ios-carousel-view img {
+        max-width: 100%;
+        max-height: 70vh;
+        border-radius: 16px;
+        border: 2px solid var(--accent);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      }
+      .ios-carousel-controls {
+        display: flex;
+        gap: 20px;
+        margin-top: 30px;
+      }
+      .ios-carousel-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.5rem;
+        box-shadow: var(--shadow);
+      }
+      .ios-carousel-btn:active {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+
+      
+      
+      
+      
+      
+      
+      
+      
     </style>
   </head>
   <body>
@@ -1185,6 +1287,34 @@
         </button>
       </div>
     </div>
+    
+    
+    
+        <!-- IOS PWA INSTALL MODAL -->
+    <div id="iosInstallModal" class="ios-install-modal">
+      <button class="ios-install-close" onclick="closeIosInstallModal()">✕</button>
+      
+      <div id="iosInstallGrid" class="ios-install-grid">
+        <img src="install1.jpg" onclick="openIosCarousel(1)" alt="Step 1" />
+        <img src="install2.jpg" onclick="openIosCarousel(2)" alt="Step 2" />
+        <img src="install3.jpg" onclick="openIosCarousel(3)" alt="Step 3" />
+        <img src="install4.jpg" onclick="openIosCarousel(4)" alt="Step 4" />
+      </div>
+
+      <div id="iosCarouselView" class="ios-carousel-view">
+        <img id="iosCarouselImage" src="install1.jpg" alt="Install Step" />
+        <div class="ios-carousel-controls">
+          <button class="ios-carousel-btn" onclick="prevIosCarousel()">←</button>
+          <button class="ios-carousel-btn" onclick="nextIosCarousel()">→</button>
+        </div>
+      </div>
+    </div>
+
+    
+    
+    
+    
+    
 
     <audio
       id="customerAlertSound"
@@ -6502,6 +6632,76 @@
       window.addEventListener("appinstalled", () => {
         dismissPwaPrompt();
       });
+      
+      
+            // --- IOS INSTALL LOGIC ---
+      let currentIosStep = 1;
+
+      function checkAndPromptIOS() {
+        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        if (isIos && !isStandalone) {
+          const installBtn = document.getElementById("pwaInstallBtn");
+          if (installBtn) {
+            installBtn.innerText = "Install Guide";
+            
+            // Clone and replace to strip the Android event listener and safely inject our iOS logic
+            const newBtn = installBtn.cloneNode(true);
+            installBtn.parentNode.replaceChild(newBtn, installBtn);
+            
+            newBtn.addEventListener("click", () => {
+              document.getElementById("iosInstallModal").classList.add("active");
+              document.getElementById("iosInstallGrid").style.display = "grid";
+              document.getElementById("iosCarouselView").classList.remove("active");
+              dismissPwaPrompt();
+            });
+          }
+
+          setTimeout(() => {
+            document.getElementById("pwaInstallPrompt").style.top = "env(safe-area-inset-top, 20px)";
+          }, 2000);
+        }
+      }
+
+      window.addEventListener("load", checkAndPromptIOS);
+
+      window.openIosCarousel = function(stepIndex) {
+        currentIosStep = stepIndex;
+        document.getElementById("iosInstallGrid").style.display = "none";
+        document.getElementById("iosCarouselView").classList.add("active");
+        updateIosCarouselImage();
+      };
+
+      window.closeIosInstallModal = function() {
+        document.getElementById("iosInstallModal").classList.remove("active");
+      };
+
+      window.prevIosCarousel = function() {
+        currentIosStep--;
+        if (currentIosStep < 1) currentIosStep = 4;
+        updateIosCarouselImage();
+      };
+
+      window.nextIosCarousel = function() {
+        currentIosStep++;
+        if (currentIosStep > 4) currentIosStep = 1;
+        updateIosCarouselImage();
+      };
+
+      function updateIosCarouselImage() { 
+        document.getElementById("iosCarouselImage").src = `install${currentIosStep}.jpg`;
+      }
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
     </script>
   </body>
 </html>
