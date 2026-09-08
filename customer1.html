@@ -5,8 +5,22 @@
     <title>Pick Up Hero - Delivery</title>
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
+
+    <script>
+      // Native App Zoom: If the device is a narrow candy bar phone (under 390px),
+      // force the layout width to 390px. The mobile browser will automatically natively
+      // zoom the entire interface out to fit the physical screen.
+      if (window.screen.width < 1500) {
+        document
+          .querySelector('meta[name="viewport"]')
+          .setAttribute(
+            "content",
+            "width=450, user-scalable=no, viewport-fit=cover"
+          );
+      }
+    </script>
 
     <link rel="manifest" href="manifest-customer.json" />
     <meta name="theme-color" content="#ee611c" />
@@ -17,14 +31,14 @@
     />
     <meta name="apple-mobile-web-app-title" content="PickUpHero" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
- 
+
     <link
-      rel="stylesheet" 
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
 
     <script src="https://js.stripe.com/v3/"></script>
- 
+
     <style>
       :root {
         --bg: #121212;
@@ -670,7 +684,8 @@
       /* --- TOP NOTIFICATION BELL --- */
       .top-controls {
         position: absolute;
-        top: env(safe-area-inset-top, 20px);
+        top: max(env(safe-area-inset-top, 20px), 35px);
+
         right: 20px;
         z-index: 1500;
       }
@@ -1086,6 +1101,98 @@
         margin-top: 10px;
         border: 1px solid var(--border);
       }
+
+      /* --- IOS INSTALL MODAL --- */
+      .ios-install-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(18, 18, 18, 0.95);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 6000;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .ios-install-modal.active {
+        display: flex;
+      }
+      .ios-install-close {
+        position: absolute;
+        top: max(env(safe-area-inset-top, 20px), 30px);
+        right: 20px;
+        background: transparent;
+        border: none;
+        color: var(--accent);
+        font-size: 2rem;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 6010;
+      }
+      .ios-install-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        width: 100%;
+        max-width: 400px;
+      }
+      .ios-install-grid img {
+        width: 100%;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .ios-install-grid img:active {
+        transform: scale(0.95);
+      }
+      .ios-carousel-view {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+      .ios-carousel-view.active {
+        display: flex;
+      }
+      .ios-carousel-view img {
+        max-width: 100%;
+        max-height: 70vh;
+        border-radius: 16px;
+        border: 2px solid var(--accent);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      }
+      .ios-carousel-controls {
+        display: flex;
+        gap: 20px;
+        margin-top: 30px;
+      }
+      .ios-carousel-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.5rem;
+        box-shadow: var(--shadow);
+      }
+      .ios-carousel-btn:active {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
     </style>
   </head>
   <body>
@@ -1168,6 +1275,32 @@
         >
           ✕
         </button>
+      </div>
+    </div>
+
+    <!-- IOS PWA INSTALL MODAL -->
+    <div id="iosInstallModal" class="ios-install-modal">
+      <button class="ios-install-close" onclick="closeIosInstallModal()">
+        ✕
+      </button>
+
+      <div id="iosInstallGrid" class="ios-install-grid">
+        <img src="install1.jpg" onclick="openIosCarousel(1)" alt="Step 1" />
+        <img src="install2.jpg" onclick="openIosCarousel(2)" alt="Step 2" />
+        <img src="install3.jpg" onclick="openIosCarousel(3)" alt="Step 3" />
+        <img src="install4.jpg" onclick="openIosCarousel(4)" alt="Step 4" />
+      </div>
+
+      <div id="iosCarouselView" class="ios-carousel-view">
+        <img id="iosCarouselImage" src="install1.jpg" alt="Install Step" />
+        <div class="ios-carousel-controls">
+          <button class="ios-carousel-btn" onclick="prevIosCarousel()">
+            ←
+          </button>
+          <button class="ios-carousel-btn" onclick="nextIosCarousel()">
+            →
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1328,16 +1461,16 @@
       </div>
     </div>
 
-    <!-- ZONE HELP TOOLTIP (Below Bell) -->
+    <!-- ZONE HELP TOOLTIP (Left of Legend) -->
     <div
       style="
         position: absolute;
-        top: calc(env(safe-area-inset-top, 20px) + 65px);
-        right: 20px;
+        top: calc(env(safe-area-inset-top, 20px) + 95px);
+        left: 20px;
         z-index: 1500;
         display: flex;
         flex-direction: column;
-        align-items: flex-end;
+        align-items: flex-start;
       "
     >
       <div
@@ -1350,7 +1483,13 @@
       <div
         id="zoneTooltipBox"
         class="tooltip-box"
-        style="top: 35px; right: 0; bottom: auto; transform-origin: top right"
+        style="
+          top: 35px;
+          left: 0;
+          right: auto;
+          bottom: auto;
+          transform-origin: top left;
+        "
       >
         <h4>
           Optimal Delivery Area
@@ -1360,10 +1499,8 @@
         </h4>
         <p>
           This highlighted zone represents your Hero's preferred delivery route.
-          <strong
-            >If your address falls outside this boundary, you are not
-            excluded!</strong
-          >
+          If your address falls outside this boundary,
+          <strong> DON'T WORRY! </strong>
           You may still submit your request, and your Hero will review it.
         </p>
       </div>
@@ -1695,7 +1832,13 @@
                       padding-bottom: 5%;
                     "
                   >
-                    <h1 style="font-size:20px; font-weight: 500; color:var(--accent) ;">
+                    <h1
+                      style="
+                        font-size: 20px;
+                        font-weight: 500;
+                        color: var(--accent);
+                      "
+                    >
                       Please provide as much detail as possible.
                     </h1>
                   </div>
@@ -2102,7 +2245,7 @@
             style="padding: 20px; font-size: 1.1rem; margin-bottom: 15px"
             onclick="proceedToGroceries()"
           >
-            Grocery Pickup
+            Standard Pickup
           </button>
           <button
             class="btn btn-primary"
@@ -2150,10 +2293,14 @@
               "
             >
               To ensure your food is completely fresh,
-              <strong>do not place your food order yet.</strong> <br /><br />
-              You may proceed to reserve your Hero. When your Hero is headed
-              towards the restaurant, they will contact you directly to tell you
-              to submit the food order so they arrive right as it is bagged.
+              <strong
+                >do not place your food order yet from the Restaurant.</strong
+              >
+              <br /><br />
+              You may continue here to reserve your Hero. When your Hero is
+              headed towards the restaurant, Your hero will contact you directly
+              to tell you to submit the food order from the restaurant so your
+              hero arrives right as your order is bagged.
             </p>
           </div>
           <div style="display: flex; gap: 10px; margin-top: auto">
@@ -2181,14 +2328,31 @@
         <h2>Find Nearby Hero</h2>
         <button class="close-btn" onclick="closeAllModals()">✕</button>
       </div>
+
       <div class="modal-content">
-        <div class="form-group">
+        <div class="form-group" style="position: relative">
           <label>YOUR ADRESS</label>
           <input
             type="text"
             id="findHeroAddressInput"
             placeholder="Enter address or landmark..."
+            style="padding-right: 45px"
           />
+          <div
+            id="locationSpinner"
+            class="search-spinner"
+            style="
+              display: none;
+              position: absolute;
+              right: 15px;
+              bottom: 13px;
+              margin: 0;
+              border-color: rgba(238, 97, 28, 0.3);
+              border-top-color: var(--accent);
+              width: 22px;
+              height: 22px;
+            "
+          ></div>
         </div>
 
         <div style="text-align: center; margin: 10px 0">
@@ -2311,30 +2475,6 @@
             class="btn btn-secondary"
             style="background: transparent; border: none; margin-top: 10px"
             onclick="document.getElementById('sosTimelineSelector').style.display='none'"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- SOS TODAY READINESS WARNING -->
-    <div class="soft-prompt-overlay" id="sosReadyWarning">
-      <div class="soft-prompt-box">
-        <h3 style="color: var(--danger)">Stop!</h3>
-        <p>
-          To guarantee ASAP delivery today, your order
-          <strong>must</strong> already be marked as 'Ready for Pickup' by the
-          store.
-        </p>
-        <div class="prompt-actions" style="flex-direction: column">
-          <button class="btn btn-primary" onclick="confirmSOSToday()">
-            Okay, it's ready!
-          </button>
-          <button
-            class="btn btn-secondary"
-            style="background: transparent; border: none; margin-top: 10px"
-            onclick="document.getElementById('sosReadyWarning').style.display='none'"
           >
             Cancel
           </button>
@@ -2980,6 +3120,10 @@
 
             bookingType: window.appState.bookingType,
             sosTimeline: window.appState.targetTimeline || "scheduled",
+            targetDate:
+              window.appState.targetDate ||
+              new Date().toISOString().split("T")[0],
+
             isHotFood: window.appState.isHotFood || false,
             status: "pending_payment",
             createdAt: new Date(),
@@ -3361,8 +3505,8 @@
 
       function initMap() {
         map = L.map("map", { zoomControl: false }).setView(
-          [39.8283, -98.5795],
-          4
+          [41.2333, -95.6111],
+          9
         );
 
         // Dark Mode Tile Layer (CartoDB Dark Matter)
@@ -4447,14 +4591,25 @@
         document.getElementById("locationSoftPrompt").style.display = "none";
 
         if (navigator.geolocation) {
+          const input = document.getElementById("findHeroAddressInput");
+          const spinner = document.getElementById("locationSpinner");
+
+          input.value = "Acquiring GPS...";
+          input.disabled = true;
+          spinner.style.display = "block";
+
           navigator.geolocation.getCurrentPosition(
             (position) => {
               userLat = position.coords.latitude;
               userLng = position.coords.longitude;
-              document.getElementById("findHeroAddressInput").value =
-                "Current Location Acquired";
+              input.value = "Current Location Acquired";
+              input.disabled = false;
+              spinner.style.display = "none";
             },
             (error) => {
+              input.value = "";
+              input.disabled = false;
+              spinner.style.display = "none";
               alert("Location access denied or unavailable.");
             }
           );
@@ -4490,16 +4645,61 @@
           userMarker.setLatLng([userLat, userLng]);
           userMarker.setOpacity(1);
 
-          // Zoom the map to perfectly frame the customer and their selected Hero's hub
+          let nearestMarker = null;
+          let shortestDistance = Infinity;
 
-          const targetBase =
-            window.appState.selectedPinLat && window.appState.selectedPinLng
-              ? [window.appState.selectedPinLat, window.appState.selectedPinLng]
-              : [userLat, userLng];
+          // 1. Scan stationary base markers for the closest Hero
+          if (window.baseMarkers) {
+            for (const markers of Object.values(window.baseMarkers)) {
+              markers.forEach((m) => {
+                const dist = map.distance([userLat, userLng], m.getLatLng());
+                if (dist < shortestDistance) {
+                  shortestDistance = dist;
+                  nearestMarker = m;
+                }
+              });
+            }
+          }
 
-          const bounds = L.latLngBounds([userLat, userLng], targetBase);
+          // 2. Scan live telemetry markers (if bases are bypassed/disabled)
+          if (window.liveMarkers) {
+            for (const m of Object.values(window.liveMarkers)) {
+              const dist = map.distance([userLat, userLng], m.getLatLng());
+              if (dist < shortestDistance) {
+                shortestDistance = dist;
+                nearestMarker = m;
+              }
+            }
+          }
 
-          map.fitBounds(bounds, { padding: [70, 70] });
+          let targetLat = userLat;
+          let targetLng = userLng;
+
+          if (nearestMarker) {
+            const pos = nearestMarker.getLatLng();
+            targetLat = pos.lat;
+            targetLng = pos.lng;
+          } else if (
+            window.appState.selectedPinLat &&
+            window.appState.selectedPinLng
+          ) {
+            targetLat = window.appState.selectedPinLat;
+            targetLng = window.appState.selectedPinLng;
+          }
+
+          // 3. Widen the padding to 150px and enforce a max zoom ceiling of 13
+          const bounds = L.latLngBounds(
+            [userLat, userLng],
+            [targetLat, targetLng]
+          );
+          map.fitBounds(bounds, { padding: [150, 150], maxZoom: 13 });
+
+          // 4. Programmatically "click" the nearest pin to auto-slide the bottom sheet
+          if (nearestMarker) {
+            setTimeout(() => {
+              nearestMarker.fire("click");
+            }, 350);
+          }
         }, 1500);
       }
 
@@ -5534,20 +5734,22 @@
 
       window.handleSOSTimeline = function (choice) {
         document.getElementById("sosTimelineSelector").style.display = "none";
+
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
         if (choice === "today") {
-          document.getElementById("sosReadyWarning").style.display = "flex";
+          window.appState.targetDate = now.toISOString().split("T")[0];
+          window.appState.targetTimeline = "asap_today";
+          document.getElementById("timelineDisplay").innerText = "Today";
+          openAddModal("emergency");
         } else {
+          window.appState.targetDate = tomorrow.toISOString().split("T")[0];
           window.appState.targetTimeline = "first_tomorrow";
           document.getElementById("timelineDisplay").innerText = "Tomorrow";
           openAddModal("emergency");
         }
-      };
-
-      window.confirmSOSToday = function () {
-        document.getElementById("sosReadyWarning").style.display = "none";
-        window.appState.targetTimeline = "asap_today";
-        document.getElementById("timelineDisplay").innerText = "Today";
-        openAddModal("emergency");
       };
 
       window.evalDriverStateForTimeline = async function () {
@@ -5710,6 +5912,9 @@
         document
           .querySelectorAll(".cal-day")
           .forEach((el) => el.classList.remove("selected"));
+
+        window.appState.targetDate = dateStr;
+
         document.getElementById(`calDay_${dateStr}`).classList.add("selected");
 
         const container = document.getElementById("waveAccordionContainer");
@@ -6276,6 +6481,38 @@
         }
       };
 
+      window.sendCommunityMessage = async function () {
+        const input = document.getElementById("communityTextInput");
+        const text = input.value.trim();
+
+        if (!text && !window.communityPendingImage) return;
+
+        if (!window.appState || !window.appState.userId) {
+          alert("Please sign in to post to the Neighborhood Hub.");
+          return;
+        }
+
+        const authorName =
+          document.getElementById("customerNameInput")?.value || "Neighbor";
+
+        try {
+          await window.addDoc(window.collection(window.db, "community_posts"), {
+            userId: window.appState.userId,
+            authorName: authorName,
+            text: text,
+            imageUrl: window.communityPendingImage || null,
+            timestamp: window.serverTimestamp(),
+            status: "active",
+          });
+
+          input.value = "";
+          window.removeCommunityImage();
+        } catch (e) {
+          console.error("Failed to post message:", e);
+          alert("Failed to post message. Please try again.");
+        }
+      };
+
       window.initCommunityListener = function () {
         if (window.communityUnsubscribe) window.communityUnsubscribe();
 
@@ -6397,6 +6634,75 @@
       window.addEventListener("appinstalled", () => {
         dismissPwaPrompt();
       });
+
+      // --- IOS INSTALL LOGIC ---
+      let currentIosStep = 1;
+
+      function checkAndPromptIOS() {
+        const isIos =
+          /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.navigator.standalone === true;
+
+        if (isIos && !isStandalone) {
+          const installBtn = document.getElementById("pwaInstallBtn");
+          if (installBtn) {
+            installBtn.innerText = "Install Guide";
+
+            // Clone and replace to strip the Android event listener and safely inject our iOS logic
+            const newBtn = installBtn.cloneNode(true);
+            installBtn.parentNode.replaceChild(newBtn, installBtn);
+
+            newBtn.addEventListener("click", () => {
+              document
+                .getElementById("iosInstallModal")
+                .classList.add("active");
+              document.getElementById("iosInstallGrid").style.display = "grid";
+              document
+                .getElementById("iosCarouselView")
+                .classList.remove("active");
+              dismissPwaPrompt();
+            });
+          }
+
+          setTimeout(() => {
+            document.getElementById("pwaInstallPrompt").style.top =
+              "env(safe-area-inset-top, 20px)";
+          }, 2000);
+        }
+      }
+
+      window.addEventListener("load", checkAndPromptIOS);
+
+      window.openIosCarousel = function (stepIndex) {
+        currentIosStep = stepIndex;
+        document.getElementById("iosInstallGrid").style.display = "none";
+        document.getElementById("iosCarouselView").classList.add("active");
+        updateIosCarouselImage();
+      };
+
+      window.closeIosInstallModal = function () {
+        document.getElementById("iosInstallModal").classList.remove("active");
+      };
+
+      window.prevIosCarousel = function () {
+        currentIosStep--;
+        if (currentIosStep < 1) currentIosStep = 4;
+        updateIosCarouselImage();
+      };
+
+      window.nextIosCarousel = function () {
+        currentIosStep++;
+        if (currentIosStep > 4) currentIosStep = 1;
+        updateIosCarouselImage();
+      };
+
+      function updateIosCarouselImage() {
+        document.getElementById(
+          "iosCarouselImage"
+        ).src = `install${currentIosStep}.jpg`;
+      }
     </script>
   </body>
 </html>
