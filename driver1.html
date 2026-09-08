@@ -2829,8 +2829,21 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           const isActive = AppState.selectedQueueDate === dateStr;
 
+          const hasOrders = AppState.allPendingOrders.some((o) => {
+            const oDate =
+              o.targetDate || new Date().toISOString().split("T")[0];
+            return oDate === dateStr;
+          });
+
+          const dotHtml = hasOrders
+            ? `<div style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; background: ${
+                isActive ? "#ffffff" : "var(--accent)"
+              }; border-radius: 50%; border: 2px solid var(--bg); box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>`
+            : "";
+
           html += `
             <button onclick="window.selectQueueDate('${dateStr}')" style="
+              position: relative;
               flex-shrink: 0; 
               padding: 10px 16px; 
               border-radius: 20px; 
@@ -2845,7 +2858,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               font-size: 0.85rem; 
               cursor: pointer; 
               transition: all 0.2s;
-            ">${label}</button>
+            ">${label}${dotHtml}</button>
           `;
         }
         container.innerHTML = html;
@@ -3667,6 +3680,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           window.filterQueueByDate();
 
+          window.renderQueueDaySelector();
+
           // Force the dashboard to redraw dynamically if they are actively looking at the triage screen
           if (AppState.workflowPhase === "triage") {
             updateDashboardUI();
@@ -3729,6 +3744,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
 
             updateDashboardUI(); // Render the restored active route
+
+            window.filterQueueByDate();
           } else {
             AppState.isOnline = false;
             await window.setDoc(
