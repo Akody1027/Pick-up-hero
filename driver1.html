@@ -1532,6 +1532,18 @@
       </div>
 
       <div class="sheet-content">
+        <div
+          id="queueDaySelector"
+          style="
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            scrollbar-width: none;
+          "
+        ></div>
+
         <h2
           id="deliveryTimelineHeader"
           style="
@@ -2539,6 +2551,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         pendingOrders: 0,
         triageQueue: [], // The generous net array
         activeQueue: [], // Final confirmed route
+        allPendingOrders: [],
+        selectedQueueDate: new Date().toISOString().split("T")[0],
+
         baseLocations: [],
         baseMarkers: [],
         tempMarker: null,
@@ -2781,6 +2796,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 initMap();
               }
               setTimeout(() => {
+                window.renderQueueDaySelector();
                 listenForPendingOrders();
                 loadDriverSettings();
                 window.initializeShiftState();
@@ -2792,6 +2808,67 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             hasBooted = false;
           }
         });
+      };
+
+      window.renderQueueDaySelector = function () {
+        const container = document.getElementById("queueDaySelector");
+        if (!container) return;
+
+        let html = "";
+        const today = new Date();
+        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(today);
+          d.setDate(today.getDate() + i);
+          const dateStr = d.toISOString().split("T")[0];
+
+          let label = days[d.getDay()];
+          if (i === 0) label = "Today";
+          if (i === 1) label = "Tmrw";
+
+          const isActive = AppState.selectedQueueDate === dateStr;
+
+          html += `
+            <button onclick="window.selectQueueDate('${dateStr}')" style="
+              flex-shrink: 0; 
+              padding: 10px 16px; 
+              border-radius: 20px; 
+              border: 1px solid ${
+                isActive ? "var(--accent)" : "var(--border)"
+              }; 
+              background: ${
+                isActive ? "var(--accent)" : "var(--surface-elevated)"
+              }; 
+              color: ${isActive ? "white" : "var(--text-muted)"}; 
+              font-weight: 700; 
+              font-size: 0.85rem; 
+              cursor: pointer; 
+              transition: all 0.2s;
+            ">${label}</button>
+          `;
+        }
+        container.innerHTML = html;
+      };
+
+      window.selectQueueDate = function (dateStr) {
+        AppState.selectedQueueDate = dateStr;
+        window.renderQueueDaySelector();
+        window.filterQueueByDate();
+      };
+
+      window.filterQueueByDate = function () {
+        AppState.triageQueue = AppState.allPendingOrders.filter((o) => {
+          const oDate = o.targetDate || new Date().toISOString().split("T")[0];
+          return oDate === AppState.selectedQueueDate;
+        });
+
+        if (
+          AppState.workflowPhase === "triage" ||
+          AppState.workflowPhase === "idle"
+        ) {
+          updateDashboardUI();
+        }
       };
 
       window.loadDriverSettings = async function () {
@@ -3502,6 +3579,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   pickupNumber: stop.pickupNumber || "",
                   sosTimeline: data.sosTimeline || "scheduled",
 
+                  targetDate: data.targetDate || "",
+
                   pin: stop.pin || "",
 
                   isHotFood: data.isHotFood || false,
@@ -3535,6 +3614,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   shiftId: data.shiftId || null,
 
                   sosTimeline: data.sosTimeline || "scheduled",
+
+                  targetDate: data.targetDate || "",
                 });
               } else {
                 console.warn(
@@ -3581,8 +3662,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           AppState.isInitialLoad = false;
 
-          AppState.triageQueue = newOrders;
+          AppState.allPendingOrders = newOrders;
           AppState.pendingOrders = snapshot.docs.length;
+
+          window.filterQueueByDate();
 
           // Force the dashboard to redraw dynamically if they are actively looking at the triage screen
           if (AppState.workflowPhase === "triage") {
@@ -4587,15 +4670,25 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
 
         // Determine if any active order is scheduled for today
-        const isToday = activeData.some(
-          (item) =>
-            item.sosTimeline === "today" || item.sosTimeline === "asap_today"
-        );
+
         if (timelineHeader) {
           timelineHeader.style.display = "block";
-          timelineHeader.innerText = isToday
-            ? "DELIVERY FOR TODAY"
-            : "DELIVERY FOR TOMORROW";
+
+          let displayDate = AppState.selectedQueueDate;
+          if (activeData.length > 0 && activeData[0].targetDate) {
+            displayDate = activeData[0].targetDate;
+          }
+
+          const [yyyy, mm, dd] = displayDate.split("-");
+          const dateObj = new Date(yyyy, mm - 1, dd);
+          const formattedDate = dateObj.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "short",
+            day: "numeric",
+          });
+
+          timelineHeader.innerText =
+            "DELIVERY FOR " + formattedDate.toUpperCase();
         }
 
         const customerMap = {};
