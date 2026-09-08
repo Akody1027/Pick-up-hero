@@ -293,7 +293,9 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 20px 20px 15px;
+
+        padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px 15px 20px;
+
         border-bottom: 1px solid var(--border);
         background: var(--surface);
       }
@@ -929,6 +931,29 @@
         opacity: 1 !important;
       }
 
+      .receipt-btn {
+        position: absolute;
+        right: 20px;
+        top: calc(max(env(safe-area-inset-top, 20px), 35px) + 65px);
+        z-index: 1500;
+        background: var(--surface);
+        border: 1px solid var(--accent);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        color: var(--accent);
+      }
+      .receipt-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+      }
+
       /* --- PRIORITY TOOLTIP --- */
       .tooltip-icon-btn {
         width: 25px;
@@ -1519,6 +1544,19 @@
         <div class="badge" id="customerNotificationBadge">0</div>
       </button>
     </div>
+
+    <!-- FLOATING RECEIPT DASHBOARD BUTTON -->
+    <button
+      class="receipt-btn"
+      id="activeOrderReceiptBtn"
+      onclick="openOrderDashboard()"
+    >
+      <img
+        src="recicon.png"
+        style="width: 26px; height: 26px; object-fit: contain"
+        alt="Receipt"
+      />
+    </button>
 
     <!-- FLOATING BOTTOM SHEET (Active Status / Announcements) -->
 
@@ -2820,6 +2858,264 @@
       </div>
     </div>
 
+    <!-- ACTIVE ORDER DASHBOARD MODAL -->
+    <div id="orderDashboardModal" class="modal">
+      <div class="modal-header">
+        <h2>Order Dashboard</h2>
+        <button class="close-btn" onclick="closeOrderDashboard()">✕</button>
+      </div>
+      <div class="modal-content">
+        <div
+          style="
+            background: var(--surface-elevated);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            text-align: center;
+          "
+        >
+          <h3
+            id="dashHeroName"
+            style="color: var(--accent); margin-bottom: 5px"
+          >
+            Hero
+          </h3>
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 0.9rem;
+              margin-bottom: 10px;
+            "
+          >
+            Target:
+            <strong id="dashTargetDate" style="color: var(--text)"></strong>
+          </p>
+          <div
+            style="
+              font-size: 0.85rem;
+              color: var(--text-muted);
+              background: var(--bg);
+              padding: 10px;
+              border-radius: 8px;
+            "
+          >
+            <strong>Final Delivery:</strong><br />
+            <span id="dashDeliveryAddress" style="color: var(--text)"></span>
+          </div>
+        </div>
+
+        <h3
+          style="
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+          "
+        >
+          Pickup Locations
+        </h3>
+        <div id="dashStopsContainer">
+          <!-- Dynamically injected stops go here -->
+        </div>
+
+        <button
+          id="dashSaveBtn"
+          class="btn btn-primary"
+          onclick="saveOrderUpdates()"
+          style="margin-top: 10px; margin-bottom: 15px"
+        >
+          Save Updates
+        </button>
+
+        <button
+          id="dashDownloadBtn"
+          class="btn btn-secondary"
+          onclick="downloadReceipt()"
+          style="
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 20px; height: 20px; fill: currentColor"
+          >
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+          </svg>
+          Download PDF Receipt
+        </button>
+      </div>
+    </div>
+
+    <!-- HIDDEN RECEIPT TEMPLATE FOR PDF EXPORT -->
+    <div
+      id="receiptTemplateContainer"
+      style="
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+        width: 800px;
+        z-index: -1000;
+      "
+    >
+      <div
+        id="receiptTemplate"
+        style="
+          background: #ffffff;
+          color: #000000;
+          padding: 40px;
+          font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+          box-sizing: border-box;
+        "
+      >
+        <div style="text-align: center; margin-bottom: 30px">
+          <img
+            src="heroimg192.png"
+            style="
+              width: 80px;
+              height: 80px;
+              border-radius: 12px;
+              margin-bottom: 10px;
+            "
+            crossorigin="anonymous"
+          />
+          <h1
+            style="
+              color: #ee611c;
+              margin: 0;
+              font-size: 28px;
+              text-transform: uppercase;
+            "
+          >
+            Pick Up Hero
+          </h1>
+          <p style="color: #555555; margin: 5px 0 0 0; font-size: 14px">
+            Official Delivery Receipt
+          </p>
+        </div>
+        <hr
+          style="
+            border: none;
+            border-top: 2px solid #eeeeee;
+            margin-bottom: 20px;
+          "
+        />
+
+        <table style="width: 100%; margin-bottom: 20px; font-size: 14px">
+          <tr>
+            <td style="padding-bottom: 8px">
+              <strong>Date:</strong> <span id="receiptDate"></span>
+            </td>
+            <td style="padding-bottom: 8px; text-align: right">
+              <strong id="receiptOrderId"></strong>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-bottom: 8px">
+              <strong>Hero Assigned:</strong> <span id="receiptDriver"></span>
+            </td>
+            <td style="padding-bottom: 8px; text-align: right">
+              <strong>Status:</strong> Paid
+            </td>
+          </tr>
+        </table>
+
+        <div
+          style="
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <h3 style="margin-top: 0; color: #333333; margin-bottom: 15px">
+            Route Details
+          </h3>
+          <div
+            id="receiptStops"
+            style="margin-bottom: 15px; color: #555555"
+          ></div>
+          <div
+            style="
+              border-top: 1px solid #dddddd;
+              padding-top: 15px;
+              color: #555555;
+            "
+          >
+            <strong>Final Delivery Destination:</strong><br />
+            <span id="receiptDelivery"></span>
+          </div>
+        </div>
+
+        <table style="width: 100%; font-size: 16px; border-collapse: collapse">
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #eeeeee">
+              Delivery Base & Premium Fees
+            </td>
+            <td
+              style="
+                padding: 10px 0;
+                text-align: right;
+                border-bottom: 1px solid #eeeeee;
+              "
+              id="receiptBase"
+            ></td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #eeeeee">
+              Hero Tip
+            </td>
+            <td
+              style="
+                padding: 10px 0;
+                text-align: right;
+                border-bottom: 1px solid #eeeeee;
+              "
+              id="receiptTip"
+            ></td>
+          </tr>
+          <tr>
+            <td
+              style="
+                padding: 15px 0;
+                font-weight: bold;
+                font-size: 18px;
+                color: #ee611c;
+              "
+            >
+              Total Paid
+            </td>
+            <td
+              style="
+                padding: 15px 0;
+                font-weight: bold;
+                font-size: 18px;
+                text-align: right;
+                color: #ee611c;
+              "
+              id="receiptTotal"
+            ></td>
+          </tr>
+        </table>
+
+        <div
+          style="
+            text-align: center;
+            margin-top: 40px;
+            color: #999999;
+            font-size: 12px;
+          "
+        >
+          Thank you for trusting Pick Up Hero!<br />
+          pickupherosolutions@gmail.com
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <!-- LEAFLET MAP JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -3729,6 +4025,9 @@
 
         document.getElementById("addModal").classList.remove("active");
         document.getElementById("settingsModal").classList.remove("active");
+
+        const dashModal = document.getElementById("orderDashboardModal");
+        if (dashModal) dashModal.classList.remove("active");
 
         const findHeroModal = document.getElementById("findHeroModal");
         if (findHeroModal) findHeroModal.classList.remove("active");
@@ -6601,6 +6900,192 @@
 
       // --- PWA INSTALLATION PROMPT ---
       let deferredInstallPrompt = null;
+
+      window.openOrderDashboard = async function () {
+        closeAllModals();
+        document.getElementById("orderDashboardModal").classList.add("active");
+
+        const saveBtn = document.getElementById("dashSaveBtn");
+        const dlBtn = document.getElementById("dashDownloadBtn");
+        const order = window.appState.activeOrder;
+
+        if (!order) {
+          document.getElementById("dashHeroName").innerText = "No Active Order";
+          document.getElementById("dashTargetDate").innerText = "--";
+          document.getElementById("dashDeliveryAddress").innerText =
+            "No delivery in progress.";
+          document.getElementById("dashStopsContainer").innerHTML = `
+            <div style="text-align: center; color: var(--text-muted); padding: 40px 10px; font-size: 0.95rem;">
+              You do not have any pending or active orders at this time.
+            </div>
+          `;
+          if (saveBtn) saveBtn.style.display = "none";
+          if (dlBtn) dlBtn.style.display = "none";
+          return;
+        }
+
+        // Restore button visibility if an order exists
+        if (saveBtn) saveBtn.style.display = "block";
+        if (dlBtn) dlBtn.style.display = "flex";
+
+        const driverName = window.appState.driverNameCache || "Hero";
+        document.getElementById("dashHeroName").innerText = driverName;
+
+        let dDate = order.targetDate || "Today";
+        document.getElementById("dashTargetDate").innerText = dDate;
+        document.getElementById("dashDeliveryAddress").innerText =
+          order.deliveryAddress || "Not specified";
+
+        const stopsContainer = document.getElementById("dashStopsContainer");
+        let html = "";
+        if (order.stops && Array.isArray(order.stops)) {
+          order.stops.forEach((stop, i) => {
+            html += `
+              <div class="node-card" style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <h4 style="color: var(--accent); margin-bottom: 10px;">Stop ${
+                  i + 1
+                }: ${stop.storeName}</h4>
+                <div class="form-group">
+                  <label>Order Number</label>
+                  <input type="text" id="dash_ordNum_${i}" value="${
+              stop.pickupNumber || ""
+            }" placeholder="Optional" />
+                </div>
+                <div class="form-group">
+                  <label>Pickup PIN</label>
+                  <input type="text" id="dash_pin_${i}" value="${
+              stop.pin || ""
+            }" placeholder="Optional" />
+                </div>
+                <div class="form-group">
+                  <label>Curbside Instructions</label>
+                  <textarea id="dash_inst_${i}" rows="2" placeholder="Optional">${
+              stop.curbsideInstructions || ""
+            }</textarea>
+                </div>
+              </div>
+            `;
+          });
+        }
+        stopsContainer.innerHTML = html;
+      };
+
+      window.closeOrderDashboard = function () {
+        document
+          .getElementById("orderDashboardModal")
+          .classList.remove("active");
+
+        const sheet = document.getElementById("trackerSheet");
+        if (window.appState && window.appState.currentOrderId) {
+          sheet.style.transform = "translateY(0)";
+        }
+      };
+
+      window.saveOrderUpdates = async function () {
+        const order = window.appState.activeOrder;
+        if (!order || !window.appState.currentOrderId) return;
+
+        const btn = document.getElementById("dashSaveBtn");
+        const origText = btn.innerText;
+        btn.innerText = "Saving...";
+        btn.disabled = true;
+
+        try {
+          const updatedStops = [...order.stops];
+          updatedStops.forEach((stop, i) => {
+            const ordNumEl = document.getElementById(`dash_ordNum_${i}`);
+            const pinEl = document.getElementById(`dash_pin_${i}`);
+            const instEl = document.getElementById(`dash_inst_${i}`);
+            if (ordNumEl) stop.pickupNumber = ordNumEl.value.trim();
+            if (pinEl) stop.pin = pinEl.value.trim();
+            if (instEl) stop.curbsideInstructions = instEl.value.trim();
+          });
+
+          await window.updateDoc(
+            window.doc(window.db, "orders", window.appState.currentOrderId),
+            {
+              stops: updatedStops,
+            }
+          );
+
+          btn.innerText = "Saved!";
+          btn.classList.replace("btn-primary", "btn-success");
+          setTimeout(() => {
+            btn.innerText = origText;
+            btn.classList.replace("btn-success", "btn-primary");
+            btn.disabled = false;
+          }, 2000);
+        } catch (e) {
+          console.error("Save updates failed:", e);
+          btn.innerText = origText;
+          btn.disabled = false;
+          alert("Failed to save updates.");
+        }
+      };
+
+      window.downloadReceipt = function () {
+        const order = window.appState.activeOrder;
+        if (!order) return;
+
+        const driverName = window.appState.driverNameCache || "Hero";
+        const orderIdShort = window.appState.currentOrderId
+          .substring(0, 8)
+          .toUpperCase();
+
+        document.getElementById("receiptOrderId").innerText =
+          "Order ID: " + orderIdShort;
+        document.getElementById("receiptDate").innerText = new Date(
+          order.createdAt.toDate()
+        ).toLocaleDateString();
+        document.getElementById("receiptDriver").innerText = driverName;
+        document.getElementById("receiptDelivery").innerText =
+          order.deliveryAddress;
+
+        let stopsHtml = "";
+        order.stops.forEach((stop, i) => {
+          stopsHtml += `<div style="margin-bottom: 8px;"><strong>Stop ${
+            i + 1
+          }:</strong> ${stop.storeName}</div>`;
+        });
+        document.getElementById("receiptStops").innerHTML = stopsHtml;
+
+        const baseFee = order.totalCost - (order.tipAmount || 0);
+        document.getElementById("receiptBase").innerText =
+          "$" + baseFee.toFixed(2);
+        document.getElementById("receiptTip").innerText =
+          "$" + (order.tipAmount || 0).toFixed(2);
+        document.getElementById("receiptTotal").innerText =
+          "$" + order.totalCost.toFixed(2);
+
+        const element = document.getElementById("receiptTemplate");
+
+        const btn = document.getElementById("dashDownloadBtn");
+        const origText = btn.innerHTML;
+        btn.innerHTML =
+          '<div class="search-spinner" style="width: 16px; height: 16px; border-width: 2px;"></div> Generating PDF...';
+        btn.disabled = true;
+
+        html2pdf()
+          .set({
+            margin: [10, 10, 10, 10],
+            filename: `PickUpHero_Receipt_${orderIdShort}.pdf`,
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          })
+          .from(element)
+          .save()
+          .then(() => {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+          })
+          .catch((err) => {
+            console.error("PDF generation failed:", err);
+            btn.innerHTML = origText;
+            btn.disabled = false;
+            alert("Failed to generate PDF.");
+          });
+      };
 
       window.addEventListener("beforeinstallprompt", (e) => {
         e.preventDefault();
