@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>Pick Up Hero - Delivery</title>
-    <meta 
+    <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
@@ -18,8 +18,8 @@
           .setAttribute(
             "content",
             "width=450, user-scalable=no, viewport-fit=cover"
-          ); 
-      } 
+          );
+      }
     </script>
 
     <link rel="manifest" href="manifest-customer.json" />
@@ -1101,9 +1101,8 @@
         margin-top: 10px;
         border: 1px solid var(--border);
       }
-      
-      
-            /* --- IOS INSTALL MODAL --- */
+
+      /* --- IOS INSTALL MODAL --- */
       .ios-install-modal {
         display: none;
         position: fixed;
@@ -1194,15 +1193,6 @@
         background: var(--accent);
         border-color: var(--accent);
       }
-
-      
-      
-      
-      
-      
-      
-      
-      
     </style>
   </head>
   <body>
@@ -1287,13 +1277,13 @@
         </button>
       </div>
     </div>
-    
-    
-    
-        <!-- IOS PWA INSTALL MODAL -->
+
+    <!-- IOS PWA INSTALL MODAL -->
     <div id="iosInstallModal" class="ios-install-modal">
-      <button class="ios-install-close" onclick="closeIosInstallModal()">✕</button>
-      
+      <button class="ios-install-close" onclick="closeIosInstallModal()">
+        ✕
+      </button>
+
       <div id="iosInstallGrid" class="ios-install-grid">
         <img src="install1.jpg" onclick="openIosCarousel(1)" alt="Step 1" />
         <img src="install2.jpg" onclick="openIosCarousel(2)" alt="Step 2" />
@@ -1304,17 +1294,15 @@
       <div id="iosCarouselView" class="ios-carousel-view">
         <img id="iosCarouselImage" src="install1.jpg" alt="Install Step" />
         <div class="ios-carousel-controls">
-          <button class="ios-carousel-btn" onclick="prevIosCarousel()">←</button>
-          <button class="ios-carousel-btn" onclick="nextIosCarousel()">→</button>
+          <button class="ios-carousel-btn" onclick="prevIosCarousel()">
+            ←
+          </button>
+          <button class="ios-carousel-btn" onclick="nextIosCarousel()">
+            →
+          </button>
         </div>
       </div>
     </div>
-
-    
-    
-    
-    
-    
 
     <audio
       id="customerAlertSound"
@@ -3132,6 +3120,10 @@
 
             bookingType: window.appState.bookingType,
             sosTimeline: window.appState.targetTimeline || "scheduled",
+            targetDate:
+              window.appState.targetDate ||
+              new Date().toISOString().split("T")[0],
+
             isHotFood: window.appState.isHotFood || false,
             status: "pending_payment",
             createdAt: new Date(),
@@ -5742,11 +5734,18 @@
 
       window.handleSOSTimeline = function (choice) {
         document.getElementById("sosTimelineSelector").style.display = "none";
+
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
         if (choice === "today") {
+          window.appState.targetDate = now.toISOString().split("T")[0];
           window.appState.targetTimeline = "asap_today";
           document.getElementById("timelineDisplay").innerText = "Today";
           openAddModal("emergency");
         } else {
+          window.appState.targetDate = tomorrow.toISOString().split("T")[0];
           window.appState.targetTimeline = "first_tomorrow";
           document.getElementById("timelineDisplay").innerText = "Tomorrow";
           openAddModal("emergency");
@@ -5913,6 +5912,9 @@
         document
           .querySelectorAll(".cal-day")
           .forEach((el) => el.classList.remove("selected"));
+
+        window.appState.targetDate = dateStr;
+
         document.getElementById(`calDay_${dateStr}`).classList.add("selected");
 
         const container = document.getElementById("waveAccordionContainer");
@@ -6632,76 +6634,75 @@
       window.addEventListener("appinstalled", () => {
         dismissPwaPrompt();
       });
-      
-      
-            // --- IOS INSTALL LOGIC ---
+
+      // --- IOS INSTALL LOGIC ---
       let currentIosStep = 1;
 
       function checkAndPromptIOS() {
-        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        const isIos =
+          /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.navigator.standalone === true;
 
         if (isIos && !isStandalone) {
           const installBtn = document.getElementById("pwaInstallBtn");
           if (installBtn) {
             installBtn.innerText = "Install Guide";
-            
+
             // Clone and replace to strip the Android event listener and safely inject our iOS logic
             const newBtn = installBtn.cloneNode(true);
             installBtn.parentNode.replaceChild(newBtn, installBtn);
-            
+
             newBtn.addEventListener("click", () => {
-              document.getElementById("iosInstallModal").classList.add("active");
+              document
+                .getElementById("iosInstallModal")
+                .classList.add("active");
               document.getElementById("iosInstallGrid").style.display = "grid";
-              document.getElementById("iosCarouselView").classList.remove("active");
+              document
+                .getElementById("iosCarouselView")
+                .classList.remove("active");
               dismissPwaPrompt();
             });
           }
 
           setTimeout(() => {
-            document.getElementById("pwaInstallPrompt").style.top = "env(safe-area-inset-top, 20px)";
+            document.getElementById("pwaInstallPrompt").style.top =
+              "env(safe-area-inset-top, 20px)";
           }, 2000);
         }
       }
 
       window.addEventListener("load", checkAndPromptIOS);
 
-      window.openIosCarousel = function(stepIndex) {
+      window.openIosCarousel = function (stepIndex) {
         currentIosStep = stepIndex;
         document.getElementById("iosInstallGrid").style.display = "none";
         document.getElementById("iosCarouselView").classList.add("active");
         updateIosCarouselImage();
       };
 
-      window.closeIosInstallModal = function() {
+      window.closeIosInstallModal = function () {
         document.getElementById("iosInstallModal").classList.remove("active");
       };
 
-      window.prevIosCarousel = function() {
+      window.prevIosCarousel = function () {
         currentIosStep--;
         if (currentIosStep < 1) currentIosStep = 4;
         updateIosCarouselImage();
       };
 
-      window.nextIosCarousel = function() {
+      window.nextIosCarousel = function () {
         currentIosStep++;
         if (currentIosStep > 4) currentIosStep = 1;
         updateIosCarouselImage();
       };
 
-      function updateIosCarouselImage() { 
-        document.getElementById("iosCarouselImage").src = `install${currentIosStep}.jpg`;
+      function updateIosCarouselImage() {
+        document.getElementById(
+          "iosCarouselImage"
+        ).src = `install${currentIosStep}.jpg`;
       }
-
-      
-      
-      
-      
-      
-      
-      
-      
-      
     </script>
   </body>
 </html>
