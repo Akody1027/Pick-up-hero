@@ -14,13 +14,13 @@
       // zoom the entire interface out to fit the physical screen.
       if (window.screen.width < 1500) {
         document
-          .querySelector('meta[name="viewport"]')
+          .querySelector('meta[name="viewport"]') 
           .setAttribute(
             "content",
             "width=450, user-scalable=no, viewport-fit=cover"
           );
       }
-    </script>
+    </script> 
 
     <link rel="manifest" href="manifest-customer.json" />
     <meta name="theme-color" content="#ee611c" />
@@ -1217,6 +1217,69 @@
       .ios-carousel-btn:active {
         background: var(--accent);
         border-color: var(--accent);
+      }
+
+      /* --- POST DELIVERY MODAL --- */
+      .post-delivery-panel {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 15px;
+      }
+      .post-delivery-panel.active {
+        display: flex;
+        animation: fadeInFadeUp 0.4s ease forwards;
+      }
+      @keyframes fadeInFadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .tip-btn-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        width: 100%;
+        margin-top: 10px;
+      }
+      .tip-btn {
+        background: var(--surface-elevated);
+        border: 1px solid var(--accent);
+        color: var(--text);
+        padding: 15px 0;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .tip-btn:active {
+        background: var(--accent);
+        color: white;
+      }
+      .star-rating-container {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin: 15px 0;
+      }
+      .star-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 2.5rem;
+        cursor: pointer;
+        transition: color 0.2s;
+        padding: 0 5px;
+      }
+      .star-btn.active {
+        color: #fbbf24; /* Golden yellow */
       }
     </style>
   </head>
@@ -3114,6 +3177,117 @@
       </div>
     </div>
 
+    <!-- POST DELIVERY MODAL (TIP & REVIEW) -->
+    <div id="postDeliveryModal" class="modal" style="z-index: 9999">
+      <div
+        class="modal-content"
+        style="justify-content: center; padding-top: 40px"
+      >
+        <!-- PHASE 1: TIPPING -->
+        <div id="tipPhasePanel" class="post-delivery-panel active">
+          <img
+            id="postDeliveryAvatar"
+            src="heroimg192.png"
+            style="
+              width: 90px;
+              height: 90px;
+              border-radius: 50%;
+              border: 3px solid var(--accent);
+              box-shadow: 0 4px 15px rgba(238, 97, 28, 0.4);
+              object-fit: cover;
+            "
+          />
+          <h2
+            style="color: var(--success); font-size: 1.8rem; margin-top: 10px"
+          >
+            Delivery Complete!
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem">
+            Your items have been safely delivered. Would you like to add a tip
+            for
+            <span
+              id="postDeliveryDriverName"
+              style="color: var(--text); font-weight: bold"
+              >your Hero</span
+            >?
+          </p>
+
+          <div class="tip-btn-grid">
+            <button class="tip-btn" onclick="processTip(5.00)">$5</button>
+            <button class="tip-btn" onclick="processTip(10.00)">$10</button>
+            <button class="tip-btn" onclick="processTip(20.00)">$20</button>
+          </div>
+
+          <button
+            class="btn btn-secondary"
+            style="
+              margin-top: 15px;
+              border: none;
+              background: transparent;
+              color: var(--text-muted);
+            "
+            onclick="skipTipAndProceed()"
+          >
+            No Thanks
+          </button>
+        </div>
+
+        <!-- PHASE 2: REVIEW -->
+        <div id="reviewPhasePanel" class="post-delivery-panel">
+          <div
+            style="
+              width: 60px;
+              height: 60px;
+              background: rgba(238, 97, 28, 0.1);
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: var(--accent);
+              margin-bottom: 10px;
+            "
+          >
+            <svg
+              viewBox="0 0 24 24"
+              style="width: 30px; height: 30px; fill: currentColor"
+            >
+              <path
+                d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+              />
+            </svg>
+          </div>
+          <h2 style="font-size: 1.5rem">Rate Your Hero</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem">
+            How was your delivery experience?
+          </p>
+
+          <div class="star-rating-container" id="starRatingContainer">
+            <button class="star-btn" onclick="setRating(1)">★</button>
+            <button class="star-btn" onclick="setRating(2)">★</button>
+            <button class="star-btn" onclick="setRating(3)">★</button>
+            <button class="star-btn" onclick="setRating(4)">★</button>
+            <button class="star-btn" onclick="setRating(5)">★</button>
+          </div>
+
+          <div class="form-group" style="width: 100%">
+            <textarea
+              id="reviewFeedbackInput"
+              rows="3"
+              placeholder="Leave a compliment or feedback (optional)..."
+            ></textarea>
+          </div>
+
+          <button
+            id="submitReviewBtn"
+            class="btn btn-primary"
+            onclick="submitReviewAndClose()"
+          >
+            Submit & Finish
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <!-- LEAFLET MAP JS -->
@@ -4496,8 +4670,7 @@
                 if (cancelBtn) cancelBtn.style.display = "none";
               } else if (data.status === "completed") {
                 title.innerText = "Delivery Complete";
-                subtitle.innerText =
-                  "Thank you for using Pick Up Hero, See you next time! ....";
+                subtitle.innerText = "Thank you for using Pick Up Hero!";
 
                 const timeline = document.getElementById("activeStopsTimeline");
                 if (timeline) timeline.style.display = "none";
@@ -4507,9 +4680,23 @@
                 );
                 if (defaultActions) defaultActions.style.display = "none";
 
-                setTimeout(() => {
-                  window.location.reload();
-                }, 6000);
+                // INTERCEPT: Hide the tracker sheet and lock the screen with the Tip Modal
+                document.getElementById("trackerSheet").style.transform =
+                  "translateY(150%)";
+
+                const driverName =
+                  window.appState.driverNameCache || "your Hero";
+                document.getElementById("postDeliveryDriverName").innerText =
+                  driverName;
+
+                const avatarImg = document.querySelector(".driver-avatar").src;
+                if (avatarImg)
+                  document.getElementById("postDeliveryAvatar").src = avatarImg;
+
+                closeAllModals();
+                document
+                  .getElementById("postDeliveryModal")
+                  .classList.add("active");
               } else if (data.status === "cancelled") {
                 if (data.cancelReason === "Cancelled by customer.") {
                   title.innerText = "Order Cancelled";
@@ -7085,6 +7272,95 @@
             btn.disabled = false;
             alert("Failed to generate PDF.");
           });
+      };
+
+      // --- POST-DELIVERY TIPPING & REVIEW LOGIC ---
+      window.postDeliveryState = {
+        rating: 0,
+        tipAmount: 0,
+      };
+
+      window.processTip = async function (amount) {
+        window.postDeliveryState.tipAmount = amount;
+
+        // Visual feedback on the buttons
+        const buttons = document.querySelectorAll(".tip-btn");
+        buttons.forEach((btn) => {
+          btn.innerText = "Processing...";
+          btn.disabled = true;
+          btn.style.opacity = "0.7";
+        });
+
+        try {
+          // NOTE: In the final step we will wire this to the actual Stripe Cloud Function.
+          // For now, we simulate a successful off-session charge taking 1.5 seconds.
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+
+          // Smoothly transition to Phase 2 (The Review)
+          document.getElementById("tipPhasePanel").classList.remove("active");
+          document.getElementById("reviewPhasePanel").classList.add("active");
+        } catch (e) {
+          console.error("Tip processing failed", e);
+          alert("Failed to process tip. Please try again.");
+          buttons.forEach((btn) => {
+            btn.disabled = false;
+            btn.style.opacity = "1";
+          });
+        }
+      };
+
+      window.skipTipAndProceed = function () {
+        window.postDeliveryState.tipAmount = 0;
+        document.getElementById("tipPhasePanel").classList.remove("active");
+        document.getElementById("reviewPhasePanel").classList.add("active");
+      };
+
+      window.setRating = function (stars) {
+        window.postDeliveryState.rating = stars;
+        const starBtns = document.querySelectorAll(".star-btn");
+        starBtns.forEach((btn, index) => {
+          if (index < stars) {
+            btn.classList.add("active");
+          } else {
+            btn.classList.remove("active");
+          }
+        });
+      };
+
+      window.submitReviewAndClose = async function () {
+        const btn = document.getElementById("submitReviewBtn");
+        btn.innerText = "Submitting...";
+        btn.disabled = true;
+
+        const feedbackText = document
+          .getElementById("reviewFeedbackInput")
+          .value.trim();
+        const rating = window.postDeliveryState.rating;
+        const orderId = window.appState.currentOrderId;
+        const driverId = window.appState.selectedDriverId;
+
+        // Save the review to Firebase so you can monitor Hero performance
+        if (rating > 0 && driverId) {
+          try {
+            await window.addDoc(
+              window.collection(window.db, "driver_reviews"),
+              {
+                driverId: driverId,
+                orderId: orderId,
+                customerId: window.appState.userId || "anonymous",
+                rating: rating,
+                feedback: feedbackText,
+                timestamp: window.serverTimestamp(),
+              }
+            );
+          } catch (e) {
+            console.error("Failed to save review:", e);
+          }
+        }
+
+        // Final cleanup: Wipe session and gracefully reload the map
+        localStorage.removeItem("pickuphero_recoveredOrderId");
+        window.location.reload();
       };
 
       window.addEventListener("beforeinstallprompt", (e) => {
