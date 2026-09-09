@@ -2552,7 +2552,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         triageQueue: [], // The generous net array
         activeQueue: [], // Final confirmed route
         allPendingOrders: [],
-        selectedQueueDate: new Date().toISOString().split("T")[0],
+
+        selectedQueueDate: (function () {
+          const now = new Date();
+          return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+            2,
+            "0"
+          )}-${String(now.getDate()).padStart(2, "0")}`;
+        })(),
 
         baseLocations: [],
         baseMarkers: [],
@@ -2821,7 +2828,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         for (let i = 0; i < 7; i++) {
           const d = new Date(today);
           d.setDate(today.getDate() + i);
-          const dateStr = d.toISOString().split("T")[0];
+
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          const dateStr = `${year}-${month}-${day}`;
 
           let label = days[d.getDay()];
           if (i === 0) label = "Today";
@@ -2830,8 +2841,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           const isActive = AppState.selectedQueueDate === dateStr;
 
           const hasOrders = AppState.allPendingOrders.some((o) => {
-            const oDate =
-              o.targetDate || new Date().toISOString().split("T")[0];
+            let oDate = o.targetDate;
+            if (!oDate) {
+              const now = new Date();
+              oDate = `${now.getFullYear()}-${String(
+                now.getMonth() + 1
+              ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+            }
             return oDate === dateStr;
           });
 
@@ -2872,7 +2888,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       window.filterQueueByDate = function () {
         AppState.triageQueue = AppState.allPendingOrders.filter((o) => {
-          const oDate = o.targetDate || new Date().toISOString().split("T")[0];
+          let oDate = o.targetDate;
+          if (!oDate) {
+            const now = new Date();
+            oDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+              2,
+              "0"
+            )}-${String(now.getDate()).padStart(2, "0")}`;
+          }
           return oDate === AppState.selectedQueueDate;
         });
 
@@ -4793,7 +4816,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           wfBtn.innerText = "Proceed to Pickups";
           wfBtn.className = "btn btn-primary";
 
-          const currentLocalDay = new Date().toISOString().split("T")[0];
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, "0");
+          const day = String(now.getDate()).padStart(2, "0");
+          const currentLocalDay = `${year}-${month}-${day}`;
+
           if (AppState.selectedQueueDate === currentLocalDay) {
             wfBtn.style.display = "block";
           } else {
