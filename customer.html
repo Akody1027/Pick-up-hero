@@ -7300,6 +7300,8 @@
         window.postDeliveryState.tipAmount = amount;
 
         const orderId = window.appState.currentOrderId;
+        
+        const order = window.appState.activeOrder;
 
         // Visual feedback on the buttons
         const buttons = document.querySelectorAll(".tip-btn");
@@ -7310,7 +7312,9 @@
         });
 
         try {
-          if (!orderId) throw new Error("No active order ID found.");
+          if (!orderId || !order || !order.stripeSessionId) {
+            throw new Error("No active order or Stripe Session found.");
+          }
 
           const response = await fetch(
             "https://processpostdeliverytip-1068443635940.us-central1.run.app",
@@ -7318,7 +7322,7 @@
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                orderId: orderId,
+                stripeSessionId: order.stripeSessionId,
                 tipAmount: amount,
               }),
             }
@@ -7329,10 +7333,21 @@
           if (!response.ok || !result.success) {
             throw new Error(result.error || "Failed to process tip.");
           }
+          
+          // FRONTEND DATABASE UPDATE (Bypassing the cross-project backend issue)
+          await window.updateDoc(window.doc(window.db, "orders", orderId), {
+            tipAmount: window.increment(amount),
+            totalCost: window.increment(amount),
+            tipPaymentIntentId: result.paymentIntentId
+          });
 
           // Smoothly transition to Phase 2 (The Review)
           document.getElementById("tipPhasePanel").classList.remove("active");
           document.getElementById("reviewPhasePanel").classList.add("active");
+        
+        
+  
+          
         } catch (e) {
           console.error("Tip processing failed", e);
           alert("Failed to process tip. Please try again.");
