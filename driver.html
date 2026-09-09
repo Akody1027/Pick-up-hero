@@ -2236,6 +2236,64 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       </div>
     </div>
 
+    <!-- ROUTE TRANSFER MODAL -->
+    <div class="soft-prompt-overlay" id="routeTransferModal">
+      <div
+        class="soft-prompt-box"
+        style="max-height: 80vh; display: flex; flex-direction: column"
+      >
+        <!-- ROSTER VIEW -->
+        <div id="transferRosterView">
+          <h3 style="margin-bottom: 8px">Transfer Route</h3>
+          <p style="font-size: 0.85rem; margin-bottom: 15px">
+            Select an active driver to take over this run.
+          </p>
+          <div
+            id="transferDriverList"
+            style="
+              max-height: 250px;
+              overflow-y: auto;
+              text-align: left;
+              margin-bottom: 15px;
+              padding-right: 5px;
+            "
+          >
+            <!-- Drivers injected here -->
+          </div>
+          <button class="btn btn-secondary" onclick="closeRouteTransferModal()">
+            Cancel
+          </button>
+        </div>
+
+        <!-- CONFIRMATION VIEW -->
+        <div id="transferConfirmView" style="display: none">
+          <h3 style="color: var(--accent); margin-bottom: 15px">
+            Confirm Transfer
+          </h3>
+          <p id="transferConfirmText" style="margin-bottom: 25px">
+            Are you sure?
+          </p>
+          <div style="display: flex; gap: 10px">
+            <button
+              class="btn btn-secondary"
+              style="flex: 1"
+              onclick="cancelRouteTransfer()"
+            >
+              Back
+            </button>
+            <button
+              class="btn btn-primary"
+              id="confirmTransferBtn"
+              style="flex: 1"
+              onclick="executeRouteTransfer()"
+            >
+              Yes, Transfer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- COMMUNITY FEED MODAL -->
     <div id="communityModal" class="modal">
       <!-- DELETE POST CONFIRMATION MODAL -->
@@ -4235,6 +4293,100 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
+      window.pendingTransferOrderId = null;
+      window.pendingTransferDriverId = null;
+
+      window.openRouteTransferModal = function (orderId) {
+        window.pendingTransferOrderId = orderId;
+        document.getElementById("transferRosterView").style.display = "block";
+        document.getElementById("transferConfirmView").style.display = "none";
+        document.getElementById("routeTransferModal").style.display = "flex";
+
+        const rosterList = document.getElementById("transferDriverList");
+        rosterList.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">Locating active drivers...</p>`;
+
+        const unsubscribe = window.onSnapshot(
+          window.collection(window.db, "driver_settings"),
+          (snapshot) => {
+            let html = "";
+            snapshot.forEach((docSnap) => {
+              if (docSnap.id !== DRIVER_DOC_ID) {
+                const data = docSnap.data();
+                const name = data.displayName || "Hero Driver";
+                html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-elevated); padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border);">
+                  <strong style="color: var(--text);">${name}</strong>
+                  <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem; width: auto;" onclick="selectDriverForTransfer('${
+                    docSnap.id
+                  }', '${name.replace(/'/g, "\\'")}')">Send</button>
+                </div>
+              `;
+              }
+            });
+            rosterList.innerHTML =
+              html ||
+              `<p style="color: var(--text-muted); font-size: 0.9rem;">No other drivers found.</p>`;
+            unsubscribe();
+          },
+          (error) => {
+            console.error("Driver fetch error:", error);
+            rosterList.innerHTML = `<p style="color: var(--danger); font-size: 0.9rem;">Error fetching drivers.</p>`;
+            unsubscribe();
+          }
+        );
+      };
+
+      window.closeRouteTransferModal = function () {
+        document.getElementById("routeTransferModal").style.display = "none";
+        window.pendingTransferOrderId = null;
+        window.pendingTransferDriverId = null;
+      };
+
+      window.selectDriverForTransfer = function (driverId, driverName) {
+        window.pendingTransferDriverId = driverId;
+        document.getElementById("transferRosterView").style.display = "none";
+        document.getElementById("transferConfirmView").style.display = "block";
+        document.getElementById(
+          "transferConfirmText"
+        ).innerHTML = `Are you sure you want to transfer this route to <strong style="color: var(--accent);">${driverName}</strong>?`;
+      };
+
+      window.cancelRouteTransfer = function () {
+        document.getElementById("transferConfirmView").style.display = "none";
+        document.getElementById("transferRosterView").style.display = "block";
+        window.pendingTransferDriverId = null;
+      };
+
+      window.executeRouteTransfer = async function () {
+        if (!window.pendingTransferOrderId || !window.pendingTransferDriverId)
+          return;
+
+        const btn = document.getElementById("confirmTransferBtn");
+        const originalText = btn.innerText;
+        btn.innerText = "Transferring...";
+        btn.disabled = true;
+
+        try {
+          await window.updateDoc(
+            window.doc(window.db, "orders", window.pendingTransferOrderId),
+            {
+              assignedDriverId: window.pendingTransferDriverId,
+              status: "pending",
+            }
+          );
+          window.closeRouteTransferModal();
+        } catch (error) {
+          console.error("Transfer failed:", error);
+          window.showCustomAlert(
+            "Transfer Error",
+            "Failed to transfer route. Please check your connection."
+          );
+        } finally {
+          btn.innerText = originalText;
+          btn.disabled = false;
+        }
+      };
+
       window.emergencyAbortActiveRoute = async function () {
         if (window.hotFoodSnoozeTimer) clearTimeout(window.hotFoodSnoozeTimer);
         const recallTab = document.getElementById("hotFoodRecallTab");
@@ -4999,6 +5151,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${o.dbId}')">💬 Chat</button>
                 </div>
               `;
+
+              actions += `
+                <button class="btn btn-secondary" style="width: 100%; margin-top: 10px; padding: 8px; font-size: 0.85rem; border-color: var(--accent); color: var(--accent);" onclick="openRouteTransferModal('${o.dbId}')">Transfer Route</button>
+              `;
             } else {
               actions = `<div style="margin-top: 10px; color: var(--text-muted); font-size: 0.85rem; font-weight: bold;"> Final Delivery Drop-off</div>`;
             }
@@ -5440,6 +5596,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="callCustomer('${node.userId}')">📞 Call</button>
                 <button class="btn btn-secondary" style="padding: 8px; font-size: 0.9rem; flex: 1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="openChatModal('${node.dbId}')">💬 Chat</button>
               </div>
+            `;
+          }
+          if (!isDone) {
+            connectHTML += `
+              <button class="btn btn-secondary" style="width: 100%; margin-bottom: 12px; padding: 8px; font-size: 0.85rem; border-color: var(--accent); color: var(--accent);" onclick="openRouteTransferModal('${node.dbId}')">Transfer Route</button>
             `;
           }
 
