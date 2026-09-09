@@ -14,13 +14,13 @@
       // zoom the entire interface out to fit the physical screen.
       if (window.screen.width < 1500) {
         document
-          .querySelector('meta[name="viewport"]') 
+          .querySelector('meta[name="viewport"]')
           .setAttribute(
             "content",
             "width=450, user-scalable=no, viewport-fit=cover"
           );
       }
-    </script> 
+    </script>
 
     <link rel="manifest" href="manifest-customer.json" />
     <meta name="theme-color" content="#ee611c" />
@@ -7283,6 +7283,8 @@
       window.processTip = async function (amount) {
         window.postDeliveryState.tipAmount = amount;
 
+        const orderId = window.appState.currentOrderId;
+
         // Visual feedback on the buttons
         const buttons = document.querySelectorAll(".tip-btn");
         buttons.forEach((btn) => {
@@ -7292,9 +7294,25 @@
         });
 
         try {
-          // NOTE: In the final step we will wire this to the actual Stripe Cloud Function.
-          // For now, we simulate a successful off-session charge taking 1.5 seconds.
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+          if (!orderId) throw new Error("No active order ID found.");
+
+          const response = await fetch(
+            "https://processpostdeliverytip-1068443635940.us-central1.run.app",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                orderId: orderId,
+                tipAmount: amount,
+              }),
+            }
+          );
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || "Failed to process tip.");
+          }
 
           // Smoothly transition to Phase 2 (The Review)
           document.getElementById("tipPhasePanel").classList.remove("active");
