@@ -12,7 +12,7 @@
       // Native App Zoom: If the device is a narrow candy bar phone (under 390px),
       // force the layout width to 390px. The mobile browser will automatically natively
       // zoom the entire interface out to fit the physical screen.
-      if (window.screen.width < 1500) {
+      if (window.screen.width < 2000) {
         document
           .querySelector('meta[name="viewport"]')
           .setAttribute(
@@ -3590,9 +3590,15 @@
 
             bookingType: window.appState.bookingType,
             sosTimeline: window.appState.targetTimeline || "scheduled",
+
             targetDate:
               window.appState.targetDate ||
-              new Date().toISOString().split("T")[0],
+              `${new Date().getFullYear()}-${String(
+                new Date().getMonth() + 1
+              ).padStart(2, "0")}-${String(new Date().getDate()).padStart(
+                2,
+                "0"
+              )}`,
 
             isHotFood: window.appState.isHotFood || false,
             status: "pending_payment",
@@ -6222,16 +6228,23 @@
         document.getElementById("sosTimelineSelector").style.display = "none";
 
         const now = new Date();
+        const yearNow = now.getFullYear();
+        const monthNow = String(now.getMonth() + 1).padStart(2, "0");
+        const dayNow = String(now.getDate()).padStart(2, "0");
+
         const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
+        const yearTmrw = tomorrow.getFullYear();
+        const monthTmrw = String(tomorrow.getMonth() + 1).padStart(2, "0");
+        const dayTmrw = String(tomorrow.getDate()).padStart(2, "0");
 
         if (choice === "today") {
-          window.appState.targetDate = now.toISOString().split("T")[0];
+          window.appState.targetDate = `${yearNow}-${monthNow}-${dayNow}`;
           window.appState.targetTimeline = "asap_today";
           document.getElementById("timelineDisplay").innerText = "Today";
           openAddModal("emergency");
         } else {
-          window.appState.targetDate = tomorrow.toISOString().split("T")[0];
+          window.appState.targetDate = `${yearTmrw}-${monthTmrw}-${dayTmrw}`;
           window.appState.targetTimeline = "first_tomorrow";
           document.getElementById("timelineDisplay").innerText = "Tomorrow";
           openAddModal("emergency");
@@ -6375,7 +6388,10 @@
 
           const isActive = hasRuns;
 
-          const fullDateStr = currentDate.toISOString().split("T")[0];
+          const year = currentDate.getFullYear();
+          const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+          const day = String(currentDate.getDate()).padStart(2, "0");
+          const fullDateStr = `${year}-${month}-${day}`;
 
           const block = document.createElement("div");
 
