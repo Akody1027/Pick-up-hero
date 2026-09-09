@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -4793,7 +4792,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           wfBtn.innerText = "Proceed to Pickups";
           wfBtn.className = "btn btn-primary";
-          wfBtn.style.display = "block";
+
+          const currentLocalDay = new Date().toISOString().split("T")[0];
+          if (AppState.selectedQueueDate === currentLocalDay) {
+            wfBtn.style.display = "block";
+          } else {
+            wfBtn.style.display = "none";
+          }
 
           wfBtn.onclick = async function (e) {
             e.stopPropagation();
