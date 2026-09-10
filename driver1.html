@@ -3942,18 +3942,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
 
           if (isActiveShift) {
-            AppState.isOnline = true;
-            const btn = document.getElementById("dutyToggleBtn");
-            if (btn) {
-              btn.innerText = "On Duty";
-              btn.classList.add("active");
-            }
-            await window.setDoc(
-              window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
-              { isOnline: true, timestamp: new Date() },
-              { merge: true }
-            );
-
             if (AppState.activeQueue && AppState.activeQueue.length > 0) {
               if (window.monitorActiveRoute) window.monitorActiveRoute();
             }
@@ -3961,13 +3949,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             updateDashboardUI(); // Render the restored active route
 
             window.filterQueueByDate();
-          } else {
-            AppState.isOnline = false;
-            await window.setDoc(
-              window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
-              { isOnline: false, timestamp: new Date() },
-              { merge: true }
-            );
           }
         } catch (e) {
           console.error("Initialization failed:", e);
