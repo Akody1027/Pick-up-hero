@@ -2849,42 +2849,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       }
 
       window.bootApplication = function () {
-        const maxRetries = 3;
-        let currentRetries = parseInt(
-          sessionStorage.getItem("appReloadCount") || "0"
-        );
-
-        const watchdogTimer = setTimeout(() => {
-          if (currentRetries < maxRetries) {
-            sessionStorage.setItem("appReloadCount", currentRetries + 1);
-            window.location.reload();
-          } else {
-            window.showCustomAlert(
-              "Connection Failed",
-              "Unable to load mapping services. Please check your cellular connection and refresh the app manually."
-            );
-          }
-        }, 6000);
-
-        const gatekeeper = setInterval(() => {
-          if (
-            window.L &&
-            window.google &&
-            window.google.maps &&
-            window.auth &&
-            window.db
-          ) {
-            clearInterval(gatekeeper);
-            clearTimeout(watchdogTimer);
-            sessionStorage.removeItem("appReloadCount");
-            window.executeAppCore();
-          }
-        }, 100);
-      };
-
-      window.executeAppCore = function () {
         window.auth.onAuthStateChanged((user) => {
           if (user) {
+            // Valid session detected. Drop the overlay and boot map.
             document.getElementById("authOverlay").style.display = "none";
             DRIVER_DOC_ID = user.uid;
             document.getElementById("driverEmailDisplay").value =
@@ -2903,18 +2870,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               }, 1000);
             }
           } else {
+            // No authenticated user. Strictly lock the gate overlay!
             document.getElementById("authOverlay").style.display = "flex";
             hasBooted = false;
           }
         });
       };
-
-      window.addEventListener("online", () => {
-        if (DRIVER_DOC_ID && AppState.workflowPhase !== "idle") {
-          listenForPendingOrders();
-          if (window.monitorActiveRoute) window.monitorActiveRoute();
-        }
-      });
 
       window.renderQueueDaySelector = function () {
         const container = document.getElementById("queueDaySelector");
@@ -3942,6 +3903,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
 
           if (isActiveShift) {
+            AppState.isOnline = true;
+            const btn = document.getElementById("dutyToggleBtn");
+            if (btn) {
+              btn.innerText = "On Duty";
+              btn.classList.add("active");
+            }
+            await window.setDoc(
+              window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+              { isOnline: true, timestamp: new Date() },
+              { merge: true }
+            );
+
             if (AppState.activeQueue && AppState.activeQueue.length > 0) {
               if (window.monitorActiveRoute) window.monitorActiveRoute();
             }
@@ -3949,6 +3922,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             updateDashboardUI(); // Render the restored active route
 
             window.filterQueueByDate();
+          } else {
+            AppState.isOnline = false;
+            await window.setDoc(
+              window.doc(window.db, "driver_locations", DRIVER_DOC_ID),
+              { isOnline: false, timestamp: new Date() },
+              { merge: true }
+            );
           }
         } catch (e) {
           console.error("Initialization failed:", e);
