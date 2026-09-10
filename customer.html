@@ -1956,7 +1956,8 @@
                       margin-bottom: 15px;
                     "
                   >
-                    <strong id="storeNameDisplay_1">Walmart Supercenter</strong>
+                    <strong id="storeNameDisplay_1">Pickup Location</strong>
+
                     <p
                       style="
                         font-size: 0.85rem;
@@ -2096,15 +2097,21 @@
             ></textarea>
           </div>
 
-
-    
           <div class="form-group" style="margin-top: 15px">
             <label>Driver Tip (Optional)</label>
-           <h1 style="font-size: .8rem; font-weight: 600; color: var(--accent); text-align: center; margin-top: 1px;">
-            Prefer to wait? You can securely tip your Hero after the delivery is complete!
-          </h1>
+            <h1
+              style="
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: var(--accent);
+                text-align: center;
+                margin-top: 1px;
+              "
+            >
+              Prefer to wait? You can securely tip your Hero after the delivery
+              is complete!
+            </h1>
 
-            
             <input
               type="number"
               id="tipInput"
@@ -2114,9 +2121,6 @@
               oninput="updateTotalCost()"
             />
           </div>
-
-        
-
 
           <div style="flex: 1"></div>
 
@@ -3488,8 +3492,10 @@
             "";
           const base64Img = window.appState.compressedImages[i] || "";
 
-          if (storeName === "Pending...") {
-            alert(`Please confirm the store location for Stop ${i}.`);
+          if (!storeLat || !storeLng) {
+            alert(
+              `Please search the map to confirm the location for Stop ${i}.`
+            );
             return;
           }
 
@@ -7301,7 +7307,7 @@
         window.postDeliveryState.tipAmount = amount;
 
         const orderId = window.appState.currentOrderId;
-        
+
         const order = window.appState.activeOrder;
 
         // Visual feedback on the buttons
@@ -7334,21 +7340,17 @@
           if (!response.ok || !result.success) {
             throw new Error(result.error || "Failed to process tip.");
           }
-          
+
           // FRONTEND DATABASE UPDATE (Bypassing the cross-project backend issue)
           await window.updateDoc(window.doc(window.db, "orders", orderId), {
             tipAmount: window.increment(amount),
             totalCost: window.increment(amount),
-            tipPaymentIntentId: result.paymentIntentId
+            tipPaymentIntentId: result.paymentIntentId,
           });
 
           // Smoothly transition to Phase 2 (The Review)
           document.getElementById("tipPhasePanel").classList.remove("active");
           document.getElementById("reviewPhasePanel").classList.add("active");
-        
-        
-  
-          
         } catch (e) {
           console.error("Tip processing failed", e);
           alert("Failed to process tip. Please try again.");
