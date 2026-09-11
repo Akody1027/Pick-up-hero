@@ -1219,6 +1219,32 @@
         border-color: var(--accent);
       }
 
+      /* --- DASHBOARD TABS --- */
+      .dash-tabs {
+        display: flex;
+        background: var(--surface-elevated);
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+      .dash-tab-btn {
+        flex: 1;
+        padding: 12px;
+        text-align: center;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .dash-tab-btn.active {
+        background: var(--accent);
+        color: white;
+      }
+
       /* --- POST DELIVERY MODAL --- */
       .post-delivery-panel {
         display: none;
@@ -2944,91 +2970,117 @@
         <button class="close-btn" onclick="closeOrderDashboard()">✕</button>
       </div>
       <div class="modal-content">
+        <div class="dash-tabs">
+          <button
+            id="tabActiveRoute"
+            class="dash-tab-btn active"
+            onclick="switchDashboardTab('active')"
+          >
+            Active Route
+          </button>
+          <button
+            id="tabHistoryRoute"
+            class="dash-tab-btn"
+            onclick="switchDashboardTab('history')"
+          >
+            Delivery History
+          </button>
+        </div>
+
         <div
-          style="
-            background: var(--surface-elevated);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            margin-bottom: 20px;
-            text-align: center;
-          "
+          id="historyRouteContainer"
+          style="display: none; padding-bottom: 20px"
         >
-          <h3
-            id="dashHeroName"
-            style="color: var(--accent); margin-bottom: 5px"
-          >
-            Hero
-          </h3>
-          <p
-            style="
-              color: var(--text-muted);
-              font-size: 0.9rem;
-              margin-bottom: 10px;
-            "
-          >
-            Target:
-            <strong id="dashTargetDate" style="color: var(--text)"></strong>
-          </p>
+          <!-- History cards dynamically injected here -->
+        </div>
+
+        <div id="activeRouteContainer">
           <div
             style="
-              font-size: 0.85rem;
-              color: var(--text-muted);
-              background: var(--bg);
-              padding: 10px;
-              border-radius: 8px;
+              background: var(--surface-elevated);
+              padding: 20px;
+              border-radius: 12px;
+              border: 1px solid var(--border);
+              margin-bottom: 20px;
+              text-align: center;
             "
           >
-            <strong>Final Delivery:</strong><br />
-            <span id="dashDeliveryAddress" style="color: var(--text)"></span>
+            <h3
+              id="dashHeroName"
+              style="color: var(--accent); margin-bottom: 5px"
+            >
+              Hero
+            </h3>
+            <p
+              style="
+                color: var(--text-muted);
+                font-size: 0.9rem;
+                margin-bottom: 10px;
+              "
+            >
+              Target:
+              <strong id="dashTargetDate" style="color: var(--text)"></strong>
+            </p>
+            <div
+              style="
+                font-size: 0.85rem;
+                color: var(--text-muted);
+                background: var(--bg);
+                padding: 10px;
+                border-radius: 8px;
+              "
+            >
+              <strong>Final Delivery:</strong><br />
+              <span id="dashDeliveryAddress" style="color: var(--text)"></span>
+            </div>
           </div>
-        </div>
 
-        <h3
-          style="
-            margin-bottom: 15px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 10px;
-          "
-        >
-          Pickup Locations
-        </h3>
-        <div id="dashStopsContainer">
-          <!-- Dynamically injected stops go here -->
-        </div>
-
-        <button
-          id="dashSaveBtn"
-          class="btn btn-primary"
-          onclick="saveOrderUpdates()"
-          style="margin-top: 10px; margin-bottom: 15px"
-        >
-          Save Updates
-        </button>
-
-        <button
-          id="dashDownloadBtn"
-          class="btn btn-secondary"
-          onclick="downloadReceipt()"
-          style="
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-          "
-        >
-          <svg
-            viewBox="0 0 24 24"
-            style="width: 20px; height: 20px; fill: currentColor"
+          <h3
+            style="
+              margin-bottom: 15px;
+              border-bottom: 1px solid var(--border);
+              padding-bottom: 10px;
+            "
           >
-            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-          </svg>
-          Download PDF Receipt
-        </button>
+            Pickup Locations
+          </h3>
+          <div id="dashStopsContainer">
+            <!-- Dynamically injected stops go here -->
+          </div>
+
+          <button
+            id="dashSaveBtn"
+            class="btn btn-primary"
+            onclick="saveOrderUpdates()"
+            style="margin-top: 10px; margin-bottom: 15px"
+          >
+            Save Updates
+          </button>
+
+          <button
+            id="dashDownloadBtn"
+            class="btn btn-secondary"
+            onclick="downloadReceipt()"
+            style="
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              gap: 8px;
+            "
+          >
+            <svg
+              viewBox="0 0 24 24"
+              style="width: 20px; height: 20px; fill: currentColor"
+            >
+              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+            </svg>
+            Download PDF Receipt
+          </button>
+        </div>
       </div>
     </div>
-
     <!-- HIDDEN RECEIPT TEMPLATE FOR PDF EXPORT -->
+
     <div
       id="receiptTemplateContainer"
       style="
@@ -3388,6 +3440,8 @@
         isHotFood: false,
 
         unreadMessages: 0,
+
+        orderHistoryCache: null,
       };
 
       auth.onAuthStateChanged((user) => {
@@ -7229,6 +7283,8 @@
         closeAllModals();
         document.getElementById("orderDashboardModal").classList.add("active");
 
+        if (window.switchDashboardTab) window.switchDashboardTab("active");
+
         const saveBtn = document.getElementById("dashSaveBtn");
         const dlBtn = document.getElementById("dashDownloadBtn");
         const order = window.appState.activeOrder;
@@ -7347,31 +7403,50 @@
         }
       };
 
-      window.downloadReceipt = function () {
-        const order = window.appState.activeOrder;
+      window.downloadReceipt = function (
+        historicalOrderId = null,
+        btnElement = null
+      ) {
+        let order = window.appState.activeOrder;
+        let orderIdRaw = window.appState.currentOrderId;
+        let driverName = window.appState.driverNameCache || "Hero";
+
+        if (historicalOrderId) {
+          order = window.appState.orderHistoryCache?.find(
+            (o) => o.id === historicalOrderId
+          );
+          orderIdRaw = historicalOrderId;
+          driverName = "Hero";
+        }
+
         if (!order) return;
 
-        const driverName = window.appState.driverNameCache || "Hero";
-        const orderIdShort = window.appState.currentOrderId
-          .substring(0, 8)
-          .toUpperCase();
-
+        const orderIdShort = orderIdRaw.substring(0, 8).toUpperCase();
         document.getElementById("receiptOrderId").innerText =
           "Order ID: " + orderIdShort;
-        document.getElementById("receiptDate").innerText = new Date(
-          order.createdAt.toDate()
-        ).toLocaleDateString();
+
+        let receiptDate = "Unknown Date";
+        if (order.createdAt && order.createdAt.toDate) {
+          receiptDate = new Date(order.createdAt.toDate()).toLocaleDateString();
+        } else if (order.targetDate) {
+          receiptDate = order.targetDate;
+        }
+        document.getElementById("receiptDate").innerText = receiptDate;
+
         document.getElementById("receiptDriver").innerText = driverName;
         document.getElementById("receiptDelivery").innerText =
-          order.deliveryAddress;
+          order.deliveryAddress || "Not specified";
 
         let stopsHtml = "";
-        order.stops.forEach((stop, i) => {
-          stopsHtml += `<div style="margin-bottom: 8px;"><strong>Stop ${
-            i + 1
-          }:</strong> ${stop.storeName}</div>`;
-        });
-        document.getElementById("receiptStops").innerHTML = stopsHtml;
+        if (order.stops && Array.isArray(order.stops)) {
+          order.stops.forEach((stop, i) => {
+            stopsHtml += `<div style="margin-bottom: 8px;"><strong>Stop ${
+              i + 1
+            }:</strong> ${stop.storeName}</div>`;
+          });
+        }
+        document.getElementById("receiptStops").innerHTML =
+          stopsHtml || "No stops recorded.";
 
         const baseFee = order.totalCost - (order.tipAmount || 0);
         document.getElementById("receiptBase").innerText =
@@ -7382,11 +7457,11 @@
           "$" + order.totalCost.toFixed(2);
 
         const element = document.getElementById("receiptTemplate");
-
-        const btn = document.getElementById("dashDownloadBtn");
+        const btn = btnElement || document.getElementById("dashDownloadBtn");
         const origText = btn.innerHTML;
+
         btn.innerHTML =
-          '<div class="search-spinner" style="width: 16px; height: 16px; border-width: 2px;"></div> Generating PDF...';
+          '<div class="search-spinner" style="width: 16px; height: 16px; border-width: 2px;"></div> Generating...';
         btn.disabled = true;
 
         html2pdf()
@@ -7407,8 +7482,100 @@
             console.error("PDF generation failed:", err);
             btn.innerHTML = origText;
             btn.disabled = false;
-            alert("Failed to generate PDF.");
+            window.showCustomAlert("Error", "Failed to generate PDF.");
           });
+      };
+
+      window.switchDashboardTab = function (tabName) {
+        const btnActive = document.getElementById("tabActiveRoute");
+        const btnHistory = document.getElementById("tabHistoryRoute");
+        const contActive = document.getElementById("activeRouteContainer");
+        const contHistory = document.getElementById("historyRouteContainer");
+
+        if (tabName === "active") {
+          btnActive.classList.add("active");
+          btnHistory.classList.remove("active");
+          contActive.style.display = "block";
+          contHistory.style.display = "none";
+        } else {
+          btnActive.classList.remove("active");
+          btnHistory.classList.add("active");
+          contActive.style.display = "none";
+          contHistory.style.display = "block";
+
+          if (!window.appState.orderHistoryCache) {
+            window.loadDeliveryHistory();
+          }
+        }
+      };
+
+      window.loadDeliveryHistory = async function () {
+        const container = document.getElementById("historyRouteContainer");
+        container.innerHTML =
+          '<div style="text-align:center; padding: 40px;"><div class="search-spinner" style="border-width: 3px; width: 24px; height: 24px;"></div><p style="color:var(--text-muted); margin-top:10px;">Loading History...</p></div>';
+
+        try {
+          const q = window.query(
+            window.collection(window.db, "orders"),
+            window.where("userId", "==", window.appState.userId),
+            window.where("status", "==", "completed"),
+            window.orderBy("createdAt", "desc")
+          );
+
+          const snapshot = await window.getDocs(q);
+          const history = [];
+          snapshot.forEach((doc) =>
+            history.push({ id: doc.id, ...doc.data() })
+          );
+
+          window.appState.orderHistoryCache = history;
+          window.renderDeliveryHistory(history);
+        } catch (e) {
+          console.error("Failed to load history:", e);
+          container.innerHTML =
+            '<div style="text-align:center; padding: 20px; color: var(--danger);">Failed to load history data.</div>';
+        }
+      };
+
+      window.renderDeliveryHistory = function (orders) {
+        const container = document.getElementById("historyRouteContainer");
+        if (orders.length === 0) {
+          container.innerHTML =
+            '<div style="text-align:center; padding: 40px; color: var(--text-muted);">You have no completed deliveries yet.</div>';
+          return;
+        }
+
+        let html = "";
+        orders.forEach((o) => {
+          let dateStr = "Unknown Date";
+          if (o.createdAt && o.createdAt.toDate) {
+            dateStr = new Date(o.createdAt.toDate()).toLocaleDateString();
+          } else if (o.targetDate) {
+            dateStr = o.targetDate;
+          }
+
+          const total = o.totalCost ? `$${o.totalCost.toFixed(2)}` : "$0.00";
+          const stopsCount =
+            o.stops && Array.isArray(o.stops) ? o.stops.length : 0;
+          const dest = o.deliveryAddress || "Home";
+
+          html += `
+                  <div style="background: var(--surface-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+                      <strong style="color:var(--text);">${dateStr}</strong>
+                      <span style="color:var(--success); font-weight:bold;">${total}</span>
+                    </div>
+                    <div style="font-size: 0.85rem; color:var(--text-muted); margin-bottom: 15px;">
+                      <span style="color:var(--accent); font-weight:600;">${stopsCount} Pickup(s)</span> &rarr; <span>${dest}</span>
+                    </div>
+                    <button class="btn btn-secondary" style="padding: 12px; font-size: 0.85rem; display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%;" onclick="downloadReceipt('${o.id}', this)">
+                      <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                      Download PDF
+                    </button>
+                  </div>
+                `;
+        });
+        container.innerHTML = html;
       };
 
       // --- POST-DELIVERY TIPPING & REVIEW LOGIC ---
