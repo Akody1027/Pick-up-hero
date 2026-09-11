@@ -14,16 +14,16 @@
       // zoom the entire interface out to fit the physical screen.
       if (window.screen.width < 2000) {
         document
-          .querySelector('meta[name="viewport"]')
+          .querySelector('meta[name="viewport"]') 
           .setAttribute(
             "content",
             "width=450, user-scalable=no, viewport-fit=cover"
           );
-      } 
+      }
     </script>
 
     <link rel="manifest" href="manifest-customer.json" />
-    <meta name="theme-color" content="#ee611c" /> 
+    <meta name="theme-color" content="#ee611c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
@@ -2602,6 +2602,17 @@
       </div>
     </div>
 
+    <!-- UNIVERSAL CUSTOM ALERT PROMPT -->
+    <div class="soft-prompt-overlay" id="customAlertModal">
+      <div class="soft-prompt-box">
+        <h3 id="customAlertTitle">Alert</h3>
+        <p id="customAlertText">Message goes here.</p>
+        <button class="btn btn-primary" onclick="closeCustomAlert()">
+          Understood
+        </button>
+      </div>
+    </div>
+
     <!-- NOTIFICATION CENTER MODAL -->
     <div id="notificationModal" class="modal">
       <div class="modal-header">
@@ -3812,7 +3823,7 @@
           saveBtn.innerText = "Save Profile";
         } else {
           saveBtn.disabled = true;
-          saveBtn.style.opacity = "0.5";
+          saveBtn.style.opacity = "0.5"; 
           saveBtn.innerText = "No Changes Made";
         }
       };
@@ -3823,6 +3834,22 @@
     <script>
       // --- GLOBAL ACTIVITY TRACKER ---
       let activityTimeout = null;
+
+      // --- UNIVERSAL ALERT SYSTEM ---
+      window.showCustomAlert = function (title, text) {
+        document.getElementById("customAlertTitle").innerText = title;
+        document.getElementById("customAlertText").innerText = text;
+        document.getElementById("customAlertModal").style.display = "flex";
+      };
+
+      window.closeCustomAlert = function () {
+        document.getElementById("customAlertModal").style.display = "none";
+      };
+
+      // Override native browser alerts to use the custom modal automatically
+      window.alert = function (message) {
+        window.showCustomAlert("Notice", message);
+      };
 
       window.triggerGlobalActivity = function () {
         const ribbon = document.getElementById("globalActivityRibbon");
