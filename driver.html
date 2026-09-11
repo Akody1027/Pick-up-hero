@@ -29,7 +29,7 @@
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
-        --surface-elevated: #2c2c2c;
+        --surface-elevated: #2c2c2c; 
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
@@ -2637,7 +2637,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       // Initialize UI and Map
 
-      AppState.isInitialLoad = true;
+      AppState.isInitialLoad = true; 
       let DRIVER_DOC_ID = null;
 
       window.showCustomAlert = function (title, text) {
@@ -2648,6 +2648,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       window.closeCustomAlert = function () {
         document.getElementById("customAlertModal").style.display = "none";
+      };
+
+      // Override native browser alerts to use the custom modal automatically
+      window.alert = function (message) {
+        window.showCustomAlert("System Notice", message);
       };
 
       // --- AUTHENTICATION LOGIC ---
