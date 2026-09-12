@@ -4506,6 +4506,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         btn.disabled = true;
 
         try {
+          
           await window.updateDoc(
             window.doc(window.db, "orders", window.pendingTransferOrderId),
             {
@@ -4513,6 +4514,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               status: "pending",
             }
           );
+          
+          // Immediately clear the transferred order from local queues so it doesn't linger
+          AppState.activeQueue = AppState.activeQueue.filter(q => (q.dbId || q.id) !== window.pendingTransferOrderId);
+          AppState.triageQueue = AppState.triageQueue.filter(q => (q.dbId || q.id) !== window.pendingTransferOrderId);
+
+          if (AppState.activeQueue.length === 0 && AppState.triageQueue.length === 0) {
+              AppState.workflowPhase = "idle";
+          }
+          updateDashboardUI();
+          window.saveShiftState();
+
           window.closeRouteTransferModal();
         } catch (error) {
           console.error("Transfer failed:", error);
@@ -4891,13 +4903,21 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           const unsub = window.onSnapshot(
             window.doc(window.db, "orders", orderId),
             (docSnap) => {
+              
               if (docSnap.exists()) {
                 const data = docSnap.data();
-                if (data.status === "cancelled") {
-                  window.showCustomAlert(
-                    "Delivery Aborted",
-                    "🚨 A customer cancelled their order! Actively rerouting your remaining stops now."
-                  );
+                if (data.status === "cancelled" || data.assignedDriverId !== DRIVER_DOC_ID) {
+                  if (data.status === "cancelled") {
+                    window.showCustomAlert(
+                      "Delivery Aborted",
+                      "🚨 A customer cancelled their order! Actively rerouting your remaining stops now."
+                    );
+                  } else {
+                    window.showCustomAlert(
+                      "Route Transferred",
+                      "This route was successfully transferred and picked up by another Hero."
+                    );
+                  }
 
                   AppState.activeQueue = AppState.activeQueue.filter(
                     (item) => item.dbId !== orderId
