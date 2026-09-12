@@ -3607,6 +3607,31 @@
         }
       }
 
+      
+      
+      else if (urlParams.get("payment_cancelled") === "true") {
+        const cancelledOrderId = urlParams.get("order_id");
+        const cancelledShiftId = urlParams.get("shift_id");
+
+        if (cancelledOrderId) {
+          window.deleteDoc(window.doc(window.db, "orders", cancelledOrderId)).catch((e) => console.error("Error deleting draft order:", e));
+        }
+        
+        if (cancelledShiftId) {
+          window.setDoc(
+            window.doc(window.db, "shifts", cancelledShiftId),
+            { bookedCount: window.increment(-1) },
+            { merge: true }
+          ).catch((e) => console.error("Error restoring shift capacity:", e));
+        }
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      
+      
+      
+      
+      
       window.handleAbortDismiss = function () {
         document.getElementById("abortAlertModal").style.display = "none";
         const abortAudio = document.getElementById("abortAlarmSound");
@@ -3813,14 +3838,18 @@
               orderId: docRef.id,
               orderData: orderData,
               successUrl:
-                window.location.origin +
+                window.location.origin + 
                 window.location.pathname +
                 "?payment_success=true&order_id=" +
                 docRef.id,
+              
               cancelUrl:
                 window.location.origin +
                 window.location.pathname +
-                "?payment_cancelled=true",
+                "?payment_cancelled=true&order_id=" + docRef.id +
+                (window.appState.selectedShiftId ? "&shift_id=" + window.appState.selectedShiftId : ""),
+              
+       
             }),
           });
 
@@ -3873,14 +3902,29 @@
             window.collection(window.db, "orders"),
             window.where("userId", "==", uid)
           );
-
-          // 2. Loop through and delete every order document
+          
+          
+          // 2. Safely anonymize or cancel orders to protect driver financial ledgers
           const querySnapshot = await window.getDocs(q);
           querySnapshot.forEach(async (documentSnapshot) => {
-            await window.deleteDoc(
-              window.doc(window.db, "orders", documentSnapshot.id)
-            );
+            const orderData = documentSnapshot.data();
+            
+            // If the order is active, cancel it so the driver isn't stranded
+            if (["pending", "accepted", "approved", "picked_up", "in_transit"].includes(orderData.status)) {
+              await window.updateDoc(
+                window.doc(window.db, "orders", documentSnapshot.id),
+                { status: "cancelled", cancelReason: "Customer deleted their account." }
+              );
+            } else {
+              // For completed history, scrub the identity but keep the financial ledger intact
+              await window.updateDoc(
+                window.doc(window.db, "orders", documentSnapshot.id),
+                { userId: "deleted_account" }
+              );
+            }
           });
+          
+ 
 
           // 3. Delete the customer's profile document from the 'users' collection
           await window.deleteDoc(window.doc(window.db, "users", uid));
@@ -4502,7 +4546,7 @@
         if (
           window.appState &&
           window.appState.selectedDriverId &&
-          window.appState.selectedPinLat &&
+          window.appState.selectedPinLat && 
           window.appState.selectedPinLng
         ) {
           centerLat = window.appState.selectedPinLat;
@@ -4512,8 +4556,8 @@
           centerLng = userLng;
         } else {
           // Absolute fallback if no driver selected and no GPS
-          centerLat = 39.8283;
-          centerLng = -98.5795;
+          centerLat = 41.2565;
+          centerLng = -95.9345;
         }
 
         const center = new L.LatLng(centerLat, centerLng);
