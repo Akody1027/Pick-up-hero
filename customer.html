@@ -4201,7 +4201,7 @@
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
-            .register("./sw-cust.js", { scope: "./cust.html" })
+            .register("./sw-customer.js", { scope: "./" })
             .then((reg) => console.log("Customer SW Active:", reg.scope))
             .catch((err) => console.error("Customer SW failed:", err));
         });
