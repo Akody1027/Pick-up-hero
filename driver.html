@@ -2236,55 +2236,51 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       </div>
     </div>
 
+    <!-- QR SCANNER MODAL -->
+    <div class="soft-prompt-overlay" id="qrCodeModal" onclick="closeQrModal()">
+      <div
+        class="soft-prompt-box"
+        style="
+          padding: 30px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        "
+        onclick="event.stopPropagation()"
+      >
+        <h3 style="color: var(--accent); margin-bottom: 15px">
+          Secondary Device Maps
+        </h3>
+        <img
+          id="qrCodeLargeImage"
+          src=""
+          style="
+            width: 200px;
+            height: 200px;
+            border: 10px solid white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background: white;
+          "
+        />
+        <p
+          style="
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+          "
+        >
+          Scan this code with your second phone's camera to instantly launch
+          Google Maps.
+        </p>
+        <button class="btn btn-secondary" onclick="closeQrModal()">
+          Close
+        </button>
+      </div>
+    </div>
+
     <!-- ROUTE TRANSFER MODAL -->
     <div class="soft-prompt-overlay" id="routeTransferModal">
-      <!-- QR SCANNER MODAL -->
-      <div
-        class="soft-prompt-overlay"
-        id="qrCodeModal"
-        onclick="closeQrModal()"
-      >
-        <div
-          class="soft-prompt-box"
-          style="
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-          "
-          onclick="event.stopPropagation()"
-        >
-          <h3 style="color: var(--accent); margin-bottom: 15px">
-            Secondary Device Maps
-          </h3>
-          <img
-            id="qrCodeLargeImage"
-            src=""
-            style="
-              width: 200px;
-              height: 200px;
-              border: 10px solid white;
-              border-radius: 8px;
-              margin-bottom: 20px;
-              background: white;
-            "
-          />
-          <p
-            style="
-              font-size: 0.9rem;
-              color: var(--text-muted);
-              margin-bottom: 20px;
-            "
-          >
-            Scan this code with your second phone's camera to instantly launch
-            Google Maps.
-          </p>
-          <button class="btn btn-secondary" onclick="closeQrModal()">
-            Close
-          </button>
-        </div>
-      </div>
-
       <div
         class="soft-prompt-box"
         style="max-height: 80vh; display: flex; flex-direction: column"
@@ -5926,8 +5922,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(mapsUrl)}" style="width: 100%; height: 100%; object-fit: contain;" alt="QR" />
                 </button>
               </div>`;
+ 
 
-
+            
+            }
+            
+            
+            
           let connectHTML = "";
           if (
             node.status !== "completed" &&
