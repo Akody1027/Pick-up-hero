@@ -2719,6 +2719,23 @@
         </button>
       </div>
     </div>
+    
+    
+    
+    <!-- PUSH NOTIFICATION SOFT PROMPT -->
+    <div class="soft-prompt-overlay" id="pushNotificationPrompt">
+      <div class="soft-prompt-box">
+        <h3 style="color: var(--accent); margin-bottom: 12px;">Enable Order Alerts</h3>
+        <p>
+          Get real-time updates when your Hero arrives, messages you, or if there is an issue with your delivery.
+        </p>
+        <div class="prompt-actions" style="margin-top: 20px;">
+          <button class="btn btn-secondary" style="flex: 1" onclick="dismissPushPrompt()">Not Now</button>
+          <button class="btn btn-primary" style="flex: 1" onclick="acceptAndRequestPush()">Allow Alerts</button>
+        </div>
+      </div>
+    </div>
+    
 
     <!-- UNIVERSAL CUSTOM ALERT PROMPT -->
     <div class="soft-prompt-overlay" id="customAlertModal">
@@ -3470,6 +3487,16 @@
         signInWithEmailAndPassword,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
+      
+      
+      import {
+        getMessaging,
+        getToken,
+        onMessage
+      } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-messaging.js";
+      
+      
+      
       import {
         getFirestore,
         collection,
@@ -3526,6 +3553,14 @@
       window.auth = auth;
       window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
       window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+      
+      const messaging = getMessaging(app);
+      window.messaging = messaging;
+      window.getToken = getToken;
+      window.onMessage = onMessage;
+      
+      
+      
 
       window.appState = {
         user: null,
@@ -3577,6 +3612,12 @@
             window.loadActiveDriver();
           }
         }
+        if (user && !sessionStorage.getItem('pushPromptSnoozed')) {
+          if (window.checkPushPermissions) window.checkPushPermissions();
+        }
+        
+        
+        
       });
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -7952,6 +7993,75 @@
       window.addEventListener("appinstalled", () => {
         dismissPwaPrompt();
       });
+      
+      
+      // --- PUSH NOTIFICATION LOGIC ---
+      window.checkPushPermissions = function() {
+        if (!window.appState.userId || !('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+        if (Notification.permission === 'default') {
+          // User hasn't been asked yet. Show soft prompt after a slight delay so it doesn't jump scare them on login.
+          setTimeout(() => {
+            document.getElementById('pushNotificationPrompt').style.display = 'flex';
+          }, 3000);
+        } else if (Notification.permission === 'granted') {
+          // Already granted. Quietly sync the token in the background to ensure the database is up to date.
+          window.syncFcmToken();
+        }
+      };
+
+      window.dismissPushPrompt = function() {
+        document.getElementById('pushNotificationPrompt').style.display = 'none';
+        // Snooze the prompt for this session so we don't annoy them
+        sessionStorage.setItem('pushPromptSnoozed', 'true');
+      };
+
+      window.acceptAndRequestPush = async function() {
+        document.getElementById('pushNotificationPrompt').style.display = 'none';
+        try {
+          // FIRE THE NATIVE BROWSER PROMPT
+          const permission = await Notification.requestPermission();
+          
+          if (permission === 'granted') {
+            await window.syncFcmToken();
+            window.showCustomAlert("Alerts Enabled", "You will now receive real-time updates for your deliveries.");
+          } else {
+            console.log("Push permission denied by user at native level.");
+          }
+        } catch (error) {
+          console.error("Error requesting push permission:", error);
+        }
+      };
+
+      
+      
+      
+      window.syncFcmToken = async function() {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          
+          const currentToken = await window.getToken(window.messaging, {
+            vapidKey: "BDyNKkQqFf-zEUHcjDNvyZ2Aqviuy5t7UQFiSmxM_ogI96aoKRFV8q6NQykNFJ_DW6k7kU93rTHAWOHjkgj2kTo",
+            serviceWorkerRegistration: registration
+          });
+      
+
+          if (currentToken && window.appState.userId) {
+            // Save it securely to their user profile
+            await window.updateDoc(window.doc(window.db, "users", window.appState.userId), {
+              fcmToken: currentToken,
+              fcmUpdatedAt: window.serverTimestamp()
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching FCM token:", error);
+        }
+      };
+      
+      
+      
+      
+      
 
       // --- IOS INSTALL LOGIC ---
       let currentIosStep = 1;
