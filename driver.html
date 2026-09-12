@@ -5185,7 +5185,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               );
 
               const sortedSOS = await sortDeliveriesByTime(
-                currentLoc[0],
+                currentLoc[0], 
                 currentLoc[1],
                 sosDeliveries
               );
@@ -5227,13 +5227,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             wfBtn.innerText = originalText;
             wfBtn.disabled = false;
-
-            // ONLY push the "approved" status update to the distinct new orders
-            // so we don't accidentally overwrite in_transit or picked_up statuses
-            const uniqueNewOrderIds = [
-              ...new Set(distinctNew.map((item) => item.dbId)),
-            ];
-            for (const orderId of uniqueNewOrderIds) {
+            
+            
+            
+            // FORCE EXPLICIT SYNC: Push the 'approved' status to Firebase for ALL accepted orders in this batch,
+            // regardless of local array filtering, ensuring the Customer App always receives the ping.
+            const uniqueApprovedIds = [...new Set(acceptedOrders.map((item) => item.dbId))];
+            for (const orderId of uniqueApprovedIds) {
               if (orderId) {
                 window
                   .updateDoc(window.doc(window.db, "orders", orderId), {
@@ -5242,6 +5242,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   .catch((e) => console.error(e));
               }
             }
+            
+
 
             const uniqueShiftIds = [
               ...new Set(
@@ -5260,20 +5262,25 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             AppState.pendingOrders = 0;
             if (window.monitorActiveRoute) window.monitorActiveRoute();
+            
+            
+            // Advance the workflow phase immediately so the app state is safely locked, regardless of modal interactions
+            AppState.workflowPhase = "pickup";
+            updateDashboardUI();
 
             const pendingPickups = AppState.activeQueue.filter(
               (q) => q.type === "pickup" && q.status !== "completed"
             );
 
+            // Trigger the hot food modal as an independent overlay, NOT as a state-blocking gatekeeper
             if (pendingPickups.length > 0 && pendingPickups[0].isHotFood) {
               window.triggerHotFoodIntercept(pendingPickups[0].dbId, () => {
-                AppState.workflowPhase = "pickup";
-                updateDashboardUI();
+                 // Callback executes silently
               });
-            } else {
-              AppState.workflowPhase = "pickup";
-              updateDashboardUI();
             }
+            
+
+            
           };
 
           drawTriageRoute();
