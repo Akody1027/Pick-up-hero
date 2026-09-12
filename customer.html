@@ -3018,8 +3018,12 @@
                 margin-bottom: 10px;
               "
             >
-              Target:
+              Delivery Date:
               <strong id="dashTargetDate" style="color: var(--text)"></strong>
+
+              <br />
+              Total Paid:
+              <strong id="dashTotalCost" style="color: var(--success)"></strong>
             </p>
             <div
               style="
@@ -3030,7 +3034,7 @@
                 border-radius: 8px;
               "
             >
-              <strong>Final Delivery:</strong><br />
+              <strong>Delivery Adress:</strong><br />
               <span id="dashDeliveryAddress" style="color: var(--text)"></span>
             </div>
           </div>
@@ -7309,10 +7313,14 @@
         if (dlBtn) dlBtn.style.display = "flex";
 
         const driverName = window.appState.driverNameCache || "Hero";
-        document.getElementById("dashHeroName").innerText = driverName;
+        document.getElementById("dashHeroName").innerText =
+          "Driver: " + driverName;
 
         let dDate = order.targetDate || "Today";
         document.getElementById("dashTargetDate").innerText = dDate;
+        document.getElementById("dashTotalCost").innerText = order.totalCost
+          ? "$" + order.totalCost.toFixed(2)
+          : "$0.00";
         document.getElementById("dashDeliveryAddress").innerText =
           order.deliveryAddress || "Not specified";
 
@@ -7555,18 +7563,36 @@
           }
 
           const total = o.totalCost ? `$${o.totalCost.toFixed(2)}` : "$0.00";
-          const stopsCount =
-            o.stops && Array.isArray(o.stops) ? o.stops.length : 0;
           const dest = o.deliveryAddress || "Home";
+
+          let stopsDetails = "";
+          if (o.stops && Array.isArray(o.stops)) {
+            o.stops.forEach((stop) => {
+              stopsDetails += `<div style="margin-bottom: 4px;">• ${stop.storeName}</div>`;
+            });
+          }
+
+          let tipInfo = "";
+          if (o.tipAmount && o.tipAmount > 0) {
+            tipInfo = `<div style="color: var(--success); font-size: 0.75rem; margin-top: 4px;">Includes $${o.tipAmount.toFixed(
+              2
+            )} tip</div>`;
+          }
 
           html += `
                   <div style="background: var(--surface-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
                     <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
                       <strong style="color:var(--text);">${dateStr}</strong>
-                      <span style="color:var(--success); font-weight:bold;">${total}</span>
+                      <div style="text-align: right;">
+                        <span style="color:var(--success); font-weight:bold;">${total}</span>
+                        ${tipInfo}
+                      </div>
                     </div>
                     <div style="font-size: 0.85rem; color:var(--text-muted); margin-bottom: 15px;">
-                      <span style="color:var(--accent); font-weight:600;">${stopsCount} Pickup(s)</span> &rarr; <span>${dest}</span>
+                      <div style="color:var(--accent); font-weight:600; margin-bottom: 8px;">Pickups:</div>
+                      ${stopsDetails}
+                      <div style="margin-top: 8px; font-weight:600; color:var(--text-muted);">Delivery Drop-off:</div>
+                      <div style="color:var(--text);">${dest}</div>
                     </div>
                     <button class="btn btn-secondary" style="padding: 12px; font-size: 0.85rem; display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%;" onclick="downloadReceipt('${o.id}', this)">
                       <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
