@@ -2238,6 +2238,53 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
     <!-- ROUTE TRANSFER MODAL -->
     <div class="soft-prompt-overlay" id="routeTransferModal">
+      <!-- QR SCANNER MODAL -->
+      <div
+        class="soft-prompt-overlay"
+        id="qrCodeModal"
+        onclick="closeQrModal()"
+      >
+        <div
+          class="soft-prompt-box"
+          style="
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          "
+          onclick="event.stopPropagation()"
+        >
+          <h3 style="color: var(--accent); margin-bottom: 15px">
+            Secondary Device Maps
+          </h3>
+          <img
+            id="qrCodeLargeImage"
+            src=""
+            style="
+              width: 200px;
+              height: 200px;
+              border: 10px solid white;
+              border-radius: 8px;
+              margin-bottom: 20px;
+              background: white;
+            "
+          />
+          <p
+            style="
+              font-size: 0.9rem;
+              color: var(--text-muted);
+              margin-bottom: 20px;
+            "
+          >
+            Scan this code with your second phone's camera to instantly launch
+            Google Maps.
+          </p>
+          <button class="btn btn-secondary" onclick="closeQrModal()">
+            Close
+          </button>
+        </div>
+      </div>
+
       <div
         class="soft-prompt-box"
         style="max-height: 80vh; display: flex; flex-direction: column"
@@ -2650,6 +2697,23 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById("customAlertModal").style.display = "none";
       };
 
+
+
+      window.openQrModal = function(url) {
+        const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+        document.getElementById("qrCodeLargeImage").src = qrApi;
+        document.getElementById("qrCodeModal").style.display = "flex";
+      };
+
+      window.closeQrModal = function() {
+        document.getElementById("qrCodeModal").style.display = "none";
+        document.getElementById("qrCodeLargeImage").src = "";
+      };
+
+
+
+
+
       // Override native browser alerts to use the custom modal automatically
       window.alert = function (message) {
         window.showCustomAlert("System Notice", message);
@@ -2969,19 +3033,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           html += `
             <button onclick="window.selectQueueDate('${dateStr}')" style="
               position: relative;
-              flex-shrink: 0; 
-              padding: 10px 16px; 
-              border-radius: 20px; 
+              flex-shrink: 0;
+              padding: 10px 16px;
+              border-radius: 20px;
               border: 1px solid ${
                 isActive ? "var(--accent)" : "var(--border)"
-              }; 
+              };
               background: ${
                 isActive ? "var(--accent)" : "var(--surface-elevated)"
-              }; 
-              color: ${isActive ? "white" : "var(--text-muted)"}; 
-              font-weight: 700; 
-              font-size: 0.85rem; 
-              cursor: pointer; 
+              };
+              color: ${isActive ? "white" : "var(--text-muted)"};
+              font-weight: 700;
+              font-size: 0.85rem;
+              cursor: pointer;
               transition: all 0.2s;
             ">${label}${dotHtml}</button>
           `;
@@ -4347,15 +4411,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           marker.bindPopup(`
           <div style="text-align:center;">
             <strong>${order.title}</strong><br>
-            
+
                         ${
                           order.geographicLock
                             ? `<span style="background:var(--danger);color:white;padding:4px 8px;border-radius:6px;font-size:0.75rem;display:inline-block;margin-top:4px;margin-bottom:4px;">Geographic Lock: Hot Food is Stop #${order.geoStopNum}</span><br>`
                             : ""
                         }
 
-            
-            
+
+
             <button onclick="rejectTriageOrder('${
               order.id
             }')" class="btn btn-emergency" style="padding: 6px 12px; margin-top: 10px; font-size: 0.8rem; border-radius: 6px;">Reject & Redraw</button>
@@ -4495,8 +4559,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById("transferRosterView").style.display = "block";
         window.pendingTransferDriverId = null;
       };
-      
-      
+
+
       window.executeRouteTransfer = async function () {
         if (!window.pendingTransferOrderId || !window.pendingTransferDriverId)
           return;
@@ -4514,8 +4578,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               status: "pending",
             }
           );
-          
-          // Force a hard reload on the sender's side to completely flush the order from local memory, 
+
+          // Force a hard reload on the sender's side to completely flush the order from local memory,
           // sever active Firebase listeners, and prevent the driver UI from freezing.
           window.location.reload();
           return;
@@ -4529,9 +4593,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           btn.disabled = false;
         }
       };
-      
 
-      
+
+
       window.emergencyAbortActiveRoute = async function () {
         if (window.hotFoodSnoozeTimer) clearTimeout(window.hotFoodSnoozeTimer);
         const recallTab = document.getElementById("hotFoodRecallTab");
@@ -4897,7 +4961,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           const unsub = window.onSnapshot(
             window.doc(window.db, "orders", orderId),
             (docSnap) => {
-              
+
               if (docSnap.exists()) {
                 const data = docSnap.data();
                 if (data.status === "cancelled" || data.assignedDriverId !== DRIVER_DOC_ID) {
@@ -5276,7 +5340,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             if (window.monitorActiveRoute) window.monitorActiveRoute();
 
 
-            
+
             // Advance the workflow phase immediately so the app state is safely locked, regardless of modal interactions
             AppState.workflowPhase = "pickup";
             updateDashboardUI();
@@ -5291,7 +5355,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                  // Callback executes silently
               });
             }
-            
+
 
           };
 
@@ -5717,10 +5781,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             // Native OS deep link to Google Maps
             const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${node.lat},${node.lng}&travelmode=driving`;
-            navBtnHTML = `<button class="btn" style="margin-top:10px; margin-bottom:5px; padding:12px; font-size:0.95rem; background:#22c55e; color:white; border:none; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="window.open('${mapsUrl}', '_blank')">
-              <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-              Navigate to Pickup
-            </button>`;
+
+
+            navBtnHTML = `
+              <div style="display: flex; gap: 10px; margin-top: 10px; margin-bottom: 5px;">
+                <button class="btn" style="flex: 1; padding:12px; font-size:0.95rem; background:#22c55e; color:white; border:none; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="window.open('${mapsUrl}', '_blank')">
+                  <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+                  Navigate to Pickup
+                </button>
+                <button class="btn" style="width: 54px; flex-shrink: 0; background: #ffffff; border: 2px solid var(--accent); padding: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openQrModal('${mapsUrl}')">
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(mapsUrl)}" style="width: 100%; height: 100%; object-fit: contain;" alt="QR" />
+                </button>
+              </div>`;
+
           } else if (!isDone) {
             statusClass = "";
           }
@@ -5795,24 +5868,24 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
 
                 </div>
-                
-                
+
+
                                   ${
                                     node.geographicLock
                                       ? `<span style="background: var(--danger); color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.4); margin-left: 10px;">Geographic Lock: Hot Food Stop #${node.geoStopNum}</span>`
                                       : ""
                                   }
 
-                
-                
-                
+
+
+
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Curbside Handoff</p>
 
                 ${AppState.workflowPhase === "pickup" ? navBtnHTML : ""}
 
                 ${!isDone ? extraInfo : ""}
-                
-                
+
+
 
                 ${AppState.workflowPhase === "pickup" ? btnHTML : ""}
               </div>
@@ -5842,11 +5915,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             // Native OS deep link to Google Maps
             const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${node.lat},${node.lng}&travelmode=driving`;
-            navBtnHTML = `<button class="btn" style="margin-top:10px; padding:12px; font-size:0.95rem; background:#22c55e; color:white; border:none; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="window.open('${mapsUrl}', '_blank')">
-              <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-              Navigate to Drop-off
-            </button>`;
-          }
+
+            navBtnHTML = `
+              <div style="display: flex; gap: 10px; margin-top: 10px; margin-bottom: 5px;">
+                <button class="btn" style="flex: 1; padding:12px; font-size:0.95rem; background:#22c55e; color:white; border:none; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="window.open('${mapsUrl}', '_blank')">
+                  <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+                  Navigate to Drop-off
+                </button>
+                <button class="btn" style="width: 54px; flex-shrink: 0; background: #ffffff; border: 2px solid var(--accent); padding: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openQrModal('${mapsUrl}')">
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(mapsUrl)}" style="width: 100%; height: 100%; object-fit: contain;" alt="QR" />
+                </button>
+              </div>`;
+
 
           let connectHTML = "";
           if (
