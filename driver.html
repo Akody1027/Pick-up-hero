@@ -4495,7 +4495,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById("transferRosterView").style.display = "block";
         window.pendingTransferDriverId = null;
       };
-
+      
+      
       window.executeRouteTransfer = async function () {
         if (!window.pendingTransferOrderId || !window.pendingTransferDriverId)
           return;
@@ -4506,7 +4507,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         btn.disabled = true;
 
         try {
-          
           await window.updateDoc(
             window.doc(window.db, "orders", window.pendingTransferOrderId),
             {
@@ -4515,29 +4515,23 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
           );
           
-          // Immediately clear the transferred order from local queues so it doesn't linger
-          AppState.activeQueue = AppState.activeQueue.filter(q => (q.dbId || q.id) !== window.pendingTransferOrderId);
-          AppState.triageQueue = AppState.triageQueue.filter(q => (q.dbId || q.id) !== window.pendingTransferOrderId);
-
-          if (AppState.activeQueue.length === 0 && AppState.triageQueue.length === 0) {
-              AppState.workflowPhase = "idle";
-          }
-          updateDashboardUI();
-          window.saveShiftState();
-
-          window.closeRouteTransferModal();
+          // Force a hard reload on the sender's side to completely flush the order from local memory, 
+          // sever active Firebase listeners, and prevent the driver UI from freezing.
+          window.location.reload();
+          return;
         } catch (error) {
           console.error("Transfer failed:", error);
           window.showCustomAlert(
             "Transfer Error",
             "Failed to transfer route. Please check your connection."
           );
-        } finally {
           btn.innerText = originalText;
           btn.disabled = false;
         }
       };
+      
 
+      
       window.emergencyAbortActiveRoute = async function () {
         if (window.hotFoodSnoozeTimer) clearTimeout(window.hotFoodSnoozeTimer);
         const recallTab = document.getElementById("hotFoodRecallTab");
