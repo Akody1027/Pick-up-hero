@@ -1526,6 +1526,98 @@
       </div>
     </div>
 
+    <!-- HOT FOOD CUSTOMER ALERT MODAL -->
+    <div
+      id="hotFoodCustomerModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(239, 68, 68, 0.95);
+        z-index: 9999;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(10px);
+      "
+    >
+      <div
+        style="
+          background: var(--surface);
+          width: 90%;
+          max-width: 400px;
+          padding: 30px;
+          border-radius: 20px;
+          text-align: center;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+          border: 2px solid #fff;
+        "
+      >
+        <div
+          style="
+            width: 80px;
+            height: 80px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.2);
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 40px; height: 40px; fill: #fff"
+          >
+            <path
+              d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm4.77 1c-.82-1.18-1.77-2.73-1.77-6h-2c0 2.06.66 4.3 1.96 6.18L16.5 14v8h2v-8l2.54-3.82C22.34 8.3 23 6.06 23 4h-2c0 3.27-.95 4.82-1.77 6z"
+            />
+          </svg>
+        </div>
+        <h2
+          style="
+            color: var(--danger);
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+          "
+        >
+          Hot Food Action Required
+        </h2>
+        <p
+          style="
+            color: var(--text);
+            font-size: 1rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+          "
+        >
+          Your Hero is arriving at the restaurant!
+          <strong>Please submit your food order with the restaurant NOW</strong>
+          to ensure it is hot and fresh.
+        </p>
+        <button
+          class="btn btn-primary"
+          onclick="acknowledgeHotFoodCustomer()"
+          style="
+            background: var(--danger);
+            color: white;
+            font-size: 1.1rem;
+            padding: 18px;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5);
+          "
+        >
+          I UNDERSTAND
+        </button>
+      </div> 
+    </div>
+
     <!-- MAP BASE -->
     <div id="map"></div>
 
@@ -3525,6 +3617,20 @@
         window.location.reload();
       };
 
+      
+      
+      
+      window.acknowledgeHotFoodCustomer = function() {
+        document.getElementById("hotFoodCustomerModal").style.display = "none";
+        const abortAudio = document.getElementById("abortAlarmSound");
+        if (abortAudio) {
+            abortAudio.pause();
+            abortAudio.currentTime = 0;
+        }
+        window.showCustomAlert("Action Confirmed", "Thank you! Your Hero has been notified and will secure your items momentarily.");
+      };
+      
+
       window.recoverEditDelivery = function () {
         document.getElementById("trackerSheet").style.transform =
           "translateY(150%)";
@@ -4038,13 +4144,7 @@
               }
 
               // 2. Mid-Run States: Reload to draw the new route if we missed a progression while asleep
-              if (
-                (window.appState.lastKnownStatus &&
-                  window.appState.lastKnownStatus !== data.status) ||
-                (!window.appState.lastKnownStatus && data.status !== "pending")
-              ) {
-                window.location.reload();
-              }
+      
             }
           } catch (e) {
             console.error("Background sync failed:", e);
@@ -4689,6 +4789,14 @@
           async (docSnap) => {
             if (docSnap.exists()) {
               const data = docSnap.data();
+              
+              // FORCE REFRESH ON ROUTE TRANSFER: If the driver ID changes mid-session, hard reload the app to re-sync all listeners cleanly.
+              if (window.appState.lastKnownDriverId && window.appState.lastKnownDriverId !== data.assignedDriverId) {
+                  window.location.reload();
+                  return;
+              }
+              window.appState.lastKnownDriverId = data.assignedDriverId;
+              
 
               // Calculate completed stops to track individual pickups
               let completedStopsCount = 0;
@@ -4720,6 +4828,15 @@
 
               // 1. FIX: Fetch dynamic driver image during a live delivery
               if (data.assignedDriverId) {
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 try {
                   const driverDoc = await window.getDoc(
                     window.doc(
@@ -6848,7 +6965,17 @@
               const isMe = msg.senderId === window.appState.userId;
 
               if (!isMe && !msg.read) {
-                isNewPayload = true;
+                if (msg.text === "SYSTEM_HOT_FOOD_ALERT") {
+                  document.getElementById("hotFoodCustomerModal").style.display = "flex";
+                  const abortAudio = document.getElementById("abortAlarmSound");
+                  if (abortAudio) {
+                      abortAudio.loop = true;
+                      abortAudio.play().catch(e => console.log(e));
+                  }
+                  window.updateDoc(change.doc.ref, { read: true }).catch(e => console.log(e));
+                } else {
+                  isNewPayload = true;
+                }
               }
             }
           });
@@ -6856,6 +6983,8 @@
           // 2. Rebuild entire chat to resolve "Sending..." optimistic local writes
           snapshot.docs.forEach((docSnap) => {
             const msg = docSnap.data();
+            if (msg.text === "SYSTEM_HOT_FOOD_ALERT") return; // Skip rendering system triggers in chat UI
+
             const isMe = msg.senderId === window.appState.userId;
             const bubbleClass = isMe ? "customer" : "hero";
 
@@ -6867,6 +6996,7 @@
               : "Sending...";
 
             html += `
+
                           <div class="chat-bubble ${bubbleClass}">
                             ${
                               msg.imageUrl
