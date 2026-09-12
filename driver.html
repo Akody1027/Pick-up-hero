@@ -2225,21 +2225,34 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       </div>
     </div>
 
-    
     <!-- PUSH NOTIFICATION SOFT PROMPT -->
     <div class="soft-prompt-overlay" id="pushNotificationPrompt">
       <div class="soft-prompt-box">
-        <h3 style="color: var(--accent); margin-bottom: 12px;">Enable Route Alerts</h3>
+        <h3 style="color: var(--accent); margin-bottom: 12px">
+          Enable Route Alerts
+        </h3>
         <p>
-          Get instantly notified when new high-paying deliveries hit the queue or when customers message you.
+          Get instantly notified when new high-paying deliveries hit the queue
+          or when customers message you.
         </p>
-        <div style="display: flex; gap: 12px; margin-top: 20px;">
-          <button class="btn btn-secondary" style="flex: 1" onclick="dismissPushPrompt()">Not Now</button>
-          <button class="btn btn-primary" style="flex: 1" onclick="acceptAndRequestPush()">Allow Alerts</button>
+        <div style="display: flex; gap: 12px; margin-top: 20px">
+          <button
+            class="btn btn-secondary"
+            style="flex: 1"
+            onclick="dismissPushPrompt()"
+          >
+            Not Now
+          </button>
+          <button
+            class="btn btn-primary"
+            style="flex: 1"
+            onclick="acceptAndRequestPush()"
+          >
+            Allow Alerts
+          </button>
         </div>
       </div>
     </div>
-    
 
     <!-- CUSTOM ALERT PROMPT -->
     <div class="soft-prompt-overlay" id="customAlertModal">
@@ -2555,14 +2568,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         browserSessionPersistence,
         deleteUser,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
-      
-      
+
       import {
         getMessaging,
         getToken,
-        onMessage
+        onMessage,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-messaging.js";
-      
 
       import {
         getFirestore,
@@ -2617,13 +2628,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.deleteUser = deleteUser;
       window.addDoc = addDoc;
 
-      const messaging = getMessaging(app);
-      window.messaging = messaging;
-      window.getToken = getToken;
-      window.onMessage = onMessage;
-      
-      
-      
+      try {
+        const messaging = getMessaging(app);
+        window.messaging = messaging;
+        window.getToken = getToken;
+        window.onMessage = onMessage;
+      } catch (error) {
+        console.warn(
+          "Firebase Messaging disabled: Not supported in this local environment.",
+          error
+        );
+        window.messaging = null;
+      }
+
       // Fire the application boot sequence now that Firebase is guaranteed loaded
       if (window.bootApplication) window.bootApplication();
     </script>
@@ -2724,22 +2741,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         document.getElementById("customAlertModal").style.display = "none";
       };
 
-
-
-      window.openQrModal = function(url) {
-        const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+      window.openQrModal = function (url) {
+        const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+          url
+        )}`;
         document.getElementById("qrCodeLargeImage").src = qrApi;
         document.getElementById("qrCodeModal").style.display = "flex";
       };
 
-      window.closeQrModal = function() {
+      window.closeQrModal = function () {
         document.getElementById("qrCodeModal").style.display = "none";
         document.getElementById("qrCodeLargeImage").src = "";
       };
-
-
-
-
 
       // Override native browser alerts to use the custom modal automatically
       window.alert = function (message) {
@@ -2938,7 +2951,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
-            .register("./sw-driver.js", { scope: "./driver.html" })
+            .register("./sw-driver.js", { scope: "./" })
             .then((reg) => console.log("Driver SW Active:", reg.scope))
             .catch((err) => console.error("Driver SW failed:", err));
         });
@@ -2996,13 +3009,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 listenForPendingOrders();
                 loadDriverSettings();
                 window.initializeShiftState();
-                
-                if (!sessionStorage.getItem('pushPromptSnoozed')) {
-                  if (window.checkPushPermissions) window.checkPushPermissions();
+
+                if (!sessionStorage.getItem("pushPromptSnoozed")) {
+                  if (window.checkPushPermissions)
+                    window.checkPushPermissions();
                 }
-                
-                
-                
               }, 1000);
             }
           } else {
@@ -3070,9 +3081,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               flex-shrink: 0;
               padding: 10px 16px;
               border-radius: 20px;
-              border: 1px solid ${
-                isActive ? "var(--accent)" : "var(--border)"
-              };
+              border: 1px solid ${isActive ? "var(--accent)" : "var(--border)"};
               background: ${
                 isActive ? "var(--accent)" : "var(--surface-elevated)"
               };
@@ -4594,7 +4603,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         window.pendingTransferDriverId = null;
       };
 
-
       window.executeRouteTransfer = async function () {
         if (!window.pendingTransferOrderId || !window.pendingTransferDriverId)
           return;
@@ -4627,8 +4635,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           btn.disabled = false;
         }
       };
-
-
 
       window.emergencyAbortActiveRoute = async function () {
         if (window.hotFoodSnoozeTimer) clearTimeout(window.hotFoodSnoozeTimer);
@@ -4995,10 +5001,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           const unsub = window.onSnapshot(
             window.doc(window.db, "orders", orderId),
             (docSnap) => {
-
               if (docSnap.exists()) {
                 const data = docSnap.data();
-                if (data.status === "cancelled" || data.assignedDriverId !== DRIVER_DOC_ID) {
+                if (
+                  data.status === "cancelled" ||
+                  data.assignedDriverId !== DRIVER_DOC_ID
+                ) {
                   if (data.status === "cancelled") {
                     window.showCustomAlert(
                       "Delivery Aborted",
@@ -5373,8 +5381,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             AppState.pendingOrders = 0;
             if (window.monitorActiveRoute) window.monitorActiveRoute();
 
-
-
             // Advance the workflow phase immediately so the app state is safely locked, regardless of modal interactions
             AppState.workflowPhase = "pickup";
             updateDashboardUI();
@@ -5386,13 +5392,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             // Trigger the hot food modal as an independent overlay, NOT as a state-blocking gatekeeper
             if (pendingPickups.length > 0 && pendingPickups[0].isHotFood) {
               window.triggerHotFoodIntercept(pendingPickups[0].dbId, () => {
-                 // Callback executes silently
+                // Callback executes silently
               });
             }
-
-
           };
-
 
           drawTriageRoute();
           timeline.innerHTML = "";
@@ -5816,7 +5819,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             // Native OS deep link to Google Maps
             const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${node.lat},${node.lng}&travelmode=driving`;
 
-
             navBtnHTML = `
               <div style="display: flex; gap: 10px; margin-top: 10px; margin-bottom: 5px;">
                 <button class="btn" style="flex: 1; padding:12px; font-size:0.95rem; background:#22c55e; color:white; border:none; display:flex; justify-content:center; align-items:center; gap:8px;" onclick="window.open('${mapsUrl}', '_blank')">
@@ -5824,10 +5826,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   Navigate to Pickup
                 </button>
                 <button class="btn" style="width: 54px; flex-shrink: 0; background: #ffffff; border: 2px solid var(--accent); padding: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openQrModal('${mapsUrl}')">
-                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(mapsUrl)}" style="width: 100%; height: 100%; object-fit: contain;" alt="QR" />
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(
+                    mapsUrl
+                  )}" style="width: 100%; height: 100%; object-fit: contain;" alt="QR" />
                 </button>
               </div>`;
-
           } else if (!isDone) {
             statusClass = "";
           }
@@ -5957,16 +5960,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   Navigate to Drop-off
                 </button>
                 <button class="btn" style="width: 54px; flex-shrink: 0; background: #ffffff; border: 2px solid var(--accent); padding: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="openQrModal('${mapsUrl}')">
-                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(mapsUrl)}" style="width: 100%; height: 100%; object-fit: contain;" alt="QR" />
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(
+                    mapsUrl
+                  )}" style="width: 100%; height: 100%; object-fit: contain;" alt="QR" />
                 </button>
               </div>`;
- 
+          }
 
-            
-            }
-            
-            
-            
           let connectHTML = "";
           if (
             node.status !== "completed" &&
@@ -6679,34 +6679,44 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         );
       };
 
-      
-      
       // --- PUSH NOTIFICATION LOGIC ---
-      window.checkPushPermissions = function() {
-        if (!DRIVER_DOC_ID || !('Notification' in window) || !('serviceWorker' in navigator)) return;
+      window.checkPushPermissions = function () {
+        if (
+          !DRIVER_DOC_ID ||
+          !("Notification" in window) ||
+          !("serviceWorker" in navigator) ||
+          !window.messaging
+        )
+          return;
 
-        if (Notification.permission === 'default') {
+        if (Notification.permission === "default") {
           setTimeout(() => {
-            document.getElementById('pushNotificationPrompt').style.display = 'flex';
+            document.getElementById("pushNotificationPrompt").style.display =
+              "flex";
           }, 3000);
-        } else if (Notification.permission === 'granted') {
+        } else if (Notification.permission === "granted") {
           window.syncFcmToken();
         }
       };
 
-      window.dismissPushPrompt = function() {
-        document.getElementById('pushNotificationPrompt').style.display = 'none';
-        sessionStorage.setItem('pushPromptSnoozed', 'true');
+      window.dismissPushPrompt = function () {
+        document.getElementById("pushNotificationPrompt").style.display =
+          "none";
+        sessionStorage.setItem("pushPromptSnoozed", "true");
       };
 
-      window.acceptAndRequestPush = async function() {
-        document.getElementById('pushNotificationPrompt').style.display = 'none';
+      window.acceptAndRequestPush = async function () {
+        document.getElementById("pushNotificationPrompt").style.display =
+          "none";
         try {
           const permission = await Notification.requestPermission();
-          
-          if (permission === 'granted') {
+
+          if (permission === "granted") {
             await window.syncFcmToken();
-            window.showCustomAlert("Alerts Enabled", "You will now receive real-time updates for new deliveries.");
+            window.showCustomAlert(
+              "Alerts Enabled",
+              "You will now receive real-time updates for new deliveries."
+            );
           } else {
             console.log("Push permission denied by driver.");
           }
@@ -6715,26 +6725,30 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
-      window.syncFcmToken = async function() {
+      window.syncFcmToken = async function () {
         try {
           const registration = await navigator.serviceWorker.ready;
-          
+
           const currentToken = await window.getToken(window.messaging, {
-            vapidKey: "BDyNKkQqFf-zEUHcjDNvyZ2Aqviuy5t7UQFiSmxM_ogI96aoKRFV8q6NQykNFJ_DW6k7kU93rTHAWOHjkgj2kTo",
-            serviceWorkerRegistration: registration
+            vapidKey:
+              "BDyNKkQqFf-zEUHcjDNvyZ2Aqviuy5t7UQFiSmxM_ogI96aoKRFV8q6NQykNFJ_DW6k7kU93rTHAWOHjkgj2kTo",
+            serviceWorkerRegistration: registration,
           });
 
           if (currentToken && DRIVER_DOC_ID) {
-            await window.setDoc(window.doc(window.db, "driver_settings", DRIVER_DOC_ID), {
-              fcmToken: currentToken,
-              fcmUpdatedAt: window.serverTimestamp()
-            }, { merge: true });
+            await window.setDoc(
+              window.doc(window.db, "driver_settings", DRIVER_DOC_ID),
+              {
+                fcmToken: currentToken,
+                fcmUpdatedAt: window.serverTimestamp(),
+              },
+              { merge: true }
+            );
           }
         } catch (error) {
           console.error("Error fetching FCM token:", error);
         }
       };
-      
 
       // --- PWA INSTALLATION PROMPT ---
       let deferredInstallPrompt = null;
