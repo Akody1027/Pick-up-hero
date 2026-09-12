@@ -29,7 +29,7 @@
       :root {
         --bg: #121212;
         --surface: #1e1e1e;
-        --surface-elevated: #2c2c2c; 
+        --surface-elevated: #2c2c2c;
         --accent: #ee611c;
         --accent-hover: #d95314;
         --text: #ffffff;
@@ -2637,7 +2637,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       // Initialize UI and Map
 
-      AppState.isInitialLoad = true; 
+      AppState.isInitialLoad = true;
       let DRIVER_DOC_ID = null;
 
       window.showCustomAlert = function (title, text) {
@@ -5185,7 +5185,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               );
 
               const sortedSOS = await sortDeliveriesByTime(
-                currentLoc[0], 
+                currentLoc[0],
                 currentLoc[1],
                 sosDeliveries
               );
@@ -5227,12 +5227,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             wfBtn.innerText = originalText;
             wfBtn.disabled = false;
-            
-            
-            
+
             // FORCE EXPLICIT SYNC: Push the 'approved' status to Firebase for ALL accepted orders in this batch,
             // regardless of local array filtering, ensuring the Customer App always receives the ping.
-            const uniqueApprovedIds = [...new Set(acceptedOrders.map((item) => item.dbId))];
+            const uniqueApprovedIds = [
+              ...new Set(acceptedOrders.map((item) => item.dbId)),
+            ];
             for (const orderId of uniqueApprovedIds) {
               if (orderId) {
                 window
@@ -5242,8 +5242,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   .catch((e) => console.error(e));
               }
             }
-            
-
 
             const uniqueShiftIds = [
               ...new Set(
@@ -5262,7 +5260,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             AppState.pendingOrders = 0;
             if (window.monitorActiveRoute) window.monitorActiveRoute();
-            
+
+
             
             // Advance the workflow phase immediately so the app state is safely locked, regardless of modal interactions
             AppState.workflowPhase = "pickup";
@@ -5280,8 +5279,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
             
 
-            
           };
+
 
           drawTriageRoute();
           timeline.innerHTML = "";
