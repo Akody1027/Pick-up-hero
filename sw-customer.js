@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html>
+
 importScripts("https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.4.0/firebase-messaging-compat.js");
 
@@ -63,45 +62,6 @@ self.addEventListener("fetch", (event) => {
 });
 
   
-  
-  // --- BACKGROUND NOTIFICATION LISTENER ---
-messaging.onBackgroundMessage((payload) => {
-  console.log("Received background message: ", payload);
-  
-  // Extract from the new data-only payload
-  const notificationTitle = payload.data.title || "Pick Up Hero";
-  const notificationOptions = {
-    body: payload.data.body || "You have a new update.",
-    icon: "./heroimg192.png",
-    badge: "./heroimg192.png"
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
-  
-
-
-// --- NOTIFICATION CLICK WAKE-UP HANDLER ---
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close(); // Close the lock-screen banner
-  
-  // Check if the app is already open in a background tab and focus it
-  event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        // If the customer app is already open somewhere, just bring it to the front
-        if (client.url.includes("customer.html") && "focus" in client) {
-          return client.focus();
-        }
-      }
-      // If the app was completely closed, launch a new window
-      if (clients.openWindow) {
-        return clients.openWindow("./customer.html");
-      }
-    })
-  );
-});
-
 
 
 
