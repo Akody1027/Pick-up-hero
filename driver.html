@@ -3305,16 +3305,21 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
             updateDashboardUI();
           }
-        } catch (e) {
+          
+          
+          } catch (e) {
           console.error("Error loading settings:", e);
-
+          
           // CORRUPTED READ FAILSAFE: Purge cache so the next load pulls fresh server data
           localStorage.clear();
           sessionStorage.clear();
 
           updateDashboardUI(); // Force dashboard to un-freeze
         }
+
       };
+      
+
 
       window.saveDriverSettings = async function () {
         const btn = document.getElementById("saveSettingsBtn");
@@ -5075,15 +5080,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
                   updateDashboardUI();
                 }
-              } else {
+                
+                
+                
+                } else {
                 // HARD-DELETE FAILSAFE: Instantly purge ghost cache and hard reset the app
-                alert(
-                  "SYSTEM OVERRIDE: An active order was removed from the database. Flushing local memory to restore map synchronization."
-                );
+                alert("SYSTEM OVERRIDE: An active order was removed from the database. Flushing local memory to restore map synchronization.");
                 localStorage.clear();
                 sessionStorage.clear();
                 window.location.reload(true);
               }
+
             }
           );
 
