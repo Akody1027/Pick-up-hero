@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -3004,17 +3005,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               if (!AppState.mapInstance) {
                 initMap();
               }
-              setTimeout(() => {
+              
+              setTimeout(async () => {
                 window.renderQueueDaySelector();
                 listenForPendingOrders();
-                loadDriverSettings();
-                window.initializeShiftState();
+                
+                await loadDriverSettings();
+                await window.initializeShiftState();
 
                 if (!sessionStorage.getItem("pushPromptSnoozed")) {
                   if (window.checkPushPermissions)
                     window.checkPushPermissions();
                 }
               }, 1000);
+
             }
           } else {
             document.getElementById("authOverlay").style.display = "flex";
