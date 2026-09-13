@@ -3262,19 +3262,27 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                     position.coords.latitude,
                     position.coords.longitude,
                   ];
+                  AppState.baseLocations = [
+                    {
+                      lat: position.coords.latitude,
+                      lng: position.coords.longitude,
+                    },
+                  ];
                   if (AppState.mapInstance) {
                     AppState.mapInstance.setView(AppState.homeBase, 12);
                     renderHomeBases();
                   }
-                  updateDashboardUI(); // Force dashboard to un-freeze
+                  updateDashboardUI();
                 },
                 (error) => {
                   console.error("GPS Fallback Error:", error);
-                  // Force a default map view if GPS is denied so the app doesn't freeze
                   AppState.homeBase = [39.8283, -98.5795];
-                  if (AppState.mapInstance)
+                  AppState.baseLocations = [{ lat: 39.8283, lng: -98.5795 }];
+                  if (AppState.mapInstance) {
                     AppState.mapInstance.setView(AppState.homeBase, 4);
-                  updateDashboardUI(); // Force dashboard to un-freeze
+                    renderHomeBases();
+                  }
+                  updateDashboardUI();
                   alert(
                     "Please enable location access to set your exact Home Base."
                   );
@@ -3283,16 +3291,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               );
             } else {
               AppState.homeBase = [39.8283, -98.5795];
-              if (AppState.mapInstance)
+              AppState.baseLocations = [{ lat: 39.8283, lng: -98.5795 }];
+              if (AppState.mapInstance) {
                 AppState.mapInstance.setView(AppState.homeBase, 4);
-              updateDashboardUI(); // Force dashboard to un-freeze
+                renderHomeBases();
+              }
+              updateDashboardUI();
             }
           } else {
             if (AppState.mapInstance) {
               AppState.mapInstance.setView(AppState.homeBase, 12);
               renderHomeBases();
             }
-            updateDashboardUI(); // Force dashboard to un-freeze
+            updateDashboardUI();
           }
         } catch (e) {
           console.error("Error loading settings:", e);
@@ -5008,7 +5019,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         uniqueOrderIds.forEach((orderId) => {
           if (!orderId) return;
 
-          // 1. Monitor Order Status for Cancellations
+          // 1. Monitor Order Status for Cancellations and Hard Deletions
           const unsub = window.onSnapshot(
             window.doc(window.db, "orders", orderId),
             (docSnap) => {
@@ -5059,9 +5070,45 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
                   updateDashboardUI();
                 }
+              } else {
+                // HARD-DELETE FAILSAFE
+                window.showCustomAlert(
+                  "Order Removed",
+                  "An active delivery request was removed from the database. Adjusting your route now."
+                );
+
+                AppState.activeQueue = AppState.activeQueue.filter(
+                  (item) => item.dbId !== orderId
+                );
+                AppState.triageQueue = AppState.triageQueue.filter(
+                  (item) => item.dbId !== orderId
+                );
+
+                if (
+                  AppState.activeQueue.length === 0 &&
+                  AppState.triageQueue.length === 0
+                ) {
+                  AppState.workflowPhase = "idle";
+                } else if (
+                  AppState.workflowPhase === "pickup" ||
+                  AppState.workflowPhase === "ready_pickup"
+                ) {
+                  const pendingPickups = AppState.activeQueue.filter(
+                    (i) => i.type === "pickup" && i.status !== "completed"
+                  );
+                  if (
+                    pendingPickups.length === 0 &&
+                    AppState.activeQueue.length > 0
+                  ) {
+                    AppState.workflowPhase = "ready_delivery";
+                  }
+                }
+
+                updateDashboardUI();
               }
             }
           );
+
           window.activeOrderUnsubscribers.push(unsub);
 
           // 2. Background Chat Listener for Notifications (Filing Cabinet System)
@@ -6426,9 +6473,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           badge.style.display = totalCount > 0 ? "flex" : "none";
         }
       };
-
-      
-
 
       // --- COMMUNITY HUB LOGIC ---
       window.communityUnsubscribe = null;
