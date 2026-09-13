@@ -61,29 +61,23 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// --- NATIVE PUSH INTERCEPTOR ---
-self.addEventListener('push', function(event) {
-  if (!event.data) return;
+// --- BACKGROUND NOTIFICATION LISTENER ---
+messaging.onBackgroundMessage((payload) => {
+  console.log("Received background message: ", payload);
   
-  let payload = {};
-  try {
-    payload = event.data.json();
-  } catch (e) {
-    console.warn("Failed to parse push payload", e);
-  }
-
-  const notificationTitle = payload?.notification?.title || "Hero Command";
+  // Extract from the new data-only payload
+  const notificationTitle = payload.data.title || "Hero Command";
   const notificationOptions = {
-    body: payload?.notification?.body || "A new order requires your attention.",
+    body: payload.data.body || "A new order requires your attention.",
     icon: "./heroimg192.png",
-    badge: "./heroimg192.png",
-    data: payload?.data || {} 
+    badge: "./heroimg192.png"
   };
 
-  event.waitUntil(
-    self.registration.showNotification(notificationTitle, notificationOptions)
-  );
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });
+
+
+
 
 // --- NOTIFICATION CLICK WAKE-UP HANDLER ---
 self.addEventListener("notificationclick", (event) => {
