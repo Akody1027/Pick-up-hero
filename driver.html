@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Pick Up Hero - Driver Command</title>
+    <title>Pick Up Hero - Driver Command</title> 
 
     <link rel="icon" href="hero.ico" type="image/x-icon" />
     <meta
@@ -3307,6 +3307,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
         } catch (e) {
           console.error("Error loading settings:", e);
+
+          // CORRUPTED READ FAILSAFE: Purge cache so the next load pulls fresh server data
+          localStorage.clear();
+          sessionStorage.clear();
+
           updateDashboardUI(); // Force dashboard to un-freeze
         }
       };
@@ -5071,40 +5076,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   updateDashboardUI();
                 }
               } else {
-                // HARD-DELETE FAILSAFE
-                window.showCustomAlert(
-                  "Order Removed",
-                  "An active delivery request was removed from the database. Adjusting your route now."
+                // HARD-DELETE FAILSAFE: Instantly purge ghost cache and hard reset the app
+                alert(
+                  "SYSTEM OVERRIDE: An active order was removed from the database. Flushing local memory to restore map synchronization."
                 );
-
-                AppState.activeQueue = AppState.activeQueue.filter(
-                  (item) => item.dbId !== orderId
-                );
-                AppState.triageQueue = AppState.triageQueue.filter(
-                  (item) => item.dbId !== orderId
-                );
-
-                if (
-                  AppState.activeQueue.length === 0 &&
-                  AppState.triageQueue.length === 0
-                ) {
-                  AppState.workflowPhase = "idle";
-                } else if (
-                  AppState.workflowPhase === "pickup" ||
-                  AppState.workflowPhase === "ready_pickup"
-                ) {
-                  const pendingPickups = AppState.activeQueue.filter(
-                    (i) => i.type === "pickup" && i.status !== "completed"
-                  );
-                  if (
-                    pendingPickups.length === 0 &&
-                    AppState.activeQueue.length > 0
-                  ) {
-                    AppState.workflowPhase = "ready_delivery";
-                  }
-                }
-
-                updateDashboardUI();
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.reload(true);
               }
             }
           );
