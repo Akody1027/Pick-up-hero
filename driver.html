@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -5085,10 +5086,32 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 
                 } else {
                 // HARD-DELETE FAILSAFE: Instantly purge ghost cache and hard reset the app
-                alert("SYSTEM OVERRIDE: An active order was removed from the database. Flushing local memory to restore map synchronization.");
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.reload(true);
+
+                  AppState.workflowPhase = "idle";
+                AppState.activeQueue = [];
+                AppState.triageQueue = [];
+                
+                window.setDoc(
+                  window.doc(window.db, "driver_state", DRIVER_DOC_ID),
+                  {
+                    workflowPhase: "idle",
+                    activeQueue: [],
+                    triageQueue: [],
+                    acknowledgedOrderIds: []
+                  },
+                  { merge: true }
+                ).then(() => {
+                  alert("SYSTEM OVERRIDE: An active order was removed from the database. Flushing local memory to restore map synchronization.");
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  window.location.reload(true);
+                }).catch((error) => {
+                  console.error("Failsafe database reset failed:", error);
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  window.location.reload(true);
+                });
+                  
               }
 
             }
