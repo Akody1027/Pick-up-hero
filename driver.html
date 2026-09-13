@@ -5081,29 +5081,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 AppState.workflowPhase = "idle";
                 AppState.activeQueue = [];
                 AppState.triageQueue = [];
+                AppState.acknowledgedOrderIds = [];
 
-                const purgeAndReload = async () => {
-                  alert(
-                    "SYSTEM OVERRIDE: An active order was removed from the database. Flushing local memory to restore map synchronization."
+                if (window.activeOrderUnsubscribers) {
+                  window.activeOrderUnsubscribers.forEach((activeUnsub) =>
+                    activeUnsub()
                   );
-                  localStorage.clear();
-                  sessionStorage.clear();
-
-                  if (window.indexedDB && window.indexedDB.databases) {
-                    try {
-                      const dbs = await window.indexedDB.databases();
-                      dbs.forEach((db) =>
-                        window.indexedDB.deleteDatabase(db.name)
-                      );
-                    } catch (e) {
-                      console.warn("Native IndexedDB iteration blocked:", e);
-                    }
-                  }
-
-                  setTimeout(() => {
-                    window.location.reload(true);
-                  }, 500);
-                };
+                  window.activeOrderUnsubscribers = [];
+                }
 
                 window
                   .setDoc(
@@ -5116,8 +5101,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                     },
                     { merge: true }
                   )
-                  .then(purgeAndReload)
-                  .catch(purgeAndReload);
+                  .then(() => {
+                    window.showCustomAlert(
+                      "Route Terminated",
+                      "An active order was removed from the server. Your route has been safely cleared."
+                    );
+                    updateDashboardUI();
+                  })
+                  .catch((error) => {
+                    console.error("Failsafe database sync failed:", error);
+                    updateDashboardUI();
+                  });
               }
             }
           );
