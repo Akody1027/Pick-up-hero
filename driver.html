@@ -2556,6 +2556,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqlDSF6sSZqagHDlFCw2K-v4lRQQCK6Ew&libraries=places&loading=async"
     ></script>
     <!-- FIREBASE SDK -->
+
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
 
@@ -2568,12 +2569,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         browserSessionPersistence,
         deleteUser,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
-
-      import {
-        getMessaging,
-        getToken,
-        onMessage,
-      } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-messaging.js";
 
       import {
         getFirestore,
@@ -2605,7 +2600,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       const auth = getAuth(app);
       const db = getFirestore(app);
 
-      // Attach db to window to allow global AppState functions to execute Firestore queries
       window.db = db;
       window.auth = auth;
       window.signInWithEmailAndPassword = signInWithEmailAndPassword;
@@ -2621,27 +2615,32 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.updateDoc = updateDoc;
       window.setDoc = setDoc;
       window.getDoc = getDoc;
-
       window.serverTimestamp = serverTimestamp;
       window.orderBy = orderBy;
       window.deleteDoc = deleteDoc;
       window.deleteUser = deleteUser;
       window.addDoc = addDoc;
 
-      try {
-        const messaging = getMessaging(app);
-        window.messaging = messaging;
-        window.getToken = getToken;
-        window.onMessage = onMessage;
-      } catch (error) {
-        console.warn(
-          "Firebase Messaging disabled: Not supported in this local environment.",
-          error
-        );
-        window.messaging = null;
-      }
+      // Isolate messaging inside a dynamic import bubble to prevent fatal module crashes
+      import("https://www.gstatic.com/firebasejs/10.4.0/firebase-messaging.js")
+        .then(({ getMessaging, getToken, onMessage }) => {
+          try {
+            window.messaging = getMessaging(app);
+            window.getToken = getToken;
+            window.onMessage = onMessage;
+          } catch (e) {
+            console.warn("Messaging disabled by local environment.", e);
+            window.messaging = null;
+          }
+        })
+        .catch((err) => {
+          console.warn(
+            "Push messaging SDK blocked. Continuing core boot.",
+            err
+          );
+          window.messaging = null;
+        });
 
-      // Fire the application boot sequence now that Firebase is guaranteed loaded
       if (window.bootApplication) window.bootApplication();
     </script>
 
@@ -2946,12 +2945,13 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       };
 
       // --- SECURE BOOT SEQUENCE ---
+
       let hasBooted = false;
 
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
-            .register("./sw-driver.js", { scope: "./" })
+            .register("./sw-driver.js", { scope: "./driver.html" })
             .then((reg) => console.log("Driver SW Active:", reg.scope))
             .catch((err) => console.error("Driver SW failed:", err));
         });
@@ -6727,6 +6727,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       window.syncFcmToken = async function () {
         try {
+          if (!window.messaging || !window.getToken) return;
           const registration = await navigator.serviceWorker.ready;
 
           const currentToken = await window.getToken(window.messaging, {
@@ -6746,7 +6747,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             );
           }
         } catch (error) {
-          console.error("Error fetching FCM token:", error);
+          console.warn("FCM token sync aborted:", error);
         }
       };
 
