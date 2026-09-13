@@ -61,19 +61,28 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// --- BACKGROUND NOTIFICATION LISTENER ---
-messaging.onBackgroundMessage((payload) => {
-  console.log("Received background message: ", payload);
+// --- NATIVE PUSH INTERCEPTOR ---
+self.addEventListener('push', function(event) {
+  if (!event.data) return;
   
-  const notificationTitle = payload.notification.title || "Hero Command";
+  let payload = {};
+  try {
+    payload = event.data.json();
+  } catch (e) {
+    console.warn("Failed to parse push payload", e);
+  }
+
+  const notificationTitle = payload?.notification?.title || "Hero Command";
   const notificationOptions = {
-    body: payload.notification.body,
+    body: payload?.notification?.body || "A new order requires your attention.",
     icon: "./heroimg192.png",
     badge: "./heroimg192.png",
-    data: payload.data // Passes hidden routing data to the click handler
+    data: payload?.data || {} 
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  event.waitUntil(
+    self.registration.showNotification(notificationTitle, notificationOptions)
+  );
 });
 
 // --- NOTIFICATION CLICK WAKE-UP HANDLER ---
@@ -96,7 +105,6 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
-
 
 
 
