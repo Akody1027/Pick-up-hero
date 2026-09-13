@@ -3171,16 +3171,26 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           let hasSavedLocation = false;
 
+          // 1. GUARANTEE STATE: Prevent UI freezing for brand new driver accounts
+          AppState.weeklyRoutine = {
+            Sun: [],
+            Mon: [],
+            Tue: [],
+            Wed: [],
+            Thu: [],
+            Fri: [],
+            Sat: [],
+          };
+          AppState.selectedRoutineDay = "Mon";
+
           if (docSnap.exists()) {
             const data = docSnap.data();
             if (data.displayName)
               document.getElementById("driverNameInput").value =
                 data.displayName;
-
             if (data.phoneNumber)
               document.getElementById("driverPhoneInput").value =
                 data.phoneNumber;
-
             if (data.bio)
               document.getElementById("driverBioInput").value = data.bio;
             if (data.premiumRate)
@@ -3228,20 +3238,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             if (data.weeklyRoutine) {
               AppState.weeklyRoutine = data.weeklyRoutine;
-            } else {
-              AppState.weeklyRoutine = {
-                Sun: [],
-                Mon: [],
-                Tue: [],
-                Wed: [],
-                Thu: [],
-                Fri: [],
-                Sat: [],
-              };
             }
-
-            AppState.selectedRoutineDay = "Mon";
-            window.renderWaveBuilder();
 
             const killSwitch = document.getElementById("killSwitchToggle");
             if (data.globalKillSwitch) killSwitch.classList.add("on");
@@ -3252,10 +3249,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             else sosToggle.classList.remove("on");
           }
 
-          // --- NATIVE GEOLOCATION FALLBACK ---
-
+          // 2. ALWAYS RENDER UI: Ensure menus populate even if database is empty
+          window.renderWaveBuilder();
           window.checkProfileDirty();
 
+          // 3. NATIVE GEOLOCATION FALLBACK & DASHBOARD FORCE-START
           if (!hasSavedLocation) {
             if (navigator.geolocation) {
               navigator.geolocation.getCurrentPosition(
@@ -3268,24 +3266,37 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                     AppState.mapInstance.setView(AppState.homeBase, 12);
                     renderHomeBases();
                   }
+                  updateDashboardUI(); // Force dashboard to un-freeze
                 },
                 (error) => {
                   console.error("GPS Fallback Error:", error);
-                  alert("Please enable location access to set your Home Base.");
+                  // Force a default map view if GPS is denied so the app doesn't freeze
+                  AppState.homeBase = [39.8283, -98.5795];
+                  if (AppState.mapInstance)
+                    AppState.mapInstance.setView(AppState.homeBase, 4);
+                  updateDashboardUI(); // Force dashboard to un-freeze
+                  alert(
+                    "Please enable location access to set your exact Home Base."
+                  );
                 },
                 { enableHighAccuracy: true }
               );
+            } else {
+              AppState.homeBase = [39.8283, -98.5795];
+              if (AppState.mapInstance)
+                AppState.mapInstance.setView(AppState.homeBase, 4);
+              updateDashboardUI(); // Force dashboard to un-freeze
             }
           } else {
-            // Apply the saved database location
             if (AppState.mapInstance) {
               AppState.mapInstance.setView(AppState.homeBase, 12);
-
               renderHomeBases();
             }
+            updateDashboardUI(); // Force dashboard to un-freeze
           }
         } catch (e) {
           console.error("Error loading settings:", e);
+          updateDashboardUI(); // Force dashboard to un-freeze
         }
       };
 
@@ -6416,15 +6427,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
-      // Inject Triage into Notification center if pending orders exist
-      const originalListenForPendingOrders = window.listenForPendingOrders;
-      window.listenForPendingOrders = function () {
-        originalListenForPendingOrders();
-        setTimeout(() => {
-          if (window.updateNotificationsUI) window.updateNotificationsUI();
-          if (window.monitorActiveRoute) window.monitorActiveRoute();
-        }, 500);
-      };
+      
+
 
       // --- COMMUNITY HUB LOGIC ---
       window.communityUnsubscribe = null;
