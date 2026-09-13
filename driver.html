@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -2952,7 +2951,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
-            .register("./sw-driver.js", { scope: "./driver.html" })
+          
+          
+            .register("./sw-driver.js", { scope: "./" })
             .then((reg) => console.log("Driver SW Active:", reg.scope))
             .catch((err) => console.error("Driver SW failed:", err));
         });
