@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -3026,15 +3025,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 
                 await loadDriverSettings();
                 await window.initializeShiftState();
+                
+                
+                /* Push notification prompt temporarily disabled */
 
-                if (!sessionStorage.getItem("pushPromptSnoozed")) {
-                  if (window.checkPushPermissions)
-                    window.checkPushPermissions();
-                }
               }, 1000);
 
             }
-          } else {
+          } else { 
             document.getElementById("authOverlay").style.display = "flex";
             hasBooted = false;
           }
