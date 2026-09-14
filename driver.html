@@ -3080,7 +3080,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             const isTriageStatus = ["pending", "accepted", "approved"].includes(
               o.status
             );
-            return oDate === AppState.selectedQueueDate && isTriageStatus;
+
+          return oDate === dateStr && isTriageStatus;
+          
           });
 
           const hasOrders = ordersForThisDay.length > 0;
