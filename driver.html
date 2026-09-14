@@ -26,7 +26,7 @@
     />
 
     <style>
-      :root { 
+      :root {
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
@@ -4018,15 +4018,16 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           AppState.allPendingOrders = newOrders;
           AppState.pendingOrders = snapshot.docs.length;
 
-          // --- ACTIVE ROUTE AUTO-RECOVERY ---
-          let liveStateRecovered = false;
+          // --- ACTIVE ROUTE AUTO-RECOVERY & VALIDATION ---
+          let hasLiveItems = false;
+
           newOrders.forEach((o) => {
             if (["approved", "picked_up", "in_transit"].includes(o.status)) {
+              hasLiveItems = true;
               const localMatch = AppState.activeQueue.find(
                 (a) => a.id === o.id
               );
               if (!localMatch) {
-                // Pre-complete pickups if the network confirms we are already en route
                 if (
                   o.type === "pickup" &&
                   ["picked_up", "in_transit"].includes(o.status)
@@ -4034,21 +4035,29 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   o.status = "completed";
                 }
                 AppState.activeQueue.push(o);
-                liveStateRecovered = true;
               }
             }
           });
 
+          // Fallback check local memory in case network drops
+          if (!hasLiveItems && AppState.activeQueue.length > 0) {
+            hasLiveItems = AppState.activeQueue.some((q) =>
+              ["approved", "picked_up", "in_transit", "completed"].includes(
+                q.status
+              )
+            );
+          }
+
+          // Force Phase Correction if trapped in Triage
           if (
-            liveStateRecovered &&
+            hasLiveItems &&
             ["idle", "triage"].includes(AppState.workflowPhase)
           ) {
             const dbStatuses = AppState.activeQueue.map((q) => {
               const matched = newOrders.find((n) => n.id === q.id);
-              return matched ? matched.status : "approved";
+              return matched ? matched.status : q.status;
             });
 
-            // Jump to the furthest progressed state
             if (dbStatuses.includes("in_transit"))
               AppState.workflowPhase = "delivery";
             else if (dbStatuses.includes("picked_up"))
@@ -4313,8 +4322,46 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       window.acknowledgeSOS = function () {
         document.getElementById("sosAlertModal").style.display = "none";
-        // Force the app into triage mode so the driver can immediately route it
-        window.startTriageMode();
+
+        if (
+          ["pickup", "ready_delivery", "delivery"].includes(
+            AppState.workflowPhase
+          )
+        ) {
+          // Hot-swap the SOS directly into the active route without going to Triage
+          const sosOrders = AppState.allPendingOrders.filter(
+            (o) => o.sosTimeline === "asap_today"
+          );
+          let newlyAdded = false;
+
+          sosOrders.forEach((sos) => {
+            if (!AppState.activeQueue.find((a) => a.id === sos.id)) {
+              sos.status = "approved";
+              AppState.activeQueue.push(sos);
+              newlyAdded = true;
+
+              window
+                .updateDoc(window.doc(window.db, "orders", sos.dbId), {
+                  status: "approved",
+                })
+                .catch((e) => console.error(e));
+            }
+            if (!AppState.acknowledgedOrderIds.includes(sos.dbId)) {
+              AppState.acknowledgedOrderIds.push(sos.dbId);
+            }
+          });
+
+          if (newlyAdded) {
+            window.showCustomAlert(
+              "SOS Injected",
+              "The emergency order has been successfully appended to your current route."
+            );
+            updateDashboardUI();
+          }
+        } else {
+          // Force the app into triage mode so the driver can immediately route it
+          window.startTriageMode();
+        }
       };
 
       // Visual Pruning System Engine
@@ -4329,6 +4376,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         if (stdAudio) {
           stdAudio.pause();
           stdAudio.currentTime = 0;
+        }
+
+        // PROTECT ACTIVE ROUTES: Do not allow the Waiting Room to wipe active maps
+        if (
+          ["pickup", "ready_delivery", "delivery"].includes(
+            AppState.workflowPhase
+          )
+        ) {
+          window.showCustomAlert(
+            "Active Route Protected",
+            "You are currently on an active run. New requests are safely queued. Finish your current drops before processing the Waiting Room."
+          );
+          return;
         }
 
         if (AppState.pendingOrders === 0) return;
