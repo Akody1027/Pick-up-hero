@@ -3177,6 +3177,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           );
           return oDate === AppState.selectedQueueDate && isTriageStatus;
         });
+        
+        
+        if (AppState.workflowPhase === "triage" && AppState.triageQueue.length === 0) {
+            AppState.workflowPhase = "idle";
+        }
 
         if (
           AppState.workflowPhase === "triage" ||
@@ -3185,6 +3190,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           updateDashboardUI();
         }
       };
+        
+        
+
 
       window.loadDriverSettings = async function () {
         try {
@@ -5421,12 +5429,24 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       // --- STATE MACHINE ---
       async function updateDashboardUI() {
+        
+        
         const gTitle = document.getElementById("glanceTitle");
         const gSub = document.getElementById("glanceSubtitle");
         const wfBtn = document.getElementById("workflowBtn");
         const timeline = document.getElementById("timelineList");
+        const daySelector = document.getElementById("queueDaySelector");
+
+        // Hide Waiting Room filters while actively running a route
+        if (["pickup", "ready_delivery", "delivery", "complete"].includes(AppState.workflowPhase)) {
+          if (daySelector) daySelector.style.display = "none";
+        } else {
+          if (daySelector) daySelector.style.display = "flex";
+        }
 
         if (AppState.workflowPhase === "triage") {
+
+          
           gTitle.innerText = "Waiting Room";
 
           const uniqueOrderCount = new Set(
