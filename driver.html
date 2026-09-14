@@ -3880,7 +3880,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         const q = window.query(
           window.collection(window.db, "orders"),
           window.where("assignedDriverId", "==", DRIVER_DOC_ID),
-          window.where("status", "in", ["pending", "accepted"]),
+          
+          window.where("status", "in", ["pending", "accepted", "approved"]),
           window.where("createdAt", ">=", timeBoundary)
         );
 
@@ -5322,9 +5323,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           wfBtn.onclick = async function (e) {
             e.stopPropagation();
+            
             const acceptedOrders = AppState.triageQueue.filter(
-              (t) => t.status === "accepted"
-            );
+                (t) => t.status === "accepted" || t.status === "approved"
+              );
+
             if (acceptedOrders.length === 0) {
               window.showCustomAlert(
                 "Queue Empty",
