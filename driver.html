@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
+      content="black-translucent" 
     />
     <meta name="apple-mobile-web-app-title" content="Hero Driver" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
@@ -6561,24 +6561,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         let html = "";
         let totalCount = 0;
 
-        const uniquePendingIds = [
-          ...new Set(AppState.allPendingOrders.map((o) => o.dbId)),
-        ];
-        let newPending = uniquePendingIds.filter(
-          (id) => !AppState.acknowledgedOrderIds.includes(id)
-        ).length;
-
-        if (newPending > 0) {
-          totalCount += newPending;
-          html += `
-            <div style="background: var(--surface-elevated); padding: 15px; border-radius: 12px; border: 1px solid var(--danger); cursor: pointer; margin-bottom: 15px;" onclick="window.startTriageMode()">
-              <strong style="color: var(--danger);">Pending Route Requests (${newPending})</strong>
-              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Tap to open mapping engine</p>
-            </div>
-          `;
-        }
-
-        // --- THE FILING CABINET: Build persistent threads for every active customer ---
         const allOrders = [
           ...(AppState.activeQueue || []),
           ...(AppState.triageQueue || []),
