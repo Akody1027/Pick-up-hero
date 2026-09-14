@@ -26,7 +26,7 @@
     />
 
     <style>
-      :root {
+      :root { 
         --bg: #121212;
         --surface: #1e1e1e;
         --surface-elevated: #2c2c2c;
@@ -3080,9 +3080,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             const isTriageStatus = ["pending", "accepted", "approved"].includes(
               o.status
             );
-
-          return oDate === dateStr && isTriageStatus;
-          
+            return oDate === dateStr && isTriageStatus;
           });
 
           const hasOrders = ordersForThisDay.length > 0;
@@ -3173,9 +3171,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               "0"
             )}-${String(now.getDate()).padStart(2, "0")}`;
           }
-          
-          
-          const isTriageStatus = ["pending", "accepted", "approved"].includes(o.status);
+
+          const isTriageStatus = ["pending", "accepted", "approved"].includes(
+            o.status
+          );
           return oDate === AppState.selectedQueueDate && isTriageStatus;
         });
 
@@ -4018,6 +4017,49 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           AppState.allPendingOrders = newOrders;
           AppState.pendingOrders = snapshot.docs.length;
+
+          // --- ACTIVE ROUTE AUTO-RECOVERY ---
+          let liveStateRecovered = false;
+          newOrders.forEach((o) => {
+            if (["approved", "picked_up", "in_transit"].includes(o.status)) {
+              const localMatch = AppState.activeQueue.find(
+                (a) => a.id === o.id
+              );
+              if (!localMatch) {
+                // Pre-complete pickups if the network confirms we are already en route
+                if (
+                  o.type === "pickup" &&
+                  ["picked_up", "in_transit"].includes(o.status)
+                ) {
+                  o.status = "completed";
+                }
+                AppState.activeQueue.push(o);
+                liveStateRecovered = true;
+              }
+            }
+          });
+
+          if (
+            liveStateRecovered &&
+            ["idle", "triage"].includes(AppState.workflowPhase)
+          ) {
+            const dbStatuses = AppState.activeQueue.map((q) => {
+              const matched = newOrders.find((n) => n.id === q.id);
+              return matched ? matched.status : "approved";
+            });
+
+            // Jump to the furthest progressed state
+            if (dbStatuses.includes("in_transit"))
+              AppState.workflowPhase = "delivery";
+            else if (dbStatuses.includes("picked_up"))
+              AppState.workflowPhase = "ready_delivery";
+            else AppState.workflowPhase = "pickup";
+
+            updateDashboardUI();
+            const sheet = document.getElementById("activeQueueSheet");
+            if (sheet) sheet.classList.add("expanded");
+          }
+          // --- END AUTO-RECOVERY ---
 
           // --- GARBAGE COLLECTION DIFF ---
           const activeDbIds = new Set(newOrders.map((o) => o.dbId));
