@@ -2628,19 +2628,21 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             window.messaging = getMessaging(app);
             window.getToken = getToken;
             window.onMessage = onMessage;
-            
-            
-            
-          onMessage(window.messaging, (payload) => {
-          if (window.showCustomAlert) {
-            window.showCustomAlert(payload.notification.title, payload.notification.body);
-          }
-          const alertAudio = document.getElementById("alertSound");
-          if (alertAudio && window.audioUnlocked) {
-            alertAudio.play().catch(e => console.log("Audio blocked:", e));
-          }
-        });
 
+            onMessage(window.messaging, (payload) => {
+              if (window.showCustomAlert) {
+                window.showCustomAlert(
+                  payload.notification.title,
+                  payload.notification.body
+                );
+              }
+              const alertAudio = document.getElementById("alertSound");
+              if (alertAudio && window.audioUnlocked) {
+                alertAudio
+                  .play()
+                  .catch((e) => console.log("Audio blocked:", e));
+              }
+            });
           } catch (e) {
             console.warn("Messaging disabled by local environment.", e);
             window.messaging = null;
@@ -3018,21 +3020,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               if (!AppState.mapInstance) {
                 initMap();
               }
-              
+
               setTimeout(async () => {
                 window.renderQueueDaySelector();
                 listenForPendingOrders();
-                
+
                 await loadDriverSettings();
                 await window.initializeShiftState();
-                
-                
+
                 /* Push notification prompt temporarily disabled */
-
               }, 1000);
-
             }
-          } else { 
+          } else {
             document.getElementById("authOverlay").style.display = "flex";
             hasBooted = false;
           }
@@ -3077,7 +3076,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                 now.getMonth() + 1
               ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
             }
-            return oDate === dateStr;
+
+            const isTriageStatus = ["pending", "accepted", "approved"].includes(
+              o.status
+            );
+            return oDate === AppState.selectedQueueDate && isTriageStatus;
           });
 
           const hasOrders = ordersForThisDay.length > 0;
@@ -3168,7 +3171,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               "0"
             )}-${String(now.getDate()).padStart(2, "0")}`;
           }
-          return oDate === AppState.selectedQueueDate;
+          
+          
+          const isTriageStatus = ["pending", "accepted", "approved"].includes(o.status);
+          return oDate === AppState.selectedQueueDate && isTriageStatus;
         });
 
         if (
@@ -3880,8 +3886,15 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         const q = window.query(
           window.collection(window.db, "orders"),
           window.where("assignedDriverId", "==", DRIVER_DOC_ID),
-          
-          window.where("status", "in", ["pending", "accepted", "approved"]),
+
+          window.where("status", "in", [
+            "pending",
+            "accepted",
+            "approved",
+            "picked_up",
+            "in_transit",
+          ]),
+
           window.where("createdAt", ">=", timeBoundary)
         );
 
@@ -3975,6 +3988,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           });
 
           const previousTriageLength = AppState.triageQueue.length;
+          const incomingTriageCount = newOrders.filter((o) =>
+            ["pending", "accepted", "approved"].includes(o.status)
+          ).length;
 
           if (hasNewSOS && !AppState.isInitialLoad) {
             document.getElementById("sosAlertModal").style.display = "flex";
@@ -3988,7 +4004,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
           } else if (
             !AppState.isInitialLoad &&
-            newOrders.length > previousTriageLength
+            incomingTriageCount > previousTriageLength
           ) {
             document
               .getElementById("alertSound")
@@ -4602,6 +4618,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             snapshot.forEach((docSnap) => {
               if (docSnap.id !== DRIVER_DOC_ID) {
                 const data = docSnap.data();
+
                 const name = data.displayName || "Hero Driver";
                 html += `
                 <div style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-elevated); padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border);">
@@ -5047,11 +5064,18 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             (docSnap) => {
               if (docSnap.exists()) {
                 const data = docSnap.data();
+
+                const terminationStatuses = [
+                  "cancelled",
+                  "refunded",
+                  "failed",
+                  "aborted",
+                ];
                 if (
-                  data.status === "cancelled" ||
+                  terminationStatuses.includes(data.status) ||
                   data.assignedDriverId !== DRIVER_DOC_ID
                 ) {
-                  if (data.status === "cancelled") {
+                  if (terminationStatuses.includes(data.status)) {
                     window.showCustomAlert(
                       "Delivery Aborted",
                       "🚨 A customer cancelled their order! Actively rerouting your remaining stops now."
@@ -5323,10 +5347,10 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           wfBtn.onclick = async function (e) {
             e.stopPropagation();
-            
+
             const acceptedOrders = AppState.triageQueue.filter(
-                (t) => t.status === "accepted" || t.status === "approved"
-              );
+              (t) => t.status === "accepted" || t.status === "approved"
+            );
 
             if (acceptedOrders.length === 0) {
               window.showCustomAlert(
