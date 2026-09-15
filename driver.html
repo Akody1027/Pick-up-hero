@@ -4126,6 +4126,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           AppState.isInitialLoad = false;
 
+          AppState.allPendingOrders = newOrders;
+          AppState.pendingOrders = snapshot.docs.length;
+
           // --- ACTIVE ROUTE AUTO-RECOVERY & VALIDATION ---
           let hasLiveItems = false;
 
@@ -4663,7 +4666,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           );
           let next = stdDeliveriesTriage.shift();
           sorted.push(next);
-          current = [next.lat, next.lng]; 
+          current = [next.lat, next.lng];
         }
 
         AppState.triageQueue = sorted; // Save sorted sequence
