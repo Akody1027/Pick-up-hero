@@ -3525,6 +3525,8 @@
         orderBy,
         updateDoc,
         increment,
+        disableNetwork,
+        enableNetwork,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -3559,6 +3561,9 @@
       window.deleteDoc = deleteDoc;
       window.updateDoc = updateDoc;
       window.increment = increment;
+
+      window.disableNetwork = disableNetwork;
+      window.enableNetwork = enableNetwork;
 
       window.deleteUser = deleteUser;
       window.signOut = signOut;
@@ -3634,10 +3639,6 @@
             window.loadActiveDriver();
           }
         }
-        
-        
-        
-
       });
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -4237,6 +4238,20 @@
 
       // --- BACKGROUND SYNC ENGINE ---
       document.addEventListener("visibilitychange", async () => {
+        if (
+          document.visibilityState === "visible" &&
+          window.db &&
+          window.disableNetwork &&
+          window.enableNetwork
+        ) {
+          try {
+            await window.disableNetwork(window.db);
+            await window.enableNetwork(window.db);
+          } catch (e) {
+            console.error("Network cycle failed:", e);
+          }
+        }
+
         if (
           document.visibilityState === "visible" &&
           window.appState &&
