@@ -2770,10 +2770,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         if (!window.audioUnlocked) {
           const stdAudio = document.getElementById("alertSound");
           const sosAudio = document.getElementById("sosAlarmSound");
+
           if (stdAudio) {
             stdAudio
               .play()
-              .then(() => stdAudio.pause())
+              .then(() => {
+                stdAudio.pause();
+                stdAudio.currentTime = 0;
+              })
               .catch((e) => {});
           }
 
@@ -2782,13 +2786,14 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               .play()
               .then(() => {
                 const isSosActive =
-                  document.getElementById("sosAlertModal").style.display ===
-                  "flex";
+                  document.getElementById("sosAlertModal").style.display !==
+                  "none";
                 const isCancelActive =
-                  document.getElementById("cancelAlertModal").style.display ===
-                  "flex";
+                  document.getElementById("cancelAlertModal").style.display !==
+                  "none";
                 if (!isSosActive && !isCancelActive) {
                   sosAudio.pause();
+                  sosAudio.currentTime = 0;
                 }
               })
               .catch((e) => {});
@@ -4121,6 +4126,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             if (sosAudio) {
               sosAudio.loop = true;
+              sosAudio.currentTime = 0;
               sosAudio
                 .play()
                 .catch((e) => console.log("SOS Audio blocked:", e));
@@ -5322,6 +5328,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                     const sosAudio = document.getElementById("sosAlarmSound");
                     if (sosAudio) {
                       sosAudio.loop = true;
+                      sosAudio.currentTime = 0;
                       sosAudio
                         .play()
                         .catch((e) => console.log("Audio blocked:", e));
