@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent" 
+      content="black-translucent"
     />
     <meta name="apple-mobile-web-app-title" content="Hero Driver" />
     <link rel="apple-touch-icon" href="heroimg192.png" />
@@ -2584,6 +2584,8 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         orderBy,
         deleteDoc,
         addDoc,
+        disableNetwork,
+        enableNetwork,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -2620,6 +2622,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
       window.deleteDoc = deleteDoc;
       window.deleteUser = deleteUser;
       window.addDoc = addDoc;
+
+      window.disableNetwork = disableNetwork;
+      window.enableNetwork = enableNetwork;
 
       // Isolate messaging inside a dynamic import bubble to prevent fatal module crashes
       import("https://www.gstatic.com/firebasejs/10.4.0/firebase-messaging.js")
@@ -2707,6 +2712,20 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           });
         }
       );
+
+      document.addEventListener("visibilitychange", () => {
+        if (
+          document.visibilityState === "visible" &&
+          window.db &&
+          window.disableNetwork &&
+          window.enableNetwork
+        ) {
+          window
+            .disableNetwork(window.db)
+            .then(() => window.enableNetwork(window.db))
+            .catch(console.error);
+        }
+      });
 
       // System State
       const AppState = {
@@ -3177,10 +3196,12 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           );
           return oDate === AppState.selectedQueueDate && isTriageStatus;
         });
-        
-        
-        if (AppState.workflowPhase === "triage" && AppState.triageQueue.length === 0) {
-            AppState.workflowPhase = "idle";
+
+        if (
+          AppState.workflowPhase === "triage" &&
+          AppState.triageQueue.length === 0
+        ) {
+          AppState.workflowPhase = "idle";
         }
 
         if (
@@ -3190,9 +3211,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           updateDashboardUI();
         }
       };
-        
-        
-
 
       window.loadDriverSettings = async function () {
         try {
@@ -5429,8 +5447,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       // --- STATE MACHINE ---
       async function updateDashboardUI() {
-        
-        
         const gTitle = document.getElementById("glanceTitle");
         const gSub = document.getElementById("glanceSubtitle");
         const wfBtn = document.getElementById("workflowBtn");
@@ -5438,15 +5454,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         const daySelector = document.getElementById("queueDaySelector");
 
         // Hide Waiting Room filters while actively running a route
-        if (["pickup", "ready_delivery", "delivery", "complete"].includes(AppState.workflowPhase)) {
+        if (
+          ["pickup", "ready_delivery", "delivery", "complete"].includes(
+            AppState.workflowPhase
+          )
+        ) {
           if (daySelector) daySelector.style.display = "none";
         } else {
           if (daySelector) daySelector.style.display = "flex";
         }
 
         if (AppState.workflowPhase === "triage") {
-
-          
           gTitle.innerText = "Waiting Room";
 
           const uniqueOrderCount = new Set(
