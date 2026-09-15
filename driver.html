@@ -2776,10 +2776,21 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               .then(() => stdAudio.pause())
               .catch((e) => {});
           }
+
           if (sosAudio) {
             sosAudio
               .play()
-              .then(() => sosAudio.pause())
+              .then(() => {
+                const isSosActive =
+                  document.getElementById("sosAlertModal").style.display ===
+                  "flex";
+                const isCancelActive =
+                  document.getElementById("cancelAlertModal").style.display ===
+                  "flex";
+                if (!isSosActive && !isCancelActive) {
+                  sosAudio.pause();
+                }
+              })
               .catch((e) => {});
           }
           window.audioUnlocked = true;
