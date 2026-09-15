@@ -1407,6 +1407,99 @@
       </div>
     </div>
 
+    <!-- CANCEL FULL SCREEN ALERT MODAL -->
+    <div
+      id="cancelAlertModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(239, 68, 68, 0.95);
+        z-index: 9999;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(10px);
+      "
+    >
+      <div
+        style="
+          background: var(--surface);
+          width: 90%;
+          max-width: 400px;
+          padding: 30px;
+          border-radius: 20px;
+          text-align: center;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+          border: 2px solid #fff;
+        "
+      >
+        <div
+          style="
+            width: 80px;
+            height: 80px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.2);
+          "
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style="width: 40px; height: 40px; fill: #fff"
+          >
+            <path
+              d="M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2"
+            />
+          </svg>
+        </div>
+        <h2
+          style="
+            color: var(--danger);
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+          "
+        >
+          Delivery Aborted
+        </h2>
+
+        <p
+          style="
+            color: var(--text);
+            font-size: 1rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+          "
+        >
+          A customer just cancelled their order! Actively rerouting your
+          remaining stops now.
+        </p>
+
+        <button
+          class="btn btn-primary"
+          onclick="acknowledgeCancellation()"
+          style="
+            background: var(--danger);
+            color: white;
+            font-size: 1.1rem;
+            padding: 18px;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5);
+          "
+        >
+          Understood
+        </button>
+      </div>
+    </div>
+
     <!-- MAP LAYER -->
     <div id="map"></div>
 
@@ -4001,25 +4094,17 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
             }
           });
 
-          window.pendingSOSOrderIds = window.pendingSOSOrderIds || new Set();
-          let hasNewSOS = false;
-
-          newOrders.forEach((order) => {
-            if (
-              order.sosTimeline === "asap_today" &&
-              !window.pendingSOSOrderIds.has(order.dbId)
-            ) {
-              hasNewSOS = true;
-              window.pendingSOSOrderIds.add(order.dbId);
-            }
-          });
+          let hasPendingSOS = newOrders.some(
+            (order) =>
+              order.sosTimeline === "asap_today" && order.status === "pending"
+          );
 
           const previousTriageLength = AppState.triageQueue.length;
           const incomingTriageCount = newOrders.filter((o) =>
             ["pending", "accepted", "approved"].includes(o.status)
           ).length;
 
-          if (hasNewSOS && !AppState.isInitialLoad) {
+          if (hasPendingSOS) {
             document.getElementById("sosAlertModal").style.display = "flex";
             const sosAudio = document.getElementById("sosAlarmSound");
 
@@ -4040,9 +4125,6 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           }
 
           AppState.isInitialLoad = false;
-
-          AppState.allPendingOrders = newOrders;
-          AppState.pendingOrders = snapshot.docs.length;
 
           // --- ACTIVE ROUTE AUTO-RECOVERY & VALIDATION ---
           let hasLiveItems = false;
@@ -4346,8 +4428,22 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
         }
       };
 
+      window.acknowledgeCancellation = function () {
+        document.getElementById("cancelAlertModal").style.display = "none";
+        const sosAudio = document.getElementById("sosAlarmSound");
+        if (sosAudio) {
+          sosAudio.pause();
+          sosAudio.currentTime = 0;
+        }
+      };
+
       window.acknowledgeSOS = function () {
         document.getElementById("sosAlertModal").style.display = "none";
+        const sosAudio = document.getElementById("sosAlarmSound");
+        if (sosAudio) {
+          sosAudio.pause();
+          sosAudio.currentTime = 0;
+        }
 
         if (
           ["pickup", "ready_delivery", "delivery"].includes(
@@ -4567,7 +4663,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           );
           let next = stdDeliveriesTriage.shift();
           sorted.push(next);
-          current = [next.lat, next.lng];
+          current = [next.lat, next.lng]; 
         }
 
         AppState.triageQueue = sorted; // Save sorted sequence
@@ -5201,15 +5297,21 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   "failed",
                   "aborted",
                 ];
+
                 if (
                   terminationStatuses.includes(data.status) ||
                   data.assignedDriverId !== DRIVER_DOC_ID
                 ) {
                   if (terminationStatuses.includes(data.status)) {
-                    window.showCustomAlert(
-                      "Delivery Aborted",
-                      "🚨 A customer cancelled their order! Actively rerouting your remaining stops now."
-                    );
+                    document.getElementById("cancelAlertModal").style.display =
+                      "flex";
+                    const sosAudio = document.getElementById("sosAlarmSound");
+                    if (sosAudio) {
+                      sosAudio.loop = true;
+                      sosAudio
+                        .play()
+                        .catch((e) => console.log("Audio blocked:", e));
+                    }
                   } else {
                     window.showCustomAlert(
                       "Route Transferred",
