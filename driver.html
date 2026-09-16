@@ -2801,6 +2801,19 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
           window.audioUnlocked = true;
         }
 
+        // EMERGENCY AUDIO OVERRIDE: Force playback on tap if red modal is visible
+        const activeSosAudio = document.getElementById("sosAlarmSound");
+        if (activeSosAudio) {
+          const isSosVisible =
+            document.getElementById("sosAlertModal").style.display === "flex";
+          const isCancelVisible =
+            document.getElementById("cancelAlertModal").style.display ===
+            "flex";
+          if (isSosVisible || isCancelVisible) {
+            activeSosAudio.play().catch((e) => {});
+          }
+        }
+
         if (ribbon) ribbon.classList.add("activity-active");
         if (spinner) spinner.classList.add("activity-active");
 
@@ -4141,6 +4154,55 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               .catch(() => console.log("Audio blocked."));
           }
 
+          // VANISHING ORDER DETECTOR
+          if (!AppState.isInitialLoad) {
+            const newOrderIds = new Set(newOrders.map((o) => o.dbId));
+            const oldOrderIds = new Set(
+              AppState.allPendingOrders.map((o) => o.dbId)
+            );
+
+            oldOrderIds.forEach(async (oldId) => {
+              if (!newOrderIds.has(oldId)) {
+                try {
+                  const checkSnap = await window.getDoc(
+                    window.doc(window.db, "orders", oldId)
+                  );
+                  if (
+                    checkSnap.exists() &&
+                    checkSnap.data().status === "cancelled"
+                  ) {
+                    document.getElementById("cancelAlertModal").style.display =
+                      "flex";
+                    const sosAudio = document.getElementById("sosAlarmSound");
+                    if (sosAudio) {
+                      sosAudio.loop = true;
+                      sosAudio.currentTime = 0;
+                      sosAudio.play().catch((e) => console.log(e));
+                    }
+
+                    AppState.activeQueue = AppState.activeQueue.filter(
+                      (q) => q.dbId !== oldId
+                    );
+                    AppState.triageQueue = AppState.triageQueue.filter(
+                      (q) => q.dbId !== oldId
+                    );
+
+                    if (
+                      AppState.activeQueue.length === 0 &&
+                      AppState.triageQueue.length === 0
+                    ) {
+                      AppState.workflowPhase = "idle";
+                    }
+
+                    updateDashboardUI();
+                  }
+                } catch (e) {
+                  console.error("Vanishing order check failed:", e);
+                }
+              }
+            });
+          }
+
           AppState.isInitialLoad = false;
 
           AppState.allPendingOrders = newOrders;
@@ -4151,7 +4213,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           newOrders.forEach((o) => {
             if (["approved", "picked_up", "in_transit"].includes(o.status)) {
-              hasLiveItems = true;
+               hasLiveItems = true;
               const localMatch = AppState.activeQueue.find(
                 (a) => a.id === o.id
               );
