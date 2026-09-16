@@ -3706,6 +3706,9 @@
 
       window.acknowledgeHotFoodCustomer = function () {
         document.getElementById("hotFoodCustomerModal").style.display = "none";
+
+        localStorage.removeItem("unacknowledged_hot_food");
+
         const abortAudio = document.getElementById("abortAlarmSound");
         if (abortAudio) {
           abortAudio.pause();
@@ -4156,23 +4159,56 @@
 
       let audioUnlocked = false;
       window.unlockGlobalAudio = function () {
-        if (audioUnlocked) return;
-        const alertAudio = document.getElementById("customerAlertSound");
-        if (alertAudio) {
-          alertAudio
-            .play()
-            .then(() => {
-              alertAudio.pause();
-              alertAudio.currentTime = 0;
-            })
-            .catch((e) => {});
+        if (!audioUnlocked) {
+          const alertAudio = document.getElementById("customerAlertSound");
+          const abortAudio = document.getElementById("abortAlarmSound");
+
+          if (alertAudio) {
+            alertAudio
+              .play()
+              .then(() => {
+                alertAudio.pause();
+                alertAudio.currentTime = 0;
+              })
+              .catch((e) => {});
+          }
+
+          if (abortAudio) {
+            abortAudio
+              .play()
+              .then(() => {
+                const isHotFoodActive =
+                  document.getElementById("hotFoodCustomerModal").style
+                    .display !== "none";
+                const isAbortActive =
+                  document.getElementById("abortAlertModal").style.display !==
+                  "none";
+                if (!isHotFoodActive && !isAbortActive) {
+                  abortAudio.pause();
+                  abortAudio.currentTime = 0;
+                }
+              })
+              .catch((e) => {});
+          }
+          audioUnlocked = true;
         }
-        audioUnlocked = true;
+
+        // EMERGENCY AUDIO OVERRIDE: Force playback on tap if a red modal is visible
+        const activeAbortAudio = document.getElementById("abortAlarmSound");
+        if (activeAbortAudio) {
+          const isHotFoodVisible =
+            document.getElementById("hotFoodCustomerModal").style.display ===
+            "flex";
+          const isAbortVisible =
+            document.getElementById("abortAlertModal").style.display === "flex";
+          if (isHotFoodVisible || isAbortVisible) {
+            activeAbortAudio.play().catch((e) => {});
+          }
+        }
       };
 
       ["touchstart", "click"].forEach((evt) => {
         document.addEventListener(evt, window.unlockGlobalAudio, {
-          once: true,
           passive: true,
         });
       });
@@ -5775,6 +5811,22 @@
                 window.renderRecoveredOrder(window.appState.activeOrder);
               }
             }
+
+            // PERSISTENT HOT FOOD CHECK
+            if (localStorage.getItem("unacknowledged_hot_food") === "true") {
+              document.getElementById("hotFoodCustomerModal").style.display =
+                "flex";
+              const abortAudio = document.getElementById("abortAlarmSound");
+              if (abortAudio) {
+                abortAudio.loop = true;
+                abortAudio.currentTime = 0;
+                abortAudio
+                  .play()
+                  .catch((e) =>
+                    console.log("Audio blocked until interaction:", e)
+                  );
+              }
+            }
           } else {
             fab.classList.remove("locked");
 
@@ -7086,14 +7138,17 @@
 
               if (!isMe && !msg.read) {
                 if (msg.text === "SYSTEM_HOT_FOOD_ALERT") {
+                  localStorage.setItem("unacknowledged_hot_food", "true");
                   document.getElementById(
                     "hotFoodCustomerModal"
                   ).style.display = "flex";
                   const abortAudio = document.getElementById("abortAlarmSound");
                   if (abortAudio) {
                     abortAudio.loop = true;
+                    abortAudio.currentTime = 0;
                     abortAudio.play().catch((e) => console.log(e));
                   }
+
                   window
                     .updateDoc(change.doc.ref, { read: true })
                     .catch((e) => console.log(e));
