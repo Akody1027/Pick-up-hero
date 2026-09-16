@@ -4171,9 +4171,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                     checkSnap.exists() &&
                     checkSnap.data().status === "cancelled"
                   ) {
+                    localStorage.setItem("unacknowledged_cancellation", "true");
                     document.getElementById("cancelAlertModal").style.display =
                       "flex";
                     const sosAudio = document.getElementById("sosAlarmSound");
+
                     if (sosAudio) {
                       sosAudio.loop = true;
                       sosAudio.currentTime = 0;
@@ -4213,7 +4215,7 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
           newOrders.forEach((o) => {
             if (["approved", "picked_up", "in_transit"].includes(o.status)) {
-               hasLiveItems = true;
+              hasLiveItems = true;
               const localMatch = AppState.activeQueue.find(
                 (a) => a.id === o.id
               );
@@ -4365,6 +4367,21 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
             window.filterQueueByDate();
           }
+
+          // PERSISTENT CANCELLATION CHECK
+          if (localStorage.getItem("unacknowledged_cancellation") === "true") {
+            document.getElementById("cancelAlertModal").style.display = "flex";
+            const sosAudio = document.getElementById("sosAlarmSound");
+            if (sosAudio) {
+              sosAudio.loop = true;
+              sosAudio.currentTime = 0;
+              sosAudio
+                .play()
+                .catch((e) =>
+                  console.log("Audio blocked until interaction:", e)
+                );
+            }
+          }
         } catch (e) {
           console.error("Initialization failed:", e);
         }
@@ -4512,6 +4529,9 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
 
       window.acknowledgeCancellation = function () {
         document.getElementById("cancelAlertModal").style.display = "none";
+
+        localStorage.removeItem("unacknowledged_cancellation");
+
         const sosAudio = document.getElementById("sosAlarmSound");
         if (sosAudio) {
           sosAudio.pause();
@@ -5385,9 +5405,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
                   data.assignedDriverId !== DRIVER_DOC_ID
                 ) {
                   if (terminationStatuses.includes(data.status)) {
+                    localStorage.setItem("unacknowledged_cancellation", "true");
                     document.getElementById("cancelAlertModal").style.display =
                       "flex";
                     const sosAudio = document.getElementById("sosAlarmSound");
+
                     if (sosAudio) {
                       sosAudio.loop = true;
                       sosAudio.currentTime = 0;
