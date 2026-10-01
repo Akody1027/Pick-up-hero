@@ -1267,13 +1267,30 @@
           transform: translateY(0);
         }
       }
+
       .tip-btn-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
         width: 100%;
         margin-top: 10px;
       }
+      .custom-tip-input {
+        text-align: center;
+        outline: none;
+      }
+      .custom-tip-input:focus {
+        background: var(--surface) !important;
+      }
+      .custom-tip-input::-webkit-outer-spin-button,
+      .custom-tip-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .custom-tip-input[type="number"] {
+        -moz-appearance: textfield;
+      }
+
       .tip-btn {
         background: var(--surface-elevated);
         border: 1px solid var(--accent);
@@ -3413,7 +3430,30 @@
             <button class="tip-btn" onclick="processTip(5.00)">$5</button>
             <button class="tip-btn" onclick="processTip(10.00)">$10</button>
             <button class="tip-btn" onclick="processTip(20.00)">$20</button>
+            <input
+              type="number"
+              id="customTipInput"
+              class="tip-btn custom-tip-input"
+              placeholder="Custom $"
+              oninput="toggleCustomTipSubmit()"
+              min="1"
+              step="1.00"
+            />
           </div>
+
+          <button
+            id="submitCustomTipBtn"
+            class="btn btn-primary"
+            style="
+              display: none;
+              margin-top: 15px;
+              border-radius: 12px;
+              font-weight: bold;
+            "
+            onclick="submitCustomTip()"
+          >
+            Add Custom Tip
+          </button>
 
           <button
             class="btn btn-secondary"
@@ -3602,6 +3642,31 @@
         orderHistoryCache: null,
       };
 
+      // FREE DELIVERY WEEK LISTENER & DYNAMIC UI
+      window.onSnapshot(
+        window.doc(window.db, "system_settings", "global_config"),
+        (docSnap) => {
+          if (docSnap.exists()) {
+            window.appState.isFreeDeliveryWeek =
+              docSnap.data().isFreeDeliveryWeek === true;
+          } else {
+            window.appState.isFreeDeliveryWeek = false;
+          }
+
+          // Dynamically update the main bottom sheet button
+          const schedBtn = document.querySelector(
+            "button[onclick=\"openAddModal('scheduled')\"]"
+          );
+          if (schedBtn) {
+            schedBtn.innerText = window.appState.isFreeDeliveryWeek
+              ? "Book Slot (FREE Promo)"
+              : "Book Slot ($12.99)";
+          }
+
+          if (typeof updateTotalCost === "function") updateTotalCost();
+        }
+      );
+
       auth.onAuthStateChanged((user) => {
         if (user) {
           window.appState.user = user;
@@ -3692,6 +3757,25 @@
           document.title,
           window.location.pathname
         );
+      } else if (urlParams.get("tip_success") === "true") {
+        const tipOrderId = urlParams.get("order_id");
+        const tipAmount = parseFloat(urlParams.get("amount"));
+        if (tipOrderId && tipAmount) {
+          window
+            .updateDoc(window.doc(window.db, "orders", tipOrderId), {
+              tipAmount: window.increment(tipAmount),
+              totalCost: window.increment(tipAmount),
+            })
+            .then(() => {
+              alert("Thank you! Your tip has been processed successfully.");
+              window.history.replaceState(
+                {},
+                document.title,
+                window.location.pathname
+              );
+            })
+            .catch((e) => console.error("Error saving tip:", e));
+        }
       }
 
       window.handleAbortDismiss = function () {
@@ -3888,6 +3972,27 @@
               { bookedCount: window.increment(1) },
               { merge: true }
             );
+          }
+
+          if (totalCost === 0) {
+            // FREE PROMO BYPASS
+            await window.setDoc(
+              window.doc(window.db, "orders", docRef.id),
+              {
+                stripeSessionId: "PROMO_FREE",
+                paymentStatus: "paid",
+                status: "pending",
+              },
+              { merge: true }
+            );
+
+            localStorage.setItem("pickuphero_recoveredOrderId", docRef.id);
+            window.appState.currentOrderId = docRef.id;
+            alert(
+              "Promo Applied! Your free order has been sent to Hero Dispatch."
+            );
+            window.location.reload();
+            return;
           }
 
           // Replace URL below with your deployed Cloud Function endpoint URL
@@ -4465,6 +4570,9 @@
         const addStopBtn = document.getElementById("addStopBtn");
         if (addStopBtn) {
           addStopBtn.innerText = "+ Add Another Stop ($12.99)";
+
+          if (window.appState.isFreeDeliveryWeek)
+            addStopBtn.innerText = "+ Add Another Stop (FREE)";
         }
 
         updateTotalCost();
@@ -4883,9 +4991,13 @@
           const premiumRate = parseFloat(
             window.appState.currentPremiumRate || 50.0
           );
-          baseFee = premiumRate + (activeStops - 1) * 12.99;
+          baseFee = window.appState.isFreeDeliveryWeek
+            ? premiumRate
+            : premiumRate + (activeStops - 1) * 12.99;
         } else {
-          baseFee = activeStops * 12.99;
+          baseFee = window.appState.isFreeDeliveryWeek
+            ? 0
+            : activeStops * 12.99;
         }
 
         const tipElement = document.getElementById("tipInput");
@@ -7919,6 +8031,28 @@
         tipAmount: 0,
       };
 
+      window.toggleCustomTipSubmit = function () {
+        const val = parseFloat(document.getElementById("customTipInput").value);
+        const btn = document.getElementById("submitCustomTipBtn");
+        if (val > 0) {
+          btn.style.display = "block";
+        } else {
+          btn.style.display = "none";
+        }
+      };
+
+      window.submitCustomTip = function () {
+        const val = parseFloat(document.getElementById("customTipInput").value);
+        if (val > 0) {
+          window.processTip(val);
+        } else {
+          window.showCustomAlert(
+            "Invalid Amount",
+            "Please enter a valid tip amount."
+          );
+        }
+      };
+
       window.processTip = async function (amount) {
         window.postDeliveryState.tipAmount = amount;
 
@@ -7937,6 +8071,37 @@
         try {
           if (!orderId || !order || !order.stripeSessionId) {
             throw new Error("No active order or Stripe Session found.");
+          }
+
+          if (order.stripeSessionId === "PROMO_FREE") {
+            // PATH A: FRESH CHECKOUT FOR PROMO TIPS
+            const cloudFunctionUrl =
+              "https://createpickupherocheckout-1068443635940.us-central1.run.app";
+            const tipResponse = await fetch(cloudFunctionUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                amount: amount,
+                orderId: orderId,
+                orderData: { tipOnly: true, userId: window.appState.userId },
+                successUrl:
+                  window.location.origin +
+                  window.location.pathname +
+                  "?tip_success=true&order_id=" +
+                  orderId +
+                  "&amount=" +
+                  amount,
+                cancelUrl: window.location.origin + window.location.pathname,
+              }),
+            });
+
+            const tipSession = await tipResponse.json();
+            if (tipSession.url) {
+              window.location.href = tipSession.url;
+              return;
+            } else {
+              throw new Error("Failed to generate tip checkout session.");
+            }
           }
 
           const response = await fetch(
