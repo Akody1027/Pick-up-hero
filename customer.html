@@ -3912,9 +3912,13 @@
 
         let baseFee = 0;
         if (window.appState.bookingType === "emergency") {
-          baseFee = premiumRate + (activeStopsFound - 1) * 12.99;
+          baseFee = window.appState.isFreeDeliveryWeek
+            ? premiumRate
+            : premiumRate + (activeStopsFound - 1) * 12.99;
         } else {
-          baseFee = activeStopsFound * 12.99;
+          baseFee = window.appState.isFreeDeliveryWeek
+            ? 0
+            : activeStopsFound * 12.99;
         }
 
         const totalCost = baseFee + tipAmount;
