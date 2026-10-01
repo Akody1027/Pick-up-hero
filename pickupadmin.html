@@ -61,7 +61,7 @@
         justify-content: space-between;
         align-items: center;
         z-index: 100;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
       }
 
       header h1 {
@@ -319,10 +319,36 @@
         gap: 12px;
       }
 
+      /* Custom Toggles */
+      .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 28px;
+        background: var(--surface-elevated);
+        border-radius: 30px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .toggle-switch.on {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .toggle-knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 22px;
+        height: 22px;
+        background: white;
+        border-radius: 50%;
+        transition: left 0.2s;
+      }
+      .toggle-switch.on .toggle-knob {
+        left: 24px;
+      }
     </style>
   </head>
   <body>
-
     <!-- AUTHENTICATION OVERLAY -->
     <div id="authOverlay">
       <div class="auth-card">
@@ -334,12 +360,16 @@
           <input type="email" id="authEmail" placeholder="admin@example.com" />
         </div>
 
-        <div class="form-group" style="margin-bottom: 30px;">
+        <div class="form-group" style="margin-bottom: 30px">
           <label>Password</label>
           <input type="password" id="authPassword" placeholder="••••••••" />
         </div>
 
-        <button class="btn btn-primary" id="authSubmitBtn" onclick="handleAuthAction()">
+        <button
+          class="btn btn-primary"
+          id="authSubmitBtn"
+          onclick="handleAuthAction()"
+        >
           Authenticate
         </button>
       </div>
@@ -348,33 +378,124 @@
     <!-- MAIN DASHBOARD -->
     <header>
       <h1>Pickup Hero Admin</h1>
-      <button class="btn btn-secondary" style="width: auto; padding: 8px 16px; font-size: 0.85rem;" onclick="signOutAdmin()">Sign Out</button>
+      <button
+        class="btn btn-secondary"
+        style="width: auto; padding: 8px 16px; font-size: 0.85rem"
+        onclick="signOutAdmin()"
+      >
+        Sign Out
+      </button>
     </header>
 
+    <!-- GLOBAL SYSTEM CONTROLS -->
+    <div style="padding: 20px 20px 0 20px">
+      <div
+        class="data-card"
+        style="
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+          border-color: var(--accent);
+        "
+      >
+        <div>
+          <strong style="color: var(--accent); font-size: 1.1rem"
+            >Customer Appreciation Week</strong
+          >
+          <p
+            style="
+              font-size: 0.85rem;
+              color: var(--text-muted);
+              margin-top: 4px;
+            "
+          >
+            Free Standard Delivery Promo
+          </p>
+        </div>
+        <div
+          class="toggle-switch"
+          id="promoToggleSwitch"
+          onclick="togglePromoWeek()"
+        >
+          <div class="toggle-knob"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="tabs">
-      <button class="tab-btn active" id="tabDriversBtn" onclick="switchTab('drivers')">Drivers Directory</button>
-      <button class="tab-btn" id="tabCustomersBtn" onclick="switchTab('customers')">Customers Directory</button>
+      <button
+        class="tab-btn active"
+        id="tabDriversBtn"
+        onclick="switchTab('drivers')"
+      >
+        Drivers Directory
+      </button>
+      <button
+        class="tab-btn"
+        id="tabCustomersBtn"
+        onclick="switchTab('customers')"
+      >
+        Customers Directory
+      </button>
     </div>
 
     <!-- DRIVERS VIEW -->
     <div class="content-area active" id="viewDrivers">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="font-size: 1.2rem; color: var(--text-muted);">Registered Heroes</h2>
-        <span id="driverCountDisplay" style="background: var(--surface-elevated); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: bold;">0</span>
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        "
+      >
+        <h2 style="font-size: 1.2rem; color: var(--text-muted)">
+          Registered Heroes
+        </h2>
+        <span
+          id="driverCountDisplay"
+          style="
+            background: var(--surface-elevated);
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            font-weight: bold;
+          "
+          >0</span
+        >
       </div>
       <div class="data-grid" id="driversGrid">
-        <p style="color: var(--text-muted);">Loading drivers...</p>
+        <p style="color: var(--text-muted)">Loading drivers...</p>
       </div>
     </div>
 
     <!-- CUSTOMERS VIEW -->
     <div class="content-area" id="viewCustomers">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="font-size: 1.2rem; color: var(--text-muted);">Registered Customers</h2>
-        <span id="customerCountDisplay" style="background: var(--surface-elevated); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: bold;">0</span>
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        "
+      >
+        <h2 style="font-size: 1.2rem; color: var(--text-muted)">
+          Registered Customers
+        </h2>
+        <span
+          id="customerCountDisplay"
+          style="
+            background: var(--surface-elevated);
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            font-weight: bold;
+          "
+          >0</span
+        >
       </div>
       <div class="data-grid" id="customersGrid">
-        <p style="color: var(--text-muted);">Loading customers...</p>
+        <p style="color: var(--text-muted)">Loading customers...</p>
       </div>
     </div>
 
@@ -382,14 +503,29 @@
     <div class="soft-prompt-overlay" id="deleteVerifyModal">
       <div class="soft-prompt-box">
         <h3>Confirm Deletion</h3>
-        <p id="deleteVerifyText">Are you absolutely sure you want to permanently delete this record? This action cannot be reversed.</p>
+        <p id="deleteVerifyText">
+          Are you absolutely sure you want to permanently delete this record?
+          This action cannot be reversed.
+        </p>
         <div class="prompt-actions">
-          <button class="btn btn-secondary" style="flex: 1;" onclick="cancelDelete()">Cancel</button>
-          <button class="btn btn-emergency" style="flex: 1; background: var(--danger); color: white;" id="confirmDeleteBtn" onclick="executeDelete()">Yes, Delete</button>
+          <button
+            class="btn btn-secondary"
+            style="flex: 1"
+            onclick="cancelDelete()"
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-emergency"
+            style="flex: 1; background: var(--danger); color: white"
+            id="confirmDeleteBtn"
+            onclick="executeDelete()"
+          >
+            Yes, Delete
+          </button>
         </div>
       </div>
     </div>
-
 
     <!-- FIREBASE SDK -->
     <script type="module">
@@ -399,7 +535,7 @@
         signInWithEmailAndPassword,
         signOut,
         setPersistence,
-        browserSessionPersistence
+        browserSessionPersistence,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
       import {
@@ -407,7 +543,8 @@
         collection,
         onSnapshot,
         doc,
-        deleteDoc
+        deleteDoc,
+        setDoc,
       } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -432,9 +569,11 @@
       window.setPersistence = setPersistence;
       window.browserSessionPersistence = browserSessionPersistence;
       window.collection = collection;
+
       window.onSnapshot = onSnapshot;
       window.doc = doc;
       window.deleteDoc = deleteDoc;
+      window.setDoc = setDoc;
 
       if (window.bootAdminApp) window.bootAdminApp();
     </script>
@@ -443,6 +582,28 @@
     <script>
       let activeDeleteTarget = null;
       let activeDeleteCollection = null;
+
+      window.togglePromoWeek = async function () {
+        const toggle = document.getElementById("promoToggleSwitch");
+        const isCurrentlyOn = toggle.classList.contains("on");
+        const newState = !isCurrentlyOn;
+
+        if (newState) toggle.classList.add("on");
+        else toggle.classList.remove("on");
+
+        try {
+          await window.setDoc(
+            window.doc(window.db, "system_settings", "global_config"),
+            { isFreeDeliveryWeek: newState },
+            { merge: true }
+          );
+        } catch (e) {
+          console.error("Failed to update promo state:", e);
+          alert("Failed to update promo toggle.");
+          if (isCurrentlyOn) toggle.classList.add("on");
+          else toggle.classList.remove("on");
+        }
+      };
 
       // --- AUTHENTICATION & BOOT ---
       window.bootAdminApp = function () {
@@ -470,7 +631,10 @@
         btn.disabled = true;
 
         try {
-          await window.setPersistence(window.auth, window.browserSessionPersistence);
+          await window.setPersistence(
+            window.auth,
+            window.browserSessionPersistence
+          );
           await window.signInWithEmailAndPassword(window.auth, email, password);
           btn.innerText = "Authenticate";
           btn.disabled = false;
@@ -478,7 +642,9 @@
           console.error("Admin Auth Error:", error);
           btn.innerText = "Authenticate";
           btn.disabled = false;
-          alert("Access Denied: " + error.message.replace("Firebase:", "").trim());
+          alert(
+            "Access Denied: " + error.message.replace("Firebase:", "").trim()
+          );
         }
       };
 
@@ -498,7 +664,7 @@
         document.getElementById("viewDrivers").classList.remove("active");
         document.getElementById("viewCustomers").classList.remove("active");
 
-        if (tabName === 'drivers') {
+        if (tabName === "drivers") {
           document.getElementById("tabDriversBtn").classList.add("active");
           document.getElementById("viewDrivers").classList.add("active");
         } else {
@@ -509,32 +675,39 @@
 
       // --- DATA LOADING & RENDERING ---
       window.loadMasterDirectories = function () {
-        
         // 1. DRIVER LISTENER
-        window.onSnapshot(window.collection(window.db, "driver_settings"), (snapshot) => {
-          const grid = document.getElementById("driversGrid");
-          document.getElementById("driverCountDisplay").innerText = snapshot.docs.length;
-          let html = "";
+        window.onSnapshot(
+          window.collection(window.db, "driver_settings"),
+          (snapshot) => {
+            const grid = document.getElementById("driversGrid");
+            document.getElementById("driverCountDisplay").innerText =
+              snapshot.docs.length;
+            let html = "";
 
-          if (snapshot.empty) {
-            html = `<p style="color: var(--text-muted);">No drivers registered in database.</p>`;
-          } else {
-            snapshot.forEach((docSnap) => {
-              const d = docSnap.data();
-              const uid = docSnap.id;
-              
-              const name = d.displayName || "Unknown Hero";
-              const phone = d.phoneNumber || "No Phone Provided";
-              const email = d.email || "Managed via Auth Console"; // Fallback if explicit email isn't in document
-              const pic = d.profilePic || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>";
-              
-              html += `
+            if (snapshot.empty) {
+              html = `<p style="color: var(--text-muted);">No drivers registered in database.</p>`;
+            } else {
+              snapshot.forEach((docSnap) => {
+                const d = docSnap.data();
+                const uid = docSnap.id;
+
+                const name = d.displayName || "Unknown Hero";
+                const phone = d.phoneNumber || "No Phone Provided";
+                const email = d.email || "Managed via Auth Console"; // Fallback if explicit email isn't in document
+                const pic =
+                  d.profilePic ||
+                  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>";
+
+                html += `
                 <div class="data-card">
                   <div class="card-header">
                     <img src="${pic}" class="card-avatar" alt="Avatar">
                     <div>
                       <div class="card-title">${name}</div>
-                      <div class="card-subtitle">UID: ${uid.substring(0,8)}...</div>
+                      <div class="card-subtitle">UID: ${uid.substring(
+                        0,
+                        8
+                      )}...</div>
                     </div>
                   </div>
                   
@@ -542,19 +715,24 @@
                   <div class="info-row"><span class="info-label">Email:</span> <span class="info-value" style="font-size:0.8rem;word-break:break-all;">${email}</span></div>
                   
                   <div style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 15px;">
-                    <button class="btn btn-emergency" onclick="triggerDoubleVerification('driver', '${uid}', '${name.replace(/'/g, "\\'")}')">Delete Driver Profile</button>
+                    <button class="btn btn-emergency" onclick="triggerDoubleVerification('driver', '${uid}', '${name.replace(
+                  /'/g,
+                  "\\'"
+                )}')">Delete Driver Profile</button>
                   </div>
                 </div>
               `;
-            });
+              });
+            }
+            grid.innerHTML = html;
           }
-          grid.innerHTML = html;
-        });
+        );
 
         // 2. CUSTOMER LISTENER
         window.onSnapshot(window.collection(window.db, "users"), (snapshot) => {
           const grid = document.getElementById("customersGrid");
-          document.getElementById("customerCountDisplay").innerText = snapshot.docs.length;
+          document.getElementById("customerCountDisplay").innerText =
+            snapshot.docs.length;
           let html = "";
 
           if (snapshot.empty) {
@@ -563,7 +741,7 @@
             snapshot.forEach((docSnap) => {
               const c = docSnap.data();
               const uid = docSnap.id;
-              
+
               const name = c.fullName || "Unknown Customer";
               const phone = c.phoneNumber || "No Phone Provided";
               const email = c.email || "Managed via Auth Console"; // Fallback
@@ -571,10 +749,15 @@
               html += `
                 <div class="data-card">
                   <div class="card-header">
-                    <div class="card-avatar" style="display:flex; align-items:center; justify-content:center; background:var(--accent); border:none; font-weight:bold; font-size:1.2rem;">${name.charAt(0).toUpperCase()}</div>
+                    <div class="card-avatar" style="display:flex; align-items:center; justify-content:center; background:var(--accent); border:none; font-weight:bold; font-size:1.2rem;">${name
+                      .charAt(0)
+                      .toUpperCase()}</div>
                     <div>
                       <div class="card-title">${name}</div>
-                      <div class="card-subtitle">UID: ${uid.substring(0,8)}...</div>
+                      <div class="card-subtitle">UID: ${uid.substring(
+                        0,
+                        8
+                      )}...</div>
                     </div>
                   </div>
                   
@@ -582,7 +765,10 @@
                   <div class="info-row"><span class="info-label">Email:</span> <span class="info-value" style="font-size:0.8rem;word-break:break-all;">${email}</span></div>
                   
                   <div style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 15px;">
-                    <button class="btn btn-emergency" onclick="triggerDoubleVerification('customer', '${uid}', '${name.replace(/'/g, "\\'")}')">Delete Customer Profile</button>
+                    <button class="btn btn-emergency" onclick="triggerDoubleVerification('customer', '${uid}', '${name.replace(
+                /'/g,
+                "\\'"
+              )}')">Delete Customer Profile</button>
                   </div>
                 </div>
               `;
@@ -590,18 +776,35 @@
           }
           grid.innerHTML = html;
         });
+
+        // 3. PROMO SYSTEM LISTENER
+        window.onSnapshot(
+          window.doc(window.db, "system_settings", "global_config"),
+          (docSnap) => {
+            const toggle = document.getElementById("promoToggleSwitch");
+            if (
+              docSnap.exists() &&
+              docSnap.data().isFreeDeliveryWeek === true
+            ) {
+              toggle.classList.add("on");
+            } else {
+              toggle.classList.remove("on");
+            }
+          }
+        );
       };
 
       // --- DESTRUCTIVE DOUBLE VERIFICATION ENGINE ---
       window.triggerDoubleVerification = function (type, uid, name) {
         activeDeleteTarget = uid;
-        activeDeleteCollection = type === 'driver' ? 'driver_settings' : 'users';
-        
+        activeDeleteCollection =
+          type === "driver" ? "driver_settings" : "users";
+
         const modal = document.getElementById("deleteVerifyModal");
         const text = document.getElementById("deleteVerifyText");
-        
+
         text.innerHTML = `Are you absolutely sure you want to permanently delete the profile for <strong style="color:var(--text);">${name}</strong>?<br><br><span style="font-size:0.8rem; color:var(--text-muted);">Note: This strips their Firestore data. Full Auth deletion must be finalized in the Firebase Console.</span>`;
-        
+
         modal.style.display = "flex";
       };
 
@@ -613,7 +816,7 @@
 
       window.executeDelete = async function () {
         if (!activeDeleteTarget || !activeDeleteCollection) return;
-        
+
         const btn = document.getElementById("confirmDeleteBtn");
         const originalText = btn.innerText;
         btn.innerText = "Deleting...";
@@ -621,12 +824,18 @@
 
         try {
           // Execute primary profile deletion
-          await window.deleteDoc(window.doc(window.db, activeDeleteCollection, activeDeleteTarget));
+          await window.deleteDoc(
+            window.doc(window.db, activeDeleteCollection, activeDeleteTarget)
+          );
 
           // If it's a driver, aggressively wipe their active routing state to keep the map clean
-          if (activeDeleteCollection === 'driver_settings') {
-            await window.deleteDoc(window.doc(window.db, "driver_locations", activeDeleteTarget));
-            await window.deleteDoc(window.doc(window.db, "driver_state", activeDeleteTarget));
+          if (activeDeleteCollection === "driver_settings") {
+            await window.deleteDoc(
+              window.doc(window.db, "driver_locations", activeDeleteTarget)
+            );
+            await window.deleteDoc(
+              window.doc(window.db, "driver_state", activeDeleteTarget)
+            );
           }
 
           window.cancelDelete();
