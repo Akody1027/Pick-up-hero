@@ -6141,7 +6141,11 @@ Hi! I'm your local rural delivery hero. I usually do runs on Tuesday and Thursda
               "https://capturepickupheropayment-1068443635940.us-central1.run.app";
 
             for (const order of uniqueOrders) {
-              if (order.stripeSessionId) {
+              if (
+                order.stripeSessionId &&
+                order.stripeSessionId !== "PROMO_FREE" &&
+                order.totalCost > 0
+              ) {
                 try {
                   await fetch(cloudFunctionUrl, {
                     method: "POST",
